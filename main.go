@@ -70,7 +70,6 @@ func (s *square) setVertexArrayObject() {
 	// This lets us enable the first attribute; 0. We are only using a single vertex buffer, so we know that it will
 	// be attribute location 0
 	gl.EnableVertexAttribArray(0)
-	//gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	// The glVertexAttribPointer function defines the layout of our first vertex buffer; "0" means define the layout
 	// for attribute number 0. "3" means that the variables are vec3 made from every 3 floats (GL_FLOAT) in the buffer.
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
@@ -116,17 +115,21 @@ func main() {
 
 	square2 := newSquare(1, pos{0.5, 0.5}, pos{0.6, 0.6})
 
-	const vertex_shader = `#version 410
+	const vertex_shader = `
+#version 410
 in vec3 vp;
 void main() {
 	gl_Position = vec4(vp.x, vp.y, vp.z, 1.0);
-}` + "\x00"
+}
+` + "\x00"
 
-	const fragment_shader = `#version 410
+	const fragment_shader = `
+#version 410
 out vec4 frag_colour;
 void main() {
 	frag_colour = vec4(0.2, 0.3, 0.4, 1.0);
-}` + "\x00"
+}
+` + "\x00"
 
 	program, err := newProgram(vertex_shader, fragment_shader)
 	if err != nil {
