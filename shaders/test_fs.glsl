@@ -1,8 +1,5 @@
-#version 420
-
-uniform vec4 inputColour;
-out vec4 fragColour;
-
+#version 410
+out vec4 frag_colour;
 void main() {
-  fragColour = inputColour;
+	frag_colour = vec4(0.2, 0.3, 0.4, 1.0);
 }

@@ -5,15 +5,18 @@ import (
 	"fmt"
 	"go/build"
 	_ "image/png"
+	"io/ioutil"
 	"log"
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
+const logFile = "gl.log"
 const windowWidth = 600
 const windowHeight = 600
 
@@ -22,71 +25,14 @@ func init() {
 	runtime.LockOSThread()
 }
 
-type pos [3]float32
-
-func newSquare(index uint32, a, b pos) *square {
-	s := &square{
-		vbo: &index,
-		vao: &index,
-		vertices: []float32{
-			a[0], a[1], 0.0,
-			a[0], b[1], 0.0,
-			b[0], a[1], 0.0,
-
-			b[0], a[1], 0.0,
-			b[0], b[1], 0.0,
-			a[0], b[1], 0.0,
-		},
-	}
-	s.setVertexBufferObject()
-	s.setVertexArrayObject()
-	return s
-}
-
-type square struct {
-	vbo, vao *uint32
-	vertices []float32
-}
-
-// vertex buffer object
-// Configure the vertex data
-// Now an unusual step. Most meshes will use a collection of one or more vertex buffer objects to hold vertex
-// points, texture-coordinates, vertex normals, etc. In older GL implementations we would have to bind each one,
-// and define their memory layout, every time that we draw the mesh. To simplify that, we have new thing called
-// the vertex array object (VAO), which remembers all of the vertex buffers that you want to use, and the memory
-// layout of each one. We set up the vertex array object once per mesh. When we want to draw, all we do then is
-// bind the VAO and draw.
-func (s *square) setVertexBufferObject() {
-	gl.GenBuffers(1, s.vbo)
-	gl.BindBuffer(gl.ARRAY_BUFFER, *s.vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(s.vertices)*4, gl.Ptr(s.vertices), gl.STATIC_DRAW)
-}
-
-func (s *square) setVertexArrayObject() {
-	// Here we tell GL to generate a new VAO for us. It sets an unsigned integer to identify it with later.
-	gl.GenVertexArrays(1, s.vao)
-	// We bind it, to bring it in to focus in the state machine.
-	gl.BindVertexArray(*s.vao)
-	// This lets us enable the first attribute; 0. We are only using a single vertex buffer, so we know that it will
-	// be attribute location 0
-	gl.EnableVertexAttribArray(0)
-	// The glVertexAttribPointer function defines the layout of our first vertex buffer; "0" means define the layout
-	// for attribute number 0. "3" means that the variables are vec3 made from every 3 floats (GL_FLOAT) in the buffer.
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
-}
-
-func (s square) Count() int32 {
-	return int32(len(s.vertices))
-}
-
-func (s square) Draw() {
-	gl.BindVertexArray(*s.vao)
-	gl.DrawArrays(gl.TRIANGLES, 0, s.Count())
-}
-
 func main() {
+	if err := restartLog(); err != nil {
+		panic(err)
+	}
+
 	if err := glfw.Init(); err != nil {
-		log.Fatalln("failed to initialize glfw:", err)
+		glError(fmt.Errorf("failed to initialize glfw: %s", err))
+		return
 	}
 	defer glfw.Terminate()
 
@@ -99,41 +45,39 @@ func main() {
 
 	window, err := glfw.CreateWindow(windowWidth, windowHeight, "Cube", nil, nil)
 	if err != nil {
-		panic(err)
+		glError(err)
+		return
 	}
 	window.MakeContextCurrent()
 
 	// Initialize Glow
 	if err := gl.Init(); err != nil {
-		panic(err)
+		glError(err)
+		return
 	}
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
-	fmt.Println("OpenGL version", version)
+	glLog(fmt.Sprintf("OpenGL Version %s", version))
 
 	square := newSquare(0, pos{0.1, 0.1}, pos{-0.1, -0.1})
-
 	square2 := newSquare(1, pos{0.5, 0.5}, pos{0.6, 0.6})
 
-	const vertex_shader = `
-#version 410
-in vec3 vp;
-void main() {
-	gl_Position = vec4(vp.x, vp.y, vp.z, 1.0);
-}
-` + "\x00"
+	vertex_shader, err := loadShader("test_vs")
+	if err != nil {
+		glError(err)
+		return
+	}
 
-	const fragment_shader = `
-#version 410
-out vec4 frag_colour;
-void main() {
-	frag_colour = vec4(0.2, 0.3, 0.4, 1.0);
-}
-` + "\x00"
+	fragment_shader, err := loadShader("test_fs")
+	if err != nil {
+		glError(err)
+		return
+	}
 
 	program, err := newProgram(vertex_shader, fragment_shader)
 	if err != nil {
-		panic(err)
+		glError(err)
+		return
 	}
 	gl.UseProgram(program)
 
@@ -155,6 +99,11 @@ void main() {
 		glfw.PollEvents()
 
 	}
+}
+
+func loadShader(name string) (string, error) {
+	res, err := ioutil.ReadFile("shaders/" + name + ".glsl")
+	return string(res) + "\x00", err
 }
 
 var prevSeconds float64
@@ -251,4 +200,41 @@ func importPathToDir(importPath string) (string, error) {
 		return "", err
 	}
 	return p.Dir, nil
+}
+
+func glLog(s string) {
+	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, 0666)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	_, err = fmt.Fprintf(f, "%s %s\n", time.Now().Format("15:04:05.000000000"), s)
+	if err != nil {
+		panic(err)
+	}
+
+}
+
+func glError(err error) {
+	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, 0666)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	_, err = fmt.Fprintf(f, "%s %s\n", time.Now().Format("15:04:05.000000000"), err)
+	fmt.Fprintf(os.Stderr, "%s %s\n", time.Now().Format("15:04:05.000000000"), err)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func restartLog() error {
+	f, err := os.Create(logFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = fmt.Fprintf(f, "%s cspace log file\n", time.Now().Format("15:04:05.000000000"))
+	return err
 }
