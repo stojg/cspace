@@ -13,9 +13,9 @@ func newSquare(index uint32, a, b pos) *square {
 			a[0], b[1], 0.0,
 			b[0], a[1], 0.0,
 
-			b[0], a[1], 0.0,
-			b[0], b[1], 0.0,
-			a[0], b[1], 0.0,
+			//b[0], a[1], 0.0,
+			//b[0], b[1], 0.0,
+			//a[0], b[1], 0.0,
 		},
 	}
 	s.setVertexBufferObject()

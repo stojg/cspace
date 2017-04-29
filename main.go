@@ -8,9 +8,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -26,13 +26,22 @@ func init() {
 }
 
 func main() {
-	if err := restartLog(); err != nil {
-		panic(err)
+	err := realMain()
+	if err != nil {
+		glError(err)
+		os.Exit(1)
 	}
+	os.Exit(0)
+}
+
+func realMain() error {
+	if err := restartLog(); err != nil {
+		return err
+	}
+	defer glLog("Program stopped")
 
 	if err := glfw.Init(); err != nil {
-		glError(fmt.Errorf("failed to initialize glfw: %s", err))
-		return
+		return fmt.Errorf("failed to initialize glfw: %s", err)
 	}
 	defer glfw.Terminate()
 
@@ -41,20 +50,21 @@ func main() {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	glfw.WindowHint(glfw.Samples, 4)
+
+	glfw.WindowHint(glfw.Samples, 16)
 
 	window, err := glfw.CreateWindow(windowWidth, windowHeight, "Cube", nil, nil)
 	if err != nil {
-		glError(err)
-		return
+		return err
 	}
 	window.MakeContextCurrent()
 
 	// Initialize Glow
 	if err := gl.Init(); err != nil {
-		glError(err)
-		return
+		return err
 	}
+
+	glLogGLParams()
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	glLog(fmt.Sprintf("OpenGL Version %s", version))
@@ -62,22 +72,19 @@ func main() {
 	square := newSquare(0, pos{0.1, 0.1}, pos{-0.1, -0.1})
 	square2 := newSquare(1, pos{0.5, 0.5}, pos{0.6, 0.6})
 
-	vertex_shader, err := loadShader("test_vs")
+	vertex_shader, err := loadVertexShader("test")
 	if err != nil {
-		glError(err)
-		return
+		return err
 	}
 
-	fragment_shader, err := loadShader("test_fs")
+	fragment_shader, err := loadFragShader("test")
 	if err != nil {
-		glError(err)
-		return
+		return err
 	}
 
 	program, err := newProgram(vertex_shader, fragment_shader)
 	if err != nil {
-		glError(err)
-		return
+		return err
 	}
 	gl.UseProgram(program)
 
@@ -99,26 +106,17 @@ func main() {
 		glfw.PollEvents()
 
 	}
+	return nil
 }
 
-func loadShader(name string) (string, error) {
-	res, err := ioutil.ReadFile("shaders/" + name + ".glsl")
+func loadVertexShader(name string) (string, error) {
+	res, err := ioutil.ReadFile(filepath.Join("shaders", fmt.Sprintf("%s.vert", name)))
 	return string(res) + "\x00", err
 }
 
-var prevSeconds float64
-var frameCount int
-
-func fpsCounter(window *glfw.Window) {
-	currentSeconds := glfw.GetTime()
-	elapsedSeconds := currentSeconds - prevSeconds
-	if elapsedSeconds > 0.25 {
-		prevSeconds = currentSeconds
-		fps := float64(frameCount) / elapsedSeconds
-		window.SetTitle(fmt.Sprintf("opengl @ fps: %.2f", fps))
-		frameCount = 0
-	}
-	frameCount++
+func loadFragShader(name string) (string, error) {
+	res, err := ioutil.ReadFile(filepath.Join("shaders", fmt.Sprintf("%s.frag", name)))
+	return string(res) + "\x00", err
 }
 
 func newProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error) {
@@ -173,7 +171,7 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 		log := strings.Repeat("\x00", int(logLength+1))
 		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
 
-		return 0, fmt.Errorf("failed to compile %v: %v", source, log)
+		return 0, fmt.Errorf("failed to compile \n%v \n%v", log, source)
 	}
 
 	return shader, nil
@@ -200,41 +198,4 @@ func importPathToDir(importPath string) (string, error) {
 		return "", err
 	}
 	return p.Dir, nil
-}
-
-func glLog(s string) {
-	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, 0666)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	_, err = fmt.Fprintf(f, "%s %s\n", time.Now().Format("15:04:05.000000000"), s)
-	if err != nil {
-		panic(err)
-	}
-
-}
-
-func glError(err error) {
-	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, 0666)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	_, err = fmt.Fprintf(f, "%s %s\n", time.Now().Format("15:04:05.000000000"), err)
-	fmt.Fprintf(os.Stderr, "%s %s\n", time.Now().Format("15:04:05.000000000"), err)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func restartLog() error {
-	f, err := os.Create(logFile)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = fmt.Fprintf(f, "%s cspace log file\n", time.Now().Format("15:04:05.000000000"))
-	return err
 }
