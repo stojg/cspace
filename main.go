@@ -6,6 +6,7 @@ import (
 	"go/build"
 	_ "image/png"
 	"log"
+	"math/rand"
 	"os"
 	"runtime"
 
@@ -59,8 +60,7 @@ func realMain() error {
 		glfw.WindowHint(glfw.ContextVersionMinor, 1)
 		glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 		glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-
-		glfw.WindowHint(glfw.Samples, 16)
+		glfw.WindowHint(glfw.Samples, 4)
 
 		var err error
 		window, err = glfw.CreateWindow(windowWidth, windowHeight, "Cube", nil, nil)
@@ -108,7 +108,7 @@ func realMain() error {
 	// setup projection and model (world)
 	{
 		gl.UseProgram(testShader.Program)
-		projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 10.0)
+		projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
 		projectionUniform := gl.GetUniformLocation(testShader.Program, gl.Str("projection\x00"))
 		gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
 
@@ -121,10 +121,20 @@ func realMain() error {
 	cam.Draw(testShader)
 
 	// load meshes
-	square := newCube(1)
-	square.Texture, err = newTexture("square_running.jpg")
-	if err != nil {
-		log.Fatalln(err)
+	var meshes []*mesh
+	for i := 0; i < 20; i++ {
+		square := newCube(float32(rand.Float64()*20-10), 0, float32(rand.Float64()*20-10))
+		text, err := newTexture("textures/crate0/crate0_diffuse.png")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		square.Textures = append(square.Textures, text)
+		duck, err := newTexture("textures/duck/duck_diffuse.png")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		square.Textures = append(square.Textures, duck)
+		meshes = append(meshes, square)
 	}
 
 	gl.ClearColor(0.45, 0.5, 0.5, 1.0)
@@ -143,8 +153,9 @@ func realMain() error {
 		cam.Update(testShader, elapsed)
 
 		// Render
-		square.Draw(testShader)
-		//square2.Draw()
+		for _, mesh := range meshes {
+			mesh.Draw(testShader)
+		}
 
 		// Maintenance
 		window.SwapBuffers()

@@ -10,7 +10,7 @@ import (
 
 func newCamera() *camera {
 	c := &camera{
-		position:   mgl32.Vec3{0, 0, 10},
+		position:   mgl32.Vec3{0, 1.8, 10},
 		front:      mgl32.Vec3{0, 0, -1},
 		up:         mgl32.Vec3{0, 1, 0},
 		lastX:      windowWidth / 2,

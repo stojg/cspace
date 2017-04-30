@@ -1,17 +1,23 @@
 package main
 
-import "github.com/go-gl/gl/v4.1-core/gl"
+import (
+	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
+)
 
 type mesh struct {
 	Vertices []float32
-	Texture  uint32
-	vbo, vao *uint32
+	Textures []uint32
+	vbo, vao uint32
+	Position mgl32.Vec3
+	Scale    mgl32.Vec3
+	// orientation?
 }
 
-func newCube(index uint32) *mesh {
+func newCube(x, y, z float32) *mesh {
 	q := &mesh{
-		vbo: &index,
-		vao: &index,
+		Position: mgl32.Vec3{x, y, z},
+		Scale:    mgl32.Vec3{0.3, 0.3, 0.3},
 	}
 	q.Vertices = []float32{
 		// Bottom
@@ -71,14 +77,14 @@ func (s *mesh) init() {
 	const sizeOfFloat = 4
 
 	// Create buffers/arrays
-	gl.GenVertexArrays(1, s.vao)
-	gl.GenBuffers(1, s.vbo)
+	gl.GenVertexArrays(1, &s.vao)
+	gl.GenBuffers(1, &s.vbo)
 	//gl.GenBuffers(1, s.ebo);
 
-	gl.BindVertexArray(*s.vao)
+	gl.BindVertexArray(s.vao)
 
 	// load data into vertex buffers
-	gl.BindBuffer(gl.ARRAY_BUFFER, *s.vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, s.vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(s.Vertices)*sizeOfFloat, gl.Ptr(s.Vertices), gl.STATIC_DRAW)
 
 	//gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, s.ebo)
@@ -100,16 +106,26 @@ func (s *mesh) init() {
 func (s mesh) Draw(shader *Shader) {
 
 	// textures
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, s.Texture)
+
+	for i := range s.Textures {
+		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+		gl.BindTexture(gl.TEXTURE_2D, s.Textures[i])
+		gl.Uniform1i(gl.GetUniformLocation(shader.Program, gl.Str("texture_diffuse2\x00")), int32(i))
+	}
 
 	// draw mesh
-	gl.BindVertexArray(*s.vao)
+	gl.BindVertexArray(s.vao)
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.Vertices)))
 
 	// set back defaults, good practice stuff
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, 0)
+
+	trans := mgl32.Translate3D(s.Position[0], s.Position[1], s.Position[2])
+	//trans = trans.Mul4(mgl32.HomogRotate3D(45.0, mgl32.Vec3{0.0, 0.0, 1.0}))
+	trans = trans.Mul4(mgl32.Scale3D(s.Scale[0], s.Scale[1], s.Scale[2]))
+	transformLoc := gl.GetUniformLocation(shader.Program, gl.Str("transform\x00"))
+	gl.UniformMatrix4fv(transformLoc, 1, false, &trans[0])
 
 }
 
@@ -154,4 +170,5 @@ func (s *square) init() {
 func (s square) Draw() {
 	gl.BindVertexArray(*s.vao)
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.vertices)))
+
 }
