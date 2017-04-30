@@ -7,7 +7,6 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"log"
-	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -80,8 +79,16 @@ func realMain() error {
 	colorUniform := gl.GetUniformLocation(program, gl.Str("inputColor\x00"))
 	gl.Uniform4f(colorUniform, 0.8, 0.8, 0.8, 1)
 
+	projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 10.0)
+	projectionUniform := gl.GetUniformLocation(program, gl.Str("projection\x00"))
+	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
+
+	camera := mgl32.LookAtV(mgl32.Vec3{0, 0, 2}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
+	cameraUniform := gl.GetUniformLocation(program, gl.Str("camera\x00"))
+	gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
+
 	model := mgl32.Ident4()
-	modelUniform := gl.GetUniformLocation(program, gl.Str("matrix\x00"))
+	modelUniform := gl.GetUniformLocation(program, gl.Str("model\x00"))
 	gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
 
 	window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
@@ -107,10 +114,14 @@ func realMain() error {
 
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
-	gl.ClearColor(0.45, 0.5, 0.55, 1.0)
+	gl.ClearColor(0.45, 0.5, 0.5, 1.0)
 
-	speed := 1.0
-	lastPosition := 0.0
+	var camSpeed float32 = 1.0
+	var camYawSpeed float32 = 1.0
+	camPos := []float32{0, 0, 2}
+	var camYaw float32
+
+	//lastPosition := 0.0
 
 	previousTime := glfw.GetTime()
 
@@ -120,16 +131,49 @@ func realMain() error {
 
 		// Update
 		time := glfw.GetTime()
-		elapsed := time - previousTime
+		elapsed := float32(time - previousTime)
 		previousTime = time
 
-		if math.Abs(float64(lastPosition)) > 1 {
-			speed = -speed
+		camMoved := false
+		if action := window.GetKey(glfw.KeyA); action == glfw.Press {
+			camPos[0] -= camSpeed * elapsed
+			camMoved = true
+		}
+		if action := window.GetKey(glfw.KeyD); action == glfw.Press {
+			camPos[0] += camSpeed * elapsed
+			camMoved = true
+		}
+		if action := window.GetKey(glfw.KeyQ); action == glfw.Press {
+			camPos[1] += camSpeed * elapsed
+			camMoved = true
+		}
+		if action := window.GetKey(glfw.KeyE); action == glfw.Press {
+			camPos[1] -= camSpeed * elapsed
+			camMoved = true
+		}
+		if action := window.GetKey(glfw.KeyW); action == glfw.Press {
+			camPos[2] -= camSpeed * elapsed
+			camMoved = true
+		}
+		if action := window.GetKey(glfw.KeyS); action == glfw.Press {
+			camPos[2] += camSpeed * elapsed
+			camMoved = true
+		}
+		if action := window.GetKey(glfw.KeyLeft); action == glfw.Press {
+			camYaw += camYawSpeed * elapsed
+			camMoved = true
+		}
+		if action := window.GetKey(glfw.KeyRight); action == glfw.Press {
+			camYaw -= camYawSpeed * elapsed
+			camMoved = true
 		}
 
-		lastPosition = elapsed*speed + lastPosition
-		model[12] = float32(lastPosition)
-		gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
+		if camMoved {
+			T := mgl32.Translate3D(float32(-camPos[0]), float32(-camPos[1]), float32(-camPos[2]))
+			R := mgl32.HomogRotate3DY(-camYaw)
+			camera = R.Mul4(T)
+			gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
+		}
 
 		// Render
 		gl.UseProgram(program)
