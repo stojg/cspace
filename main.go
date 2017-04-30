@@ -18,8 +18,11 @@ import (
 )
 
 const logFile = "gl.log"
-const windowWidth = 600
+const windowWidth = 800
 const windowHeight = 600
+
+var keys map[glfw.Key]bool
+var cursor [2]float64
 
 func init() {
 	// GLFW event handling must run on the main OS thread
@@ -36,6 +39,11 @@ func main() {
 }
 
 func realMain() error {
+
+	keys = make(map[glfw.Key]bool)
+	cursor[0] = windowWidth / 2
+	cursor[1] = windowHeight / 2
+
 	if err := restartLog(); err != nil {
 		return err
 	}
@@ -70,7 +78,22 @@ func realMain() error {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	glLogln(fmt.Sprintf("OpenGL Version %s", version))
 
-	square := newSquare(0, pos{0.1, 0.1}, pos{-0.1, -0.1})
+	window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		if action == glfw.Press {
+			keys[key] = true
+		} else if action == glfw.Release {
+			keys[key] = false
+		}
+	})
+
+	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+
+	window.SetCursorPosCallback(func(w *glfw.Window, xpos float64, ypos float64) {
+		cursor[0] = xpos
+		cursor[1] = ypos
+	})
+
+	square := newCube(1)
 
 	program, err := loadTestShader()
 	if err != nil {
@@ -83,30 +106,15 @@ func realMain() error {
 	projectionUniform := gl.GetUniformLocation(program, gl.Str("projection\x00"))
 	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
 
-	camera := mgl32.LookAtV(mgl32.Vec3{0, 0, 2}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
+	cam := newCamera()
+
 	cameraUniform := gl.GetUniformLocation(program, gl.Str("camera\x00"))
-	gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
+	view := cam.View()
+	gl.UniformMatrix4fv(cameraUniform, 1, false, &view[0])
 
 	model := mgl32.Ident4()
 	modelUniform := gl.GetUniformLocation(program, gl.Str("model\x00"))
 	gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
-
-	window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-		if key != glfw.KeySpace || action != glfw.Press {
-			return
-		}
-		newProgram, err := loadTestShader()
-		if err != nil {
-			glError(err)
-			return
-		}
-
-		colorUniform := gl.GetUniformLocation(newProgram, gl.Str("inputColor\x00"))
-		gl.Uniform4f(colorUniform, 0, 0.8, 0, 4)
-
-		fmt.Println("shaders reloaded")
-		program = newProgram
-	})
 
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
@@ -116,63 +124,26 @@ func realMain() error {
 	gl.DepthFunc(gl.LESS)
 	gl.ClearColor(0.45, 0.5, 0.5, 1.0)
 
-	var camSpeed float32 = 1.0
-	var camYawSpeed float32 = 1.0
-	camPos := []float32{0, 0, 2}
-	var camYaw float32
-
-	//lastPosition := 0.0
+	//var camYawSpeed float32 = 1.0
+	//camPos := []float32{0, 0, 2}
+	//var camYaw float32
 
 	previousTime := glfw.GetTime()
 
 	for !window.ShouldClose() {
-		fpsCounter(window)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		fpsCounter(window)
+		glfw.PollEvents()
 
 		// Update
 		time := glfw.GetTime()
 		elapsed := float32(time - previousTime)
 		previousTime = time
 
-		camMoved := false
-		if action := window.GetKey(glfw.KeyA); action == glfw.Press {
-			camPos[0] -= camSpeed * elapsed
-			camMoved = true
-		}
-		if action := window.GetKey(glfw.KeyD); action == glfw.Press {
-			camPos[0] += camSpeed * elapsed
-			camMoved = true
-		}
-		if action := window.GetKey(glfw.KeyQ); action == glfw.Press {
-			camPos[1] += camSpeed * elapsed
-			camMoved = true
-		}
-		if action := window.GetKey(glfw.KeyE); action == glfw.Press {
-			camPos[1] -= camSpeed * elapsed
-			camMoved = true
-		}
-		if action := window.GetKey(glfw.KeyW); action == glfw.Press {
-			camPos[2] -= camSpeed * elapsed
-			camMoved = true
-		}
-		if action := window.GetKey(glfw.KeyS); action == glfw.Press {
-			camPos[2] += camSpeed * elapsed
-			camMoved = true
-		}
-		if action := window.GetKey(glfw.KeyLeft); action == glfw.Press {
-			camYaw += camYawSpeed * elapsed
-			camMoved = true
-		}
-		if action := window.GetKey(glfw.KeyRight); action == glfw.Press {
-			camYaw -= camYawSpeed * elapsed
-			camMoved = true
-		}
-
-		if camMoved {
-			T := mgl32.Translate3D(float32(-camPos[0]), float32(-camPos[1]), float32(-camPos[2]))
-			R := mgl32.HomogRotate3DY(-camYaw)
-			camera = R.Mul4(T)
-			gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
+		if view := cam.Update(elapsed); view != nil {
+			fmt.Println("cam change")
+			gl.UniformMatrix4fv(cameraUniform, 1, false, &view[0])
 		}
 
 		// Render
@@ -182,7 +153,6 @@ func realMain() error {
 
 		// Maintenance
 		window.SwapBuffers()
-		glfw.PollEvents()
 
 	}
 	return nil
