@@ -93,12 +93,13 @@ func realMain() error {
 		cursor[1] = ypos
 	})
 
-	square := newCube(1)
-
 	program, err := loadTestShader()
 	if err != nil {
 		glError(err)
 	}
+
+	square := newCube(1, program)
+
 	colorUniform := gl.GetUniformLocation(program, gl.Str("inputColor\x00"))
 	gl.Uniform4f(colorUniform, 0.8, 0.8, 0.8, 1)
 
@@ -107,7 +108,6 @@ func realMain() error {
 	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
 
 	cam := newCamera()
-
 	cameraUniform := gl.GetUniformLocation(program, gl.Str("camera\x00"))
 	view := cam.View()
 	gl.UniformMatrix4fv(cameraUniform, 1, false, &view[0])
@@ -115,6 +115,19 @@ func realMain() error {
 	model := mgl32.Ident4()
 	modelUniform := gl.GetUniformLocation(program, gl.Str("model\x00"))
 	gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
+
+	textureUniform := gl.GetUniformLocation(program, gl.Str("tex\x00"))
+	gl.Uniform1i(textureUniform, 0)
+
+	gl.BindFragDataLocation(program, 0, gl.Str("outputColor\x00"))
+
+	// gl.BindFragDataLocation(program, 0, gl.Str("outputColor\x00"))
+	// Load the texture
+	//square.texture, err = newTexture("square.png")
+	square.texture, err = newTexture("square_running.jpg")
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
@@ -142,7 +155,6 @@ func realMain() error {
 		previousTime = time
 
 		if view := cam.Update(elapsed); view != nil {
-			fmt.Println("cam change")
 			gl.UniformMatrix4fv(cameraUniform, 1, false, &view[0])
 		}
 
