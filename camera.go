@@ -3,6 +3,7 @@ package main
 import (
 	"math"
 
+	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -34,7 +35,7 @@ type camera struct {
 	speed      float32
 }
 
-func (cam *camera) Update(elapsed float32) *mgl32.Mat4 {
+func (cam *camera) Update(shader *Shader, elapsed float32) {
 	changed := false
 	if cam.handleKeyboard(elapsed) {
 		changed = true
@@ -44,14 +45,14 @@ func (cam *camera) Update(elapsed float32) *mgl32.Mat4 {
 	}
 
 	if changed {
-		return cam.View()
+		cam.Draw(shader)
 	}
-	return nil
 }
 
-func (cam *camera) View() *mgl32.Mat4 {
+func (cam *camera) Draw(shader *Shader) {
 	mat := mgl32.LookAtV(cam.position, cam.position.Add(cam.front), cam.up)
-	return &mat
+	cameraUniform := gl.GetUniformLocation(shader.Program, gl.Str("camera\x00"))
+	gl.UniformMatrix4fv(cameraUniform, 1, false, &mat[0])
 }
 
 func (cam *camera) handleKeyboard(elapsed float32) bool {

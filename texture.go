@@ -14,7 +14,7 @@ import (
 func newTexture(file string) (uint32, error) {
 	imgFile, err := os.Open(file)
 	if err != nil {
-		return 0, fmt.Errorf("texture %q not found on disk: %v", file, err)
+		return 0, fmt.Errorf("Texture %q not found on disk: %v", file, err)
 	}
 	img, _, err := image.Decode(imgFile)
 	if err != nil {
