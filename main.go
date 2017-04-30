@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
+
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
@@ -38,7 +39,7 @@ func realMain() error {
 	if err := restartLog(); err != nil {
 		return err
 	}
-	defer glLog("Program stopped")
+	defer glLogln("Program stopped")
 
 	if err := glfw.Init(); err != nil {
 		return fmt.Errorf("failed to initialize glfw: %s", err)
@@ -67,30 +68,34 @@ func realMain() error {
 	glLogGLParams()
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
-	glLog(fmt.Sprintf("OpenGL Version %s", version))
+	glLogln(fmt.Sprintf("OpenGL Version %s", version))
 
 	square := newSquare(0, pos{0.1, 0.1}, pos{-0.1, -0.1})
 	square2 := newSquare(1, pos{0.5, 0.5}, pos{0.6, 0.6})
 
-	vertex_shader, err := loadVertexShader("test")
+	program, err := loadTestShader()
 	if err != nil {
-		return err
+		glError(err)
 	}
 
-	fragment_shader, err := loadFragShader("test")
-	if err != nil {
-		return err
-	}
-
-	program, err := newProgram(vertex_shader, fragment_shader)
-	if err != nil {
-		return err
-	}
-	gl.UseProgram(program)
+	window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		if key != glfw.KeySpace || action != glfw.Press {
+			return
+		}
+		newProgram, err := loadTestShader()
+		if err != nil {
+			glError(err)
+			return
+		}
+		program = newProgram
+		fmt.Println("shaders reloaded")
+	})
 
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
-	gl.ClearColor(0.9, 0.9, 0.9, 1.0)
+	gl.ClearColor(0.6, 0.6, 0.8, 1.0)
+
+	//gl.PolygonMode(gl.FRONT, gl.LINE)
 
 	for !window.ShouldClose() {
 		fpsCounter(window)
@@ -107,6 +112,26 @@ func realMain() error {
 
 	}
 	return nil
+}
+
+func loadTestShader() (uint32, error) {
+	vertex_shader, err := loadVertexShader("test")
+	if err != nil {
+		return 0, err
+	}
+	fragment_shader, err := loadFragShader("test")
+	if err != nil {
+		return 0, err
+	}
+	program, err := newProgram(vertex_shader, fragment_shader)
+	if err != nil {
+		return 0, err
+	}
+	gl.UseProgram(program)
+	glLogProgramme(program)
+	colorUniform := gl.GetUniformLocation(program, gl.Str("inputColor\x00"))
+	gl.Uniform4f(colorUniform, 0, 0.8, 0, 4)
+	return program, nil
 }
 
 func loadVertexShader(name string) (string, error) {
@@ -142,10 +167,10 @@ func newProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error)
 		var logLength int32
 		gl.GetProgramiv(program, gl.INFO_LOG_LENGTH, &logLength)
 
-		log := strings.Repeat("\x00", int(logLength+1))
-		gl.GetProgramInfoLog(program, logLength, nil, gl.Str(log))
+		l := strings.Repeat("\x00", int(logLength+1))
+		gl.GetProgramInfoLog(program, logLength, nil, gl.Str(l))
 
-		return 0, fmt.Errorf("failed to link program: %v", log)
+		return 0, fmt.Errorf("failed to link program[%d]: %v", program, l)
 	}
 
 	gl.DeleteShader(vertexShader)
@@ -156,24 +181,19 @@ func newProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error)
 
 func compileShader(source string, shaderType uint32) (uint32, error) {
 	shader := gl.CreateShader(shaderType)
-
 	csources, free := gl.Strs(source)
 	gl.ShaderSource(shader, 1, csources, nil)
 	free()
 	gl.CompileShader(shader)
-
 	var status int32
 	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
 	if status == gl.FALSE {
 		var logLength int32
 		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLength)
-
-		log := strings.Repeat("\x00", int(logLength+1))
-		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
-
-		return 0, fmt.Errorf("failed to compile \n%v \n%v", log, source)
+		l := strings.Repeat("\x00", int(logLength+1))
+		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(l))
+		return 0, fmt.Errorf("failed to compile \n%v \n%v", l, source)
 	}
-
 	return shader, nil
 }
 

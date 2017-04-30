@@ -16,7 +16,7 @@ func restartLog() error {
 	return err
 }
 
-func glLog(s string) {
+func glLogln(s string) {
 	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, 0666)
 	if err != nil {
 		panic(err)
@@ -27,7 +27,21 @@ func glLog(s string) {
 	if err != nil {
 		panic(err)
 	}
+}
 
+func glLogf(format string, a ...interface{}) {
+	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, 0666)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	now := time.Now().Format("15:04:05.000000000")
+	args := append([]interface{}{now}, a...)
+	_, err = fmt.Fprintf(f, "%s "+format, args...)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func glError(inError error) {
