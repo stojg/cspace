@@ -13,6 +13,10 @@ type Shader struct {
 	Program uint32
 }
 
+func (s *Shader) Use() {
+	gl.UseProgram(s.Program)
+}
+
 func NewShader(vertex, frag string) (*Shader, error) {
 	shader := &Shader{}
 	vertexShaderSource, err := loadVertexShader(vertex)

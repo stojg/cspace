@@ -106,7 +106,6 @@ func (s *mesh) init() {
 func (s mesh) Draw(shader *Shader) {
 
 	// textures
-
 	for i := range s.Textures {
 		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
 		gl.BindTexture(gl.TEXTURE_2D, s.Textures[i])

@@ -6,7 +6,6 @@ import (
 	"go/build"
 	_ "image/png"
 	"log"
-	"math/rand"
 	"os"
 	"runtime"
 
@@ -100,42 +99,34 @@ func realMain() error {
 		glLogln(fmt.Sprintf("OpenGL Version %s", version))
 	}
 
-	testShader, err := NewShader("test", "test")
+	lightingShader, err := NewShader("light", "light")
+	if err != nil {
+		return err
+	}
+	// setup projection and model (world)
+	//{
+	gl.UseProgram(lightingShader.Program)
+	projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
+	projectionUniform := gl.GetUniformLocation(lightingShader.Program, gl.Str("projection\x00"))
+	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
+
+	model := mgl32.Ident4()
+	modelUniform := gl.GetUniformLocation(lightingShader.Program, gl.Str("model\x00"))
+	gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
+	//}
+
+	lampShader, err := NewShader("lamp", "lamp")
 	if err != nil {
 		return err
 	}
 
-	// setup projection and model (world)
-	{
-		gl.UseProgram(testShader.Program)
-		projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
-		projectionUniform := gl.GetUniformLocation(testShader.Program, gl.Str("projection\x00"))
-		gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
-
-		model := mgl32.Ident4()
-		modelUniform := gl.GetUniformLocation(testShader.Program, gl.Str("model\x00"))
-		gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
-	}
-
 	cam := newCamera()
-	cam.Draw(testShader)
+	lightingShader.Use()
+	cam.Draw(lightingShader)
 
 	// load meshes
-	var meshes []*mesh
-	for i := 0; i < 20; i++ {
-		square := newCube(float32(rand.Float64()*20-10), 0, float32(rand.Float64()*20-10))
-		text, err := newTexture("textures/crate0/crate0_diffuse.png")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		square.Textures = append(square.Textures, text)
-		duck, err := newTexture("textures/duck/duck_diffuse.png")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		square.Textures = append(square.Textures, duck)
-		meshes = append(meshes, square)
-	}
+	cube := newCube(0, 0, 0)
+	light := newCube(1, 2, 2)
 
 	gl.ClearColor(0.45, 0.5, 0.5, 1.0)
 	previousTime := glfw.GetTime()
@@ -150,16 +141,29 @@ func realMain() error {
 		elapsed := float32(time - previousTime)
 		previousTime = time
 
-		cam.Update(testShader, elapsed)
+		lightingShader.Use()
+		objColorLoc := gl.GetUniformLocation(lightingShader.Program, gl.Str("objectColor\x00"))
+		gl.Uniform3f(objColorLoc, 1, 0.5, 0.31)
+		lightColorLoc := gl.GetUniformLocation(lightingShader.Program, gl.Str("lightColor\x00"))
+		gl.Uniform3f(lightColorLoc, 1, 1, 1)
 
-		// Render
-		for _, mesh := range meshes {
-			mesh.Draw(testShader)
-		}
+		projectionUniform := gl.GetUniformLocation(lightingShader.Program, gl.Str("projection\x00"))
+		gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
+		modelUniform := gl.GetUniformLocation(lightingShader.Program, gl.Str("model\x00"))
+		gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
 
+		cam.Update(lightingShader, elapsed)
+		cube.Draw(lightingShader)
+
+		lampShader.Use()
+		projectionUniform = gl.GetUniformLocation(lampShader.Program, gl.Str("projection\x00"))
+		gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
+		modelUniform = gl.GetUniformLocation(lampShader.Program, gl.Str("model\x00"))
+		gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
+
+		light.Draw(lampShader)
 		// Maintenance
 		window.SwapBuffers()
-
 	}
 	return nil
 }
