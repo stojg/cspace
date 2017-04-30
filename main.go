@@ -7,14 +7,15 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
-
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 const logFile = "gl.log"
@@ -71,14 +72,17 @@ func realMain() error {
 	glLogln(fmt.Sprintf("OpenGL Version %s", version))
 
 	square := newSquare(0, pos{0.1, 0.1}, pos{-0.1, -0.1})
-	//square2 := newSquare(1, pos{0.5, 0.5}, pos{0.6, 0.6})
 
 	program, err := loadTestShader()
 	if err != nil {
 		glError(err)
 	}
 	colorUniform := gl.GetUniformLocation(program, gl.Str("inputColor\x00"))
-	gl.Uniform4f(colorUniform, 0, 0.8, 0, 4)
+	gl.Uniform4f(colorUniform, 0.8, 0.8, 0.8, 1)
+
+	model := mgl32.Ident4()
+	modelUniform := gl.GetUniformLocation(program, gl.Str("matrix\x00"))
+	gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
 
 	window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if key != glfw.KeySpace || action != glfw.Press {
@@ -103,13 +107,29 @@ func realMain() error {
 
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
-	gl.ClearColor(0.6, 0.6, 0.8, 1.0)
+	gl.ClearColor(0.45, 0.5, 0.55, 1.0)
 
-	//gl.PolygonMode(gl.FRONT, gl.LINE)
+	speed := 1.0
+	lastPosition := 0.0
+
+	previousTime := glfw.GetTime()
 
 	for !window.ShouldClose() {
 		fpsCounter(window)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		// Update
+		time := glfw.GetTime()
+		elapsed := time - previousTime
+		previousTime = time
+
+		if math.Abs(float64(lastPosition)) > 1 {
+			speed = -speed
+		}
+
+		lastPosition = elapsed*speed + lastPosition
+		model[12] = float32(lastPosition)
+		gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
 
 		// Render
 		gl.UseProgram(program)
