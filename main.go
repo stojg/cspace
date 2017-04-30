@@ -71,12 +71,14 @@ func realMain() error {
 	glLogln(fmt.Sprintf("OpenGL Version %s", version))
 
 	square := newSquare(0, pos{0.1, 0.1}, pos{-0.1, -0.1})
-	square2 := newSquare(1, pos{0.5, 0.5}, pos{0.6, 0.6})
+	//square2 := newSquare(1, pos{0.5, 0.5}, pos{0.6, 0.6})
 
 	program, err := loadTestShader()
 	if err != nil {
 		glError(err)
 	}
+	colorUniform := gl.GetUniformLocation(program, gl.Str("inputColor\x00"))
+	gl.Uniform4f(colorUniform, 0, 0.8, 0, 4)
 
 	window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if key != glfw.KeySpace || action != glfw.Press {
@@ -87,9 +89,17 @@ func realMain() error {
 			glError(err)
 			return
 		}
-		program = newProgram
+
+		colorUniform := gl.GetUniformLocation(newProgram, gl.Str("inputColor\x00"))
+		gl.Uniform4f(colorUniform, 0, 0.8, 0, 4)
+
 		fmt.Println("shaders reloaded")
+		program = newProgram
 	})
+
+	gl.Enable(gl.CULL_FACE)
+	gl.CullFace(gl.BACK)
+	gl.FrontFace(gl.CCW)
 
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
@@ -104,7 +114,7 @@ func realMain() error {
 		// Render
 		gl.UseProgram(program)
 		square.Draw()
-		square2.Draw()
+		//square2.Draw()
 
 		// Maintenance
 		window.SwapBuffers()
@@ -115,6 +125,7 @@ func realMain() error {
 }
 
 func loadTestShader() (uint32, error) {
+
 	vertex_shader, err := loadVertexShader("test")
 	if err != nil {
 		return 0, err
@@ -129,8 +140,7 @@ func loadTestShader() (uint32, error) {
 	}
 	gl.UseProgram(program)
 	glLogProgramme(program)
-	colorUniform := gl.GetUniformLocation(program, gl.Str("inputColor\x00"))
-	gl.Uniform4f(colorUniform, 0, 0.8, 0, 4)
+
 	return program, nil
 }
 
