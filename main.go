@@ -54,6 +54,8 @@ func realMain() error {
 		}
 		defer glfw.Terminate()
 
+		//glfw.SwapInterval(1) // enable vertical refresh
+
 		glfw.WindowHint(glfw.Resizable, glfw.False)
 		glfw.WindowHint(glfw.ContextVersionMajor, 4)
 		glfw.WindowHint(glfw.ContextVersionMinor, 1)
@@ -118,7 +120,7 @@ func realMain() error {
 	}
 	cube.Textures = append(cube.Textures, duck)
 
-	ourShader, err := NewShader("light", "light")
+	ourShader, err := NewShader("material", "material")
 	if err != nil {
 		return err
 	}
@@ -165,10 +167,15 @@ func realMain() error {
 				{-1.3, 1.0, -1.5},
 			}
 
-			objectColorLoc := uniformLocation(ourShader, "objectColor")
-			gl.Uniform3f(objectColorLoc, 1.0, 0.5, 0.31)
-			lightColorLoc := uniformLocation(ourShader, "lightColor")
-			gl.Uniform3f(lightColorLoc, 1.0, 1.0, 1.0)
+			gl.Uniform3f(uniformLocation(ourShader, "materialAmbient"), 1.0, 0.5, 0.31)
+			gl.Uniform3f(uniformLocation(ourShader, "materialDiffuse"), 1.0, 0.5, 0.31)
+			gl.Uniform3f(uniformLocation(ourShader, "materialSpecular"), 0.5, 0.5, 0.5)
+			gl.Uniform1f(uniformLocation(ourShader, "materialShininess"), 32.0)
+
+			gl.Uniform3f(uniformLocation(ourShader, "lightAmbient"), 0.2, 0.2, 0.2)
+			gl.Uniform3f(uniformLocation(ourShader, "lightDiffuse"), 0.5, 0.5, 0.5)
+			gl.Uniform3f(uniformLocation(ourShader, "lightSpecular"), 1.0, 1.0, 1.0)
+
 			lightPosLoc := uniformLocation(ourShader, "lightPos")
 			gl.Uniform3f(lightPosLoc, lightPos[0], lightPos[1], lightPos[2])
 
