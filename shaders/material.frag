@@ -6,6 +6,11 @@ struct Light {
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
+
+    // http://www.ogre3d.org/tikiwiki/tiki-index.php?page=-Point+Light+Attenuation
+    float constant;
+    float linear;
+    float quadratic;
 };
 
 in vec3 Normal;
@@ -25,10 +30,16 @@ uniform float materialShininess;
 void main() {
 
     vec3 lightDir;
-    if (light.vector.w == 0.0f) { // Do directional light calculations
+    float attenuation = 1.0f;
+    if (light.vector.w == 0.0f) {
+        // directional light
         lightDir = normalize(light.vector.xyz);
-    } else { // Do light calculations using the light's position
+    } else {
+        // point light
         lightDir = normalize(light.vector.xyz - FragPos);
+        float distance = length(light.vector.xyz - FragPos);
+        attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+
     }
 
     // Ambient
@@ -45,12 +56,9 @@ void main() {
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), materialShininess);
     vec3 specular = light.specular * (spec * vec3(texture(materialSpecular, Frag_texture_coordinate)));
 
-//    float distance = length(light.vector - FragPos);
-//    float attenuation = 1.0f / (1.0f + 0.07f * distance + 0.017f * (distance * distance));
-
-//    ambient  *= attenuation;
-//    diffuse  *= attenuation;
-//    specular *= attenuation;
+    ambient  *= attenuation;
+    diffuse  *= attenuation;
+    specular *= attenuation;
 
     color = vec4(ambient + diffuse + specular, 1.0f);
 }

@@ -183,6 +183,9 @@ func realMain() error {
 			gl.Uniform3f(uniformLocation(ourShader, "light.ambient"), 0.2, 0.2, 0.2)
 			gl.Uniform3f(uniformLocation(ourShader, "light.diffuse"), 0.9, 0.9, 0.9)
 			gl.Uniform3f(uniformLocation(ourShader, "light.specular"), 1.0, 1.0, 1.0)
+			gl.Uniform1f(uniformLocation(ourShader, "light.constant"), 1.0)
+			gl.Uniform1f(uniformLocation(ourShader, "light.linear"), 0.045)
+			gl.Uniform1f(uniformLocation(ourShader, "light.quadratic"), 0.0075)
 
 			for i := range positions {
 				trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
