@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/build"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"runtime"
@@ -15,8 +16,8 @@ import (
 )
 
 const logFile = "gl.log"
-const windowWidth = 800
-const windowHeight = 600
+const windowWidth = 1440 / 1.2
+const windowHeight = 900 / 1.2
 
 var keys map[glfw.Key]bool
 var cursor [2]float64
@@ -61,7 +62,7 @@ func realMain() error {
 		glfw.WindowHint(glfw.ContextVersionMinor, 1)
 		glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 		glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-		glfw.WindowHint(glfw.Samples, 4)
+		glfw.WindowHint(glfw.Samples, 16)
 
 		var err error
 		window, err = glfw.CreateWindow(windowWidth, windowHeight, "Cube", nil, nil)
@@ -98,6 +99,9 @@ func realMain() error {
 		gl.Enable(gl.DEPTH_TEST)
 		gl.DepthFunc(gl.LESS)
 
+		// should be on by default, but just to make sure
+		gl.Enable(gl.MULTISAMPLE)
+
 		//gl.ClearColor(0.45, 0.5, 0.5, 1.0)
 		gl.ClearColor(0.1, 0.1, 0.1, 1.0)
 
@@ -132,6 +136,32 @@ func realMain() error {
 	// this is pretty static for now. will need to be updated if window can change size
 	projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
 
+	positions := []mgl32.Vec3{
+		{2.0, 5.0, -15.0},
+		{-1.5, -2.2, -2.5},
+		{-3.8, -2.0, -12.3},
+		{-1.7, 3.0, -7.5},
+		{1.3, -2.0, -2.5},
+		{1.5, 2.0, -2.5},
+		{1.5, 0.2, -1.5},
+		{-1.3, 1.0, -1.5},
+		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
+	}
+
+	lightColours := [][]float32{
+		{0.8, 0.5, 0.5},
+		{0.5, 0.8, 0.5},
+		{0.5, 0.5, 0.8},
+		{1.000, 0.749, 0.000},
+	}
+
 	previousTime := glfw.GetTime()
 	for !window.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -147,24 +177,21 @@ func realMain() error {
 		// update and get the camera view
 		view := cam.View(elapsed)
 
-		lightPos := []float32{-0.4, 1.4, -3.5}
+		lightPositions := [][]float32{
+			{-0.4, 1.4, -3.5},
+			{0.7, 0.2, 2.0},
+			{2.3, -3.3, -4.0},
+			{-4.0, 2.0, -12.0},
+		}
+		for i := 0; i < 3; i++ {
+			lightPositions[i][i] = lightPositions[i][i] + float32(math.Sin(glfw.GetTime())*2.0)
+		}
 
 		// draw the test meshes
 		{
 			ourShader.Use()
 			setUniformMatrix4fv(ourShader, "projection", projection)
 			setUniformMatrix4fv(ourShader, "view", view)
-
-			positions := []mgl32.Vec3{
-				{2.0, 5.0, -15.0},
-				{-1.5, -2.2, -2.5},
-				{-3.8, -2.0, -12.3},
-				{-1.7, 3.0, -7.5},
-				{1.3, -2.0, -2.5},
-				{1.5, 2.0, -2.5},
-				{1.5, 0.2, -1.5},
-				{-1.3, 1.0, -1.5},
-			}
 
 			viewPosLoc := uniformLocation(ourShader, "viewPos")
 			gl.Uniform3f(viewPosLoc, cam.position[0], cam.position[1], cam.position[2])
@@ -178,14 +205,17 @@ func realMain() error {
 			gl.Uniform1i(uniformLocation(ourShader, "materialSpecular"), 1)
 			gl.Uniform1f(uniformLocation(ourShader, "materialShininess"), 32.0)
 
-			gl.Uniform4f(uniformLocation(ourShader, "light.vector"), lightPos[0], lightPos[1], lightPos[2], 1)
-			//gl.Uniform4f(uniformLocation(ourShader, "light.vector"), 1, 1, 0, 0)
-			gl.Uniform3f(uniformLocation(ourShader, "light.ambient"), 0.2, 0.2, 0.2)
-			gl.Uniform3f(uniformLocation(ourShader, "light.diffuse"), 0.9, 0.9, 0.9)
-			gl.Uniform3f(uniformLocation(ourShader, "light.specular"), 1.0, 1.0, 1.0)
-			gl.Uniform1f(uniformLocation(ourShader, "light.constant"), 1.0)
-			gl.Uniform1f(uniformLocation(ourShader, "light.linear"), 0.045)
-			gl.Uniform1f(uniformLocation(ourShader, "light.quadratic"), 0.0075)
+			for i := range lightPositions {
+				name := fmt.Sprintf("lights[%d]", i)
+				gl.Uniform4f(uniformLocation(ourShader, name+".vector"), lightPositions[i][0], lightPositions[i][1], lightPositions[i][2], 1)
+				//gl.Uniform4f(uniformLocation(ourShader, "light.vector"), 1, 1, 0, 0)
+				gl.Uniform3f(uniformLocation(ourShader, name+".ambient"), lightColours[i][0]/10, lightColours[i][1]/10, lightColours[i][2]/10)
+				gl.Uniform3f(uniformLocation(ourShader, name+".diffuse"), lightColours[i][0], lightColours[i][1], lightColours[i][2])
+				gl.Uniform3f(uniformLocation(ourShader, name+".specular"), 1.0, 1.0, 1.0)
+				gl.Uniform1f(uniformLocation(ourShader, name+".constant"), 1.0)
+				gl.Uniform1f(uniformLocation(ourShader, name+".linear"), 0.14)
+				gl.Uniform1f(uniformLocation(ourShader, name+".quadratic"), 0.07)
+			}
 
 			for i := range positions {
 				trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
@@ -208,12 +238,16 @@ func realMain() error {
 			setUniformMatrix4fv(whiteShader, "projection", projection)
 			setUniformMatrix4fv(whiteShader, "view", view)
 
-			trans := mgl32.Translate3D(lightPos[0], lightPos[1], lightPos[2])
-			trans = trans.Mul4(mgl32.Scale3D(0.2, 0.2, 0.2))
-			setUniformMatrix4fv(whiteShader, "transform", trans)
+			for i := range lightPositions {
+				trans := mgl32.Translate3D(lightPositions[i][0], lightPositions[i][1], lightPositions[i][2])
+				trans = trans.Mul4(mgl32.Scale3D(0.2, 0.2, 0.2))
+				setUniformMatrix4fv(whiteShader, "transform", trans)
 
-			gl.BindVertexArray(cube.vao)
-			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube.Vertices)))
+				gl.Uniform3f(uniformLocation(whiteShader, "emissive"), lightColours[i][0], lightColours[i][1], lightColours[i][2])
+
+				gl.BindVertexArray(cube.vao)
+				gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube.Vertices)))
+			}
 		}
 
 		window.SwapBuffers()
