@@ -15,8 +15,8 @@ import (
 )
 
 const logFile = "gl.log"
-const windowWidth = 200
-const windowHeight = 200
+const windowWidth = 800
+const windowHeight = 600
 
 var keys map[glfw.Key]bool
 var cursor [2]float64
@@ -96,7 +96,8 @@ func realMain() error {
 		gl.Enable(gl.DEPTH_TEST)
 		gl.DepthFunc(gl.LESS)
 
-		gl.ClearColor(0.45, 0.5, 0.5, 1.0)
+		//gl.ClearColor(0.45, 0.5, 0.5, 1.0)
+		gl.ClearColor(0.1, 0.1, 0.1, 1.0)
 
 		version := gl.GoStr(gl.GetString(gl.VERSION))
 		glLogln(fmt.Sprintf("OpenGL Version %s", version))
@@ -117,7 +118,7 @@ func realMain() error {
 	}
 	cube.Textures = append(cube.Textures, duck)
 
-	ourShader, err := NewShader("test", "test")
+	ourShader, err := NewShader("light", "light")
 	if err != nil {
 		return err
 	}
@@ -145,6 +146,8 @@ func realMain() error {
 		// update and get the camera view
 		view := cam.View(elapsed)
 
+		lightPos := []float32{-0.4, 1.4, -3.5}
+
 		// draw the test meshes
 		{
 			ourShader.Use()
@@ -162,11 +165,21 @@ func realMain() error {
 				{-1.3, 1.0, -1.5},
 			}
 
-			for i := range cube.Textures {
-				gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-				gl.BindTexture(gl.TEXTURE_2D, cube.Textures[i])
-				gl.Uniform1i(uniformLocation(ourShader, fmt.Sprintf("texture_diffuse%d", i+1)), int32(i))
-			}
+			objectColorLoc := uniformLocation(ourShader, "objectColor")
+			gl.Uniform3f(objectColorLoc, 1.0, 0.5, 0.31)
+			lightColorLoc := uniformLocation(ourShader, "lightColor")
+			gl.Uniform3f(lightColorLoc, 1.0, 1.0, 1.0)
+			lightPosLoc := uniformLocation(ourShader, "lightPos")
+			gl.Uniform3f(lightPosLoc, lightPos[0], lightPos[1], lightPos[2])
+
+			viewPosLoc := uniformLocation(ourShader, "viewPos")
+			gl.Uniform3f(viewPosLoc, cam.position[0], cam.position[1], cam.position[2])
+
+			//for i := range cube.Textures {
+			//	gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+			//	gl.BindTexture(gl.TEXTURE_2D, cube.Textures[i])
+			//	gl.Uniform1i(uniformLocation(ourShader, fmt.Sprintf("texture_diffuse%d", i+1)), int32(i))
+			//}
 			for i := range positions {
 				trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
 				trans = trans.Mul4(mgl32.HomogRotate3D(float32(i*20.0), mgl32.Vec3{0, 1, 0}))
@@ -176,10 +189,10 @@ func realMain() error {
 				gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube.Vertices)))
 			}
 			// set back defaults, from the book of good practices
-			for i := range cube.Textures {
-				gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-				gl.BindTexture(gl.TEXTURE_2D, 0)
-			}
+			//for i := range cube.Textures {
+			//	gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+			//	gl.BindTexture(gl.TEXTURE_2D, 0)
+			//}
 		}
 
 		// draw the lamp
@@ -188,7 +201,7 @@ func realMain() error {
 			setUniformMatrix4fv(whiteShader, "projection", projection)
 			setUniformMatrix4fv(whiteShader, "view", view)
 
-			trans := mgl32.Translate3D(-0.4, 1.4, -3.5)
+			trans := mgl32.Translate3D(lightPos[0], lightPos[1], lightPos[2])
 			trans = trans.Mul4(mgl32.Scale3D(0.2, 0.2, 0.2))
 			setUniformMatrix4fv(whiteShader, "transform", trans)
 
