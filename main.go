@@ -122,6 +122,14 @@ func realMain() error {
 		return err
 	}
 
+	whiteShader, err := NewShader("white", "white")
+	if err != nil {
+		return err
+	}
+
+	// this is pretty static for now. will need to be updated if window can change size
+	projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
+
 	previousTime := glfw.GetTime()
 	for !window.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -134,64 +142,68 @@ func realMain() error {
 		elapsed := float32(now - previousTime)
 		previousTime = now
 
-		// render
-		ourShader.Use()
+		// update and get the camera view
+		view := cam.View(elapsed)
 
-		projectionUniform := uniformLocation(ourShader, "projection")
-		projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
-		gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
+		// draw the test meshes
+		{
+			ourShader.Use()
+			setUniformMatrix4fv(ourShader, "projection", projection)
+			setUniformMatrix4fv(ourShader, "view", view)
 
-		model := mgl32.Ident4()
-		modelUniform := uniformLocation(ourShader, "model")
-		gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
+			positions := []mgl32.Vec3{
+				{2.0, 5.0, -15.0},
+				{-1.5, -2.2, -2.5},
+				{-3.8, -2.0, -12.3},
+				{-1.7, 3.0, -7.5},
+				{1.3, -2.0, -2.5},
+				{1.5, 2.0, -2.5},
+				{1.5, 0.2, -1.5},
+				{-1.3, 1.0, -1.5},
+			}
 
-		mat := cam.View(elapsed)
-		cameraUniform := uniformLocation(ourShader, "view")
-		gl.UniformMatrix4fv(cameraUniform, 1, false, &mat[0])
+			for i := range cube.Textures {
+				gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+				gl.BindTexture(gl.TEXTURE_2D, cube.Textures[i])
+				gl.Uniform1i(uniformLocation(ourShader, fmt.Sprintf("texture_diffuse%d", i+1)), int32(i))
+			}
+			for i := range positions {
+				trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
+				trans = trans.Mul4(mgl32.HomogRotate3D(float32(i*20.0), mgl32.Vec3{0, 1, 0}))
+				setUniformMatrix4fv(whiteShader, "transform", trans)
 
-		cubePositions := []mgl32.Vec3{
-			{0.0, 0.0, 0.0},
-			{2.0, 5.0, -15.0},
-			{-1.5, -2.2, -2.5},
-			{-3.8, -2.0, -12.3},
-			{2.4, -0.4, -3.5},
-			{-1.7, 3.0, -7.5},
-			{1.3, -2.0, -2.5},
-			{1.5, 2.0, -2.5},
-			{1.5, 0.2, -1.5},
-			{-1.3, 1.0, -1.5},
+				gl.BindVertexArray(cube.vao)
+				gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube.Vertices)))
+			}
+			// set back defaults, from the book of good practices
+			for i := range cube.Textures {
+				gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+				gl.BindTexture(gl.TEXTURE_2D, 0)
+			}
 		}
 
-		for i := range cube.Textures {
-			gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-			gl.BindTexture(gl.TEXTURE_2D, cube.Textures[i])
-			gl.Uniform1i(uniformLocation(ourShader, fmt.Sprintf("texture_diffuse%d", i+1)), int32(i))
-		}
+		// draw the lamp
+		{
+			whiteShader.Use()
+			setUniformMatrix4fv(whiteShader, "projection", projection)
+			setUniformMatrix4fv(whiteShader, "view", view)
 
-		for i := range cubePositions {
-			// draw mesh
+			trans := mgl32.Translate3D(-0.4, 1.4, -3.5)
+			trans = trans.Mul4(mgl32.Scale3D(0.2, 0.2, 0.2))
+			setUniformMatrix4fv(whiteShader, "transform", trans)
+
 			gl.BindVertexArray(cube.vao)
 			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube.Vertices)))
-
-			// set back defaults, good practice stuff
-			//gl.ActiveTexture(gl.TEXTURE0)
-			//gl.BindTexture(gl.TEXTURE_2D, 0)
-
-			trans := mgl32.Translate3D(cubePositions[i][0], cubePositions[i][1], cubePositions[i][2])
-			angle := float32(i * 20.0)
-			trans = trans.Mul4(mgl32.HomogRotate3D(angle, mgl32.Vec3{0, 1, 0}))
-			//trans = trans.Mul4(mgl32.Scale3D(s.Scale[0], s.Scale[1], s.Scale[2]))
-			transformLoc := uniformLocation(ourShader, "transform")
-			gl.UniformMatrix4fv(transformLoc, 1, false, &trans[0])
-
-			//mesh.Draw(ourShader)
 		}
 
-		// Maintenance
 		window.SwapBuffers()
-
 	}
 	return nil
+}
+
+func setUniformMatrix4fv(shader *Shader, name string, matrix mgl32.Mat4) {
+	location := uniformLocation(shader, name)
+	gl.UniformMatrix4fv(location, 1, false, &matrix[0])
 }
 
 func uniformLocation(shader *Shader, name string) int32 {

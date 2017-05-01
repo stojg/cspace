@@ -8,10 +8,10 @@ in vec2 frag_texture_coordinate;
 out vec4 color;
 
 void main() {
-//    color = vec4(1.0f);
+
     vec4 t2 = texture(texture_diffuse2, frag_texture_coordinate);
     float intensity = t2.r + t2.g + t2.b;
-    if(intensity < 0.2) {
+    if(intensity < 0.1) {
         color = texture(texture_diffuse1, frag_texture_coordinate);
         return;
     }
