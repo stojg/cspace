@@ -4,7 +4,6 @@ package main
 import (
 	"fmt"
 	"go/build"
-	_ "image/png"
 	"log"
 	"math/rand"
 	"os"
@@ -16,8 +15,8 @@ import (
 )
 
 const logFile = "gl.log"
-const windowWidth = 800
-const windowHeight = 600
+const windowWidth = 200
+const windowHeight = 200
 
 var keys map[glfw.Key]bool
 var cursor [2]float64
@@ -87,57 +86,42 @@ func realMain() error {
 		if err := gl.Init(); err != nil {
 			return err
 		}
-		gl.Enable(gl.CULL_FACE)
-		gl.CullFace(gl.BACK)
-		gl.FrontFace(gl.CCW)
+
+		glLogGLParams()
+
+		//gl.Enable(gl.CULL_FACE)
+		//gl.CullFace(gl.BACK)
+		//gl.FrontFace(gl.CCW)
 
 		gl.Enable(gl.DEPTH_TEST)
 		gl.DepthFunc(gl.LESS)
 
-		glLogGLParams()
+		gl.ClearColor(0.45, 0.5, 0.5, 1.0)
 
 		version := gl.GoStr(gl.GetString(gl.VERSION))
 		glLogln(fmt.Sprintf("OpenGL Version %s", version))
 	}
 
-	testShader, err := NewShader("test", "test")
+	cam := newCamera()
+
+	// load mesh(es)
+	cube := newCube(float32(rand.Float64()*20-10), 0, float32(rand.Float64()*20-10))
+	text, err := newTexture("textures/crate0/crate0_diffuse.png")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	cube.Textures = append(cube.Textures, text)
+	duck, err := newTexture("textures/duck/duck_diffuse.png")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	cube.Textures = append(cube.Textures, duck)
+
+	ourShader, err := NewShader("test", "test")
 	if err != nil {
 		return err
 	}
 
-	// setup projection and model (world)
-	{
-		gl.UseProgram(testShader.Program)
-		projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
-		projectionUniform := gl.GetUniformLocation(testShader.Program, gl.Str("projection\x00"))
-		gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
-
-		model := mgl32.Ident4()
-		modelUniform := gl.GetUniformLocation(testShader.Program, gl.Str("model\x00"))
-		gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
-	}
-
-	cam := newCamera()
-	cam.Draw(testShader)
-
-	// load meshes
-	var meshes []*mesh
-	for i := 0; i < 20; i++ {
-		square := newCube(float32(rand.Float64()*20-10), 0, float32(rand.Float64()*20-10))
-		text, err := newTexture("textures/crate0/crate0_diffuse.png")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		square.Textures = append(square.Textures, text)
-		duck, err := newTexture("textures/duck/duck_diffuse.png")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		square.Textures = append(square.Textures, duck)
-		meshes = append(meshes, square)
-	}
-
-	gl.ClearColor(0.45, 0.5, 0.5, 1.0)
 	previousTime := glfw.GetTime()
 	for !window.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -145,16 +129,62 @@ func realMain() error {
 		fpsCounter(window)
 		glfw.PollEvents()
 
-		// Update
-		time := glfw.GetTime()
-		elapsed := float32(time - previousTime)
-		previousTime = time
+		// update timers
+		now := glfw.GetTime()
+		elapsed := float32(now - previousTime)
+		previousTime = now
 
-		cam.Update(testShader, elapsed)
+		// render
+		ourShader.Use()
 
-		// Render
-		for _, mesh := range meshes {
-			mesh.Draw(testShader)
+		projectionUniform := uniformLocation(ourShader, "projection")
+		projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
+		gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
+
+		model := mgl32.Ident4()
+		modelUniform := uniformLocation(ourShader, "model")
+		gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
+
+		mat := cam.View(elapsed)
+		cameraUniform := uniformLocation(ourShader, "view")
+		gl.UniformMatrix4fv(cameraUniform, 1, false, &mat[0])
+
+		cubePositions := []mgl32.Vec3{
+			{0.0, 0.0, 0.0},
+			{2.0, 5.0, -15.0},
+			{-1.5, -2.2, -2.5},
+			{-3.8, -2.0, -12.3},
+			{2.4, -0.4, -3.5},
+			{-1.7, 3.0, -7.5},
+			{1.3, -2.0, -2.5},
+			{1.5, 2.0, -2.5},
+			{1.5, 0.2, -1.5},
+			{-1.3, 1.0, -1.5},
+		}
+
+		for i := range cube.Textures {
+			gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+			gl.BindTexture(gl.TEXTURE_2D, cube.Textures[i])
+			gl.Uniform1i(uniformLocation(ourShader, fmt.Sprintf("texture_diffuse%d", i+1)), int32(i))
+		}
+
+		for i := range cubePositions {
+			// draw mesh
+			gl.BindVertexArray(cube.vao)
+			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube.Vertices)))
+
+			// set back defaults, good practice stuff
+			//gl.ActiveTexture(gl.TEXTURE0)
+			//gl.BindTexture(gl.TEXTURE_2D, 0)
+
+			trans := mgl32.Translate3D(cubePositions[i][0], cubePositions[i][1], cubePositions[i][2])
+			angle := float32(i * 20.0)
+			trans = trans.Mul4(mgl32.HomogRotate3D(angle, mgl32.Vec3{0, 1, 0}))
+			//trans = trans.Mul4(mgl32.Scale3D(s.Scale[0], s.Scale[1], s.Scale[2]))
+			transformLoc := uniformLocation(ourShader, "transform")
+			gl.UniformMatrix4fv(transformLoc, 1, false, &trans[0])
+
+			//mesh.Draw(ourShader)
 		}
 
 		// Maintenance
@@ -162,6 +192,14 @@ func realMain() error {
 
 	}
 	return nil
+}
+
+func uniformLocation(shader *Shader, name string) int32 {
+	location := gl.GetUniformLocation(shader.Program, gl.Str(name+"\x00"))
+	if location < 0 {
+		glError(fmt.Errorf("uniform location for shader.Program '%d' and name '%s' not found", shader.Program, name))
+	}
+	return location
 }
 
 // Set the working directory to the root of Go package, so that its assets can be accessed.

@@ -1,8 +1,8 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
-
 	"os"
 	"time"
 
@@ -61,22 +61,24 @@ func glError(inError error) {
 	}
 }
 
-var prevSeconds float64
-var frameCount int
+var fpsPrevSeconds float64
+var fpsFrameCount int
 
 func fpsCounter(window *glfw.Window) {
 	currentSeconds := glfw.GetTime()
-	elapsedSeconds := currentSeconds - prevSeconds
+	elapsedSeconds := currentSeconds - fpsPrevSeconds
 	if elapsedSeconds > 0.25 {
-		prevSeconds = currentSeconds
-		fps := float64(frameCount) / elapsedSeconds
-		window.SetTitle(fmt.Sprintf("opengl @ fps: %.2f", fps))
-		frameCount = 0
+		fpsPrevSeconds = currentSeconds
+		fps := float64(fpsFrameCount) / elapsedSeconds
+		window.SetTitle(fmt.Sprintf("cspace @ fps: %.2f", fps))
+		fpsFrameCount = 0
 	}
-	frameCount++
+	fpsFrameCount++
 }
 
-func glLogProgramme(program uint32) {
+func glLogShader(shader *Shader) {
+
+	program := shader.Program
 	glLogf("------- info shader programme %d -------\n", program)
 
 	var params int32
@@ -84,49 +86,49 @@ func glLogProgramme(program uint32) {
 	glLogf("GL_LINK_STATUS = %d\n", params)
 
 	gl.GetProgramiv(program, gl.ATTACHED_SHADERS, &params)
-	glLogf("GL_ATTACHED_SHADERS = %d\n", params)
+	glLogf("%d GL_ATTACHED_SHADERS\n", params)
 
 	gl.GetProgramiv(program, gl.ACTIVE_ATTRIBUTES, &params)
-	glLogf("GL_ACTIVE_ATTRIBUTES = %d\n", params)
+	glLogf("%d GL_ACTIVE_ATTRIBUTES\n", params)
 
 	for i := int32(0); i < params; i++ {
-		var maxLength int32 = 64
 		var actualLength int32
 		var size int32
-		var xtype uint32
-		var name [64]byte
+		var xType uint32
+		var maxLength int32 = 64
+		name := make([]byte, maxLength)
 
-		gl.GetActiveAttrib(program, uint32(i), maxLength, &actualLength, &size, &xtype, &name[0])
+		gl.GetActiveAttrib(program, uint32(i), maxLength, &actualLength, &size, &xType, &name[0])
 		if size > 1 {
 			for j := int32(0); j < size; j++ {
 				longName := []byte(fmt.Sprintf("%s[%d]", name, j))
 				location := gl.GetAttribLocation(program, &longName[0])
-				glLogf("    %d) type: %s ", i, glTypeToString(xtype), longName, location)
+				glLogf("\t%d) %s ", i, glTypeToString(xType), bytes.Trim(longName, "\x00"), location)
 			}
 		} else {
 			location := gl.GetAttribLocation(program, &name[0])
-			glLogf("    %d) type: %s name: %s, location: %d\n", i, glTypeToString(xtype), name, location)
+			glLogf("\t%d) %s %s @ location %d\n", i, glTypeToString(xType), bytes.Trim(name, "\x00"), location)
 		}
 	}
 
 	gl.GetProgramiv(program, gl.ACTIVE_UNIFORMS, &params)
-	glLogf("GL_ACTIVE_UNIFORMS = %d\n", params)
+	glLogf("%d GL_ACTIVE_UNIFORMS\n", params)
 	for i := int32(0); i < params; i++ {
-		var maxLength int32 = 64
 		var actualLength int32
 		var size int32
 		var xtype uint32
-		var name [64]byte
+		var maxLength int32 = 64
+		name := make([]byte, maxLength)
 		gl.GetActiveUniform(program, uint32(i), maxLength, &actualLength, &size, &xtype, &name[0])
 		if size > 1 {
 			for j := int32(0); j < size; j++ {
 				longName := []byte(fmt.Sprintf("%s[%d]", name, j))
-				location := gl.GetUniformLocation(program, &longName[0])
-				glLogf("    %d) type: %s ", i, glTypeToString(xtype), longName, location)
+				location := gl.GetAttribLocation(program, &longName[0])
+				glLogf("\t%d) %s ", i, glTypeToString(xtype), bytes.Trim(longName, "\x00"), location)
 			}
 		} else {
-			location := gl.GetUniformLocation(program, &name[0])
-			glLogf("    %d) type: %s name: %s, location: %d\n", i, glTypeToString(xtype), name, location)
+			location := uniformLocation(shader, fmt.Sprintf("%s\n", name))
+			glLogf("\t%d) %s %s @ location %d\n", i, glTypeToString(xtype), bytes.Trim(name, "\x00"), location)
 		}
 	}
 
@@ -214,3 +216,24 @@ func glLogGLParams() {
 	gl.GetBooleanv(params[11], &b)
 	glLogln(fmt.Sprintf("%s %t", names[11], b))
 }
+
+//func CaptureRGBA(im *image.RGBA) {
+//	b := im.Bounds()
+//	gl.ReadBuffer(gl.BACK_LEFT)
+//	gl.ReadPixels(0, 0, b.Dx(), b.Dy(), gl.RGBA, gl.UNSIGNED_BYTE, im.Pix)
+//}
+//
+//// Note: You may want to call ClearAlpha(1) first..
+//func CaptureToPng(filename string) {
+//	w, h := GetViewportWH()
+//	im := image.NewRGBA(image.Rect(0, 0, w, h))
+//	CaptureRGBA(im)
+//
+//	fd, err := os.Create(filename)
+//	if err != nil {
+//		log.Panic("Err: ", err)
+//	}
+//	defer fd.Close()
+//
+//	png.Encode(fd, im)
+//}

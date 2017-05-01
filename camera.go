@@ -3,7 +3,6 @@ package main
 import (
 	"math"
 
-	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -20,6 +19,8 @@ func newCamera() *camera {
 		speed:      5.0,
 		firstMouse: true,
 	}
+	c.updateVectors()
+	c.view = mgl32.LookAtV(c.position, c.position.Add(c.front), c.up)
 	return c
 }
 
@@ -33,9 +34,10 @@ type camera struct {
 	pitch      float32
 	firstMouse bool
 	speed      float32
+	view       mgl32.Mat4
 }
 
-func (cam *camera) Update(shader *Shader, elapsed float32) {
+func (cam *camera) View(elapsed float32) mgl32.Mat4 {
 	changed := false
 	if cam.handleKeyboard(elapsed) {
 		changed = true
@@ -45,14 +47,9 @@ func (cam *camera) Update(shader *Shader, elapsed float32) {
 	}
 
 	if changed {
-		cam.Draw(shader)
+		cam.view = mgl32.LookAtV(cam.position, cam.position.Add(cam.front), cam.up)
 	}
-}
-
-func (cam *camera) Draw(shader *Shader) {
-	mat := mgl32.LookAtV(cam.position, cam.position.Add(cam.front), cam.up)
-	cameraUniform := gl.GetUniformLocation(shader.Program, gl.Str("camera\x00"))
-	gl.UniformMatrix4fv(cameraUniform, 1, false, &mat[0])
+	return cam.view
 }
 
 func (cam *camera) handleKeyboard(elapsed float32) bool {
@@ -99,7 +96,7 @@ func (cam *camera) handleCursor(elapsed float32) bool {
 	cam.lastX = float32(xpos)
 	cam.lastY = float32(ypos)
 
-	sensitivity := float32(5)
+	sensitivity := float32(10)
 	xOffset *= sensitivity * elapsed
 	yOffset *= sensitivity * elapsed
 

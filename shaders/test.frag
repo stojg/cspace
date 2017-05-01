@@ -3,13 +3,18 @@
 uniform sampler2D texture_diffuse1;
 uniform sampler2D texture_diffuse2;
 
-in vec3 ourColor;
-in vec2 fragTexCoord;
+in vec2 frag_texture_coordinate;
 
 out vec4 color;
 
 void main() {
-//    color = texture(tex, fragTexCoord) * vec4(ourColor, 1.0f);
-    color = mix(texture(texture_diffuse1, fragTexCoord), texture(texture_diffuse2, fragTexCoord), 0.5);
+//    color = vec4(1.0f);
+    vec4 t2 = texture(texture_diffuse2, frag_texture_coordinate);
+    float intensity = t2.r + t2.g + t2.b;
+    if(intensity < 0.2) {
+        color = texture(texture_diffuse1, frag_texture_coordinate);
+        return;
+    }
+    color = mix(texture(texture_diffuse1, frag_texture_coordinate), texture(texture_diffuse2, frag_texture_coordinate), 0.1);
 }
 

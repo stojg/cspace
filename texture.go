@@ -14,7 +14,7 @@ import (
 func newTexture(file string) (uint32, error) {
 	imgFile, err := os.Open(file)
 	if err != nil {
-		return 0, fmt.Errorf("Textures %q not found on disk: %v", file, err)
+		return 0, fmt.Errorf("Texture %q not found on disk: %v", file, err)
 	}
 	img, _, err := image.Decode(imgFile)
 	if err != nil {
@@ -23,9 +23,11 @@ func newTexture(file string) (uint32, error) {
 
 	rgba := image.NewRGBA(img.Bounds())
 	if rgba.Stride != rgba.Rect.Size().X*4 {
-		return 0, fmt.Errorf("unsupported stride")
+		return 0, fmt.Errorf("unsupported stride %d", rgba.Stride)
 	}
 	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
+	// flip it into open GL format
+	rgba = flip(rgba)
 
 	var texture uint32
 	gl.GenTextures(1, &texture)
@@ -51,4 +53,26 @@ func newTexture(file string) (uint32, error) {
 	gl.GenerateMipmap(gl.TEXTURE_2D)
 
 	return texture, nil
+}
+
+// flip the image upside down so that opengl texture it properly
+func flip(src *image.RGBA) *image.RGBA {
+	srcW := src.Bounds().Max.X
+	srcH := src.Bounds().Max.Y
+	dstW := srcW
+	dstH := srcH
+
+	dst := image.NewRGBA(src.Bounds())
+
+	for dstY := 0; dstY < dstH; dstY++ {
+		for dstX := 0; dstX < dstW; dstX++ {
+			srcX := dstX
+			srcY := dstH - dstY - 1
+			srcOff := srcY*src.Stride + srcX*4
+			dstOff := dstY*dst.Stride + dstX*4
+			copy(dst.Pix[dstOff:dstOff+4], src.Pix[srcOff:srcOff+4])
+		}
+	}
+
+	return dst
 }
