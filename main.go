@@ -166,9 +166,6 @@ func realMain() error {
 				{-1.3, 1.0, -1.5},
 			}
 
-			lightPosLoc := uniformLocation(ourShader, "lightPos")
-			gl.Uniform3f(lightPosLoc, lightPos[0], lightPos[1], lightPos[2])
-
 			viewPosLoc := uniformLocation(ourShader, "viewPos")
 			gl.Uniform3f(viewPosLoc, cam.position[0], cam.position[1], cam.position[2])
 
@@ -181,9 +178,11 @@ func realMain() error {
 			gl.Uniform1i(uniformLocation(ourShader, "materialSpecular"), 1)
 			gl.Uniform1f(uniformLocation(ourShader, "materialShininess"), 32.0)
 
-			gl.Uniform3f(uniformLocation(ourShader, "lightAmbient"), 0.2, 0.2, 0.2)
-			gl.Uniform3f(uniformLocation(ourShader, "lightDiffuse"), 0.9, 0.9, 0.9)
-			gl.Uniform3f(uniformLocation(ourShader, "lightSpecular"), 1.0, 1.0, 1.0)
+			gl.Uniform4f(uniformLocation(ourShader, "light.vector"), lightPos[0], lightPos[1], lightPos[2], 1)
+			//gl.Uniform4f(uniformLocation(ourShader, "light.vector"), 1, 1, 0, 0)
+			gl.Uniform3f(uniformLocation(ourShader, "light.ambient"), 0.2, 0.2, 0.2)
+			gl.Uniform3f(uniformLocation(ourShader, "light.diffuse"), 0.9, 0.9, 0.9)
+			gl.Uniform3f(uniformLocation(ourShader, "light.specular"), 1.0, 1.0, 1.0)
 
 			for i := range positions {
 				trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
