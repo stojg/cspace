@@ -109,16 +109,15 @@ func realMain() error {
 
 	// load mesh(es)
 	cube := newCube(float32(rand.Float64()*20-10), 0, float32(rand.Float64()*20-10))
-	text, err := newTexture("textures/crate0/crate0_diffuse.png")
+
+	diffuseTexture, err := newTexture("textures/crate0/crate0_diffuse.png")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	cube.Textures = append(cube.Textures, text)
-	//duck, err := newTexture("textures/duck/duck_diffuse.png")
-	//if err != nil {
-	//	log.Fatalln(err)
-	//}
-	//cube.Textures = append(cube.Textures, duck)
+	specularTexture, err := newTexture("textures/specular.png")
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	ourShader, err := NewShader("material", "material")
 	if err != nil {
@@ -167,24 +166,25 @@ func realMain() error {
 				{-1.3, 1.0, -1.5},
 			}
 
-			gl.Uniform3f(uniformLocation(ourShader, "materialSpecular"), 0.5, 0.5, 0.5)
-			gl.Uniform1f(uniformLocation(ourShader, "materialShininess"), 32.0)
-
-			gl.Uniform3f(uniformLocation(ourShader, "lightAmbient"), 0.2, 0.2, 0.2)
-			gl.Uniform3f(uniformLocation(ourShader, "lightDiffuse"), 0.9, 0.9, 0.9)
-			gl.Uniform3f(uniformLocation(ourShader, "lightSpecular"), 1.0, 1.0, 1.0)
-
 			lightPosLoc := uniformLocation(ourShader, "lightPos")
 			gl.Uniform3f(lightPosLoc, lightPos[0], lightPos[1], lightPos[2])
 
 			viewPosLoc := uniformLocation(ourShader, "viewPos")
 			gl.Uniform3f(viewPosLoc, cam.position[0], cam.position[1], cam.position[2])
 
-			for i := range cube.Textures {
-				gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-				gl.BindTexture(gl.TEXTURE_2D, cube.Textures[i])
-				gl.Uniform1i(uniformLocation(ourShader, fmt.Sprintf("materialDiffuse%d", i+1)), int32(i))
-			}
+			gl.ActiveTexture(gl.TEXTURE0)
+			gl.BindTexture(gl.TEXTURE_2D, diffuseTexture)
+			gl.Uniform1i(uniformLocation(ourShader, "materialDiffuse"), 0)
+
+			gl.ActiveTexture(gl.TEXTURE1)
+			gl.BindTexture(gl.TEXTURE_2D, specularTexture)
+			gl.Uniform1i(uniformLocation(ourShader, "materialSpecular"), 1)
+			gl.Uniform1f(uniformLocation(ourShader, "materialShininess"), 32.0)
+
+			gl.Uniform3f(uniformLocation(ourShader, "lightAmbient"), 0.2, 0.2, 0.2)
+			gl.Uniform3f(uniformLocation(ourShader, "lightDiffuse"), 0.9, 0.9, 0.9)
+			gl.Uniform3f(uniformLocation(ourShader, "lightSpecular"), 1.0, 1.0, 1.0)
+
 			for i := range positions {
 				trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
 				trans = trans.Mul4(mgl32.HomogRotate3D(float32(i*20.0), mgl32.Vec3{0, 1, 0}))
