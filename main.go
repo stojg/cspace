@@ -114,11 +114,11 @@ func realMain() error {
 		log.Fatalln(err)
 	}
 	cube.Textures = append(cube.Textures, text)
-	duck, err := newTexture("textures/duck/duck_diffuse.png")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	cube.Textures = append(cube.Textures, duck)
+	//duck, err := newTexture("textures/duck/duck_diffuse.png")
+	//if err != nil {
+	//	log.Fatalln(err)
+	//}
+	//cube.Textures = append(cube.Textures, duck)
 
 	ourShader, err := NewShader("material", "material")
 	if err != nil {
@@ -167,13 +167,11 @@ func realMain() error {
 				{-1.3, 1.0, -1.5},
 			}
 
-			gl.Uniform3f(uniformLocation(ourShader, "materialAmbient"), 1.0, 0.5, 0.31)
-			gl.Uniform3f(uniformLocation(ourShader, "materialDiffuse"), 1.0, 0.5, 0.31)
 			gl.Uniform3f(uniformLocation(ourShader, "materialSpecular"), 0.5, 0.5, 0.5)
 			gl.Uniform1f(uniformLocation(ourShader, "materialShininess"), 32.0)
 
 			gl.Uniform3f(uniformLocation(ourShader, "lightAmbient"), 0.2, 0.2, 0.2)
-			gl.Uniform3f(uniformLocation(ourShader, "lightDiffuse"), 0.5, 0.5, 0.5)
+			gl.Uniform3f(uniformLocation(ourShader, "lightDiffuse"), 0.9, 0.9, 0.9)
 			gl.Uniform3f(uniformLocation(ourShader, "lightSpecular"), 1.0, 1.0, 1.0)
 
 			lightPosLoc := uniformLocation(ourShader, "lightPos")
@@ -182,11 +180,11 @@ func realMain() error {
 			viewPosLoc := uniformLocation(ourShader, "viewPos")
 			gl.Uniform3f(viewPosLoc, cam.position[0], cam.position[1], cam.position[2])
 
-			//for i := range cube.Textures {
-			//	gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-			//	gl.BindTexture(gl.TEXTURE_2D, cube.Textures[i])
-			//	gl.Uniform1i(uniformLocation(ourShader, fmt.Sprintf("texture_diffuse%d", i+1)), int32(i))
-			//}
+			for i := range cube.Textures {
+				gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+				gl.BindTexture(gl.TEXTURE_2D, cube.Textures[i])
+				gl.Uniform1i(uniformLocation(ourShader, fmt.Sprintf("materialDiffuse%d", i+1)), int32(i))
+			}
 			for i := range positions {
 				trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
 				trans = trans.Mul4(mgl32.HomogRotate3D(float32(i*20.0), mgl32.Vec3{0, 1, 0}))
