@@ -12,6 +12,7 @@ uniform vec3 viewPos;
 
 
 void main() {
+//    color = vec4(1.0f);
     float ambientStrength = 0.1f;
     vec3 ambient = ambientStrength * lightColor;
 

@@ -111,8 +111,8 @@ func realMain() error {
 
 	cam := newCamera()
 
-	// load mesh(es)
-	cube := newCube(float32(rand.Float64()*20-10), 0, float32(rand.Float64()*20-10))
+	// load Mesh(es)
+	cubeMesh := newCubeMesh()
 
 	diffuseTexture, err := newTexture("textures/crate0/crate0_diffuse.png")
 	if err != nil {
@@ -208,7 +208,6 @@ func realMain() error {
 			for i := range lightPositions {
 				name := fmt.Sprintf("lights[%d]", i)
 				gl.Uniform4f(uniformLocation(ourShader, name+".vector"), lightPositions[i][0], lightPositions[i][1], lightPositions[i][2], 1)
-				//gl.Uniform4f(uniformLocation(ourShader, "light.vector"), 1, 1, 0, 0)
 				gl.Uniform3f(uniformLocation(ourShader, name+".ambient"), lightColours[i][0]/10, lightColours[i][1]/10, lightColours[i][2]/10)
 				gl.Uniform3f(uniformLocation(ourShader, name+".diffuse"), lightColours[i][0], lightColours[i][1], lightColours[i][2])
 				gl.Uniform3f(uniformLocation(ourShader, name+".specular"), 1.0, 1.0, 1.0)
@@ -221,12 +220,11 @@ func realMain() error {
 				trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
 				trans = trans.Mul4(mgl32.HomogRotate3D(float32(i*20.0), mgl32.Vec3{0, 1, 0}))
 				setUniformMatrix4fv(whiteShader, "transform", trans)
-
-				gl.BindVertexArray(cube.vao)
-				gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube.Vertices)))
+				gl.BindVertexArray(cubeMesh.vao)
+				gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cubeMesh.Vertices)))
 			}
 			// set back defaults, from the book of good practices
-			//for i := range cube.Textures {
+			//for i := range cubeMesh.Textures {
 			//	gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
 			//	gl.BindTexture(gl.TEXTURE_2D, 0)
 			//}
@@ -245,8 +243,8 @@ func realMain() error {
 
 				gl.Uniform3f(uniformLocation(whiteShader, "emissive"), lightColours[i][0], lightColours[i][1], lightColours[i][2])
 
-				gl.BindVertexArray(cube.vao)
-				gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube.Vertices)))
+				gl.BindVertexArray(cubeMesh.vao)
+				gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cubeMesh.Vertices)))
 			}
 		}
 
