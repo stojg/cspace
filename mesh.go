@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"unsafe"
-
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
@@ -72,17 +70,29 @@ type Mesh struct {
 }
 
 func (s *Mesh) Draw(shader *Shader) {
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, s.Textures[0].ID)
-	gl.Uniform1i(uniformLocation(shader, "materialDiffuse"), 0)
-
-	gl.ActiveTexture(gl.TEXTURE1)
-	gl.BindTexture(gl.TEXTURE_2D, s.Textures[0].ID)
-	gl.Uniform1i(uniformLocation(shader, "materialSpecular"), 1)
-	gl.Uniform1f(uniformLocation(shader, "materialShininess"), 32.0)
+	diffuseNr := 0
+	specularNr := 0
+	for i, texture := range s.Textures {
+		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+		var number int
+		if texture.Name == "specular" {
+			number = specularNr
+			specularNr++
+		} else if texture.Name == "diffuse" {
+			number = diffuseNr
+			diffuseNr++
+		} else {
+			panic("unknown texture type ")
+		}
+		uniformName := fmt.Sprintf("mat.%s%d", texture.Name, number)
+		gl.Uniform1i(uniformLocation(shader, uniformName), int32(i))
+		gl.BindTexture(gl.TEXTURE_2D, texture.ID)
+	}
+	gl.Uniform1f(uniformLocation(shader, "mat.shininess"), 32.0)
 
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.Vertices)))
 
+	// reset textures to they don't leak into some other poor mesh
 	for i := range s.Textures {
 		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
 		gl.BindTexture(gl.TEXTURE_2D, 0)
@@ -101,7 +111,6 @@ func (s *Mesh) init() {
 	// load data into vertex buffers
 	gl.BindBuffer(gl.ARRAY_BUFFER, s.vbo)
 
-	fmt.Println(unsafe.Sizeof(&Vertex{}))
 	// 32 is the byte size of the Vertex struct
 	gl.BufferData(gl.ARRAY_BUFFER, len(s.Vertices)*32, gl.Ptr(s.Vertices), gl.STATIC_DRAW)
 
