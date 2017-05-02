@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"unsafe"
 
@@ -18,7 +19,6 @@ func newCubeMesh() *Mesh {
 
 	var vertices []Vertex
 	var indices []uint32
-	var textures []Texture
 	for i := 0; i < len(cubeData); i += perRowSize {
 		var vertex Vertex
 		copy(vertex.Position[:], cubeData[i:i+3])
@@ -26,6 +26,20 @@ func newCubeMesh() *Mesh {
 		copy(vertex.TexCoords[:], cubeData[i+6:i+8])
 		vertices = append(vertices, vertex)
 	}
+
+	var textures []*Texture
+
+	diffuseTexture, err := newTexture("diffuse", "textures/crate0/crate0_diffuse.png")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	textures = append(textures, diffuseTexture)
+	specularTexture, err := newTexture("specular", "textures/specular.png")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	textures = append(textures, specularTexture)
+
 	return NewMesh(vertices, indices, textures)
 }
 
@@ -36,11 +50,11 @@ type Vertex struct {
 }
 
 type Texture struct {
-	id    uint32
-	xType string // type of texture, like diffuse, specular or bump
+	ID   uint32
+	Name string // type of texture, like diffuse, specular or bump
 }
 
-func NewMesh(vertices []Vertex, Indices []uint32, textures []Texture) *Mesh {
+func NewMesh(vertices []Vertex, Indices []uint32, textures []*Texture) *Mesh {
 	q := &Mesh{
 		Vertices: vertices,
 		Indices:  Indices,
@@ -51,10 +65,28 @@ func NewMesh(vertices []Vertex, Indices []uint32, textures []Texture) *Mesh {
 }
 
 type Mesh struct {
-	Vertices []Vertex
-	Indices  []uint32
-	Textures []Texture
-	vbo, vao uint32
+	Vertices      []Vertex
+	Indices       []uint32
+	Textures      []*Texture
+	vbo, vao, ebo uint32
+}
+
+func (s *Mesh) Draw(shader *Shader) {
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, s.Textures[0].ID)
+	gl.Uniform1i(uniformLocation(shader, "materialDiffuse"), 0)
+
+	gl.ActiveTexture(gl.TEXTURE1)
+	gl.BindTexture(gl.TEXTURE_2D, s.Textures[0].ID)
+	gl.Uniform1i(uniformLocation(shader, "materialSpecular"), 1)
+	gl.Uniform1f(uniformLocation(shader, "materialShininess"), 32.0)
+
+	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.Vertices)))
+
+	for i := range s.Textures {
+		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+		gl.BindTexture(gl.TEXTURE_2D, 0)
+	}
 }
 
 func (s *Mesh) init() {
@@ -70,8 +102,13 @@ func (s *Mesh) init() {
 	gl.BindBuffer(gl.ARRAY_BUFFER, s.vbo)
 
 	fmt.Println(unsafe.Sizeof(&Vertex{}))
-	gl.BufferData(gl.ARRAY_BUFFER, len(s.Vertices)*32, gl.Ptr(cubeData), gl.STATIC_DRAW)
-	//gl.BufferData(gl.ARRAY_BUFFER, len(cubeData)*sizeOfFloat, gl.Ptr(cubeData), gl.STATIC_DRAW)
+	// 32 is the byte size of the Vertex struct
+	gl.BufferData(gl.ARRAY_BUFFER, len(s.Vertices)*32, gl.Ptr(s.Vertices), gl.STATIC_DRAW)
+
+	if len(s.Indices) > 0 {
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, s.ebo)
+		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(s.Indices)*3, gl.Ptr(s.Indices), gl.STATIC_DRAW)
+	}
 
 	// vertex position
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 8*sizeOfFloat, gl.PtrOffset(0))

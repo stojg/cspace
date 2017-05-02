@@ -11,19 +11,19 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
-func newTexture(file string) (uint32, error) {
+func newTexture(name string, file string) (*Texture, error) {
 	imgFile, err := os.Open(file)
 	if err != nil {
-		return 0, fmt.Errorf("Texture %q not found on disk: %v", file, err)
+		return nil, fmt.Errorf("Texture %q not found on disk: %v", file, err)
 	}
 	img, _, err := image.Decode(imgFile)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	rgba := image.NewRGBA(img.Bounds())
 	if rgba.Stride != rgba.Rect.Size().X*4 {
-		return 0, fmt.Errorf("unsupported stride %d", rgba.Stride)
+		return nil, fmt.Errorf("unsupported stride %d", rgba.Stride)
 	}
 	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
 	// flip it into open GL format
@@ -52,7 +52,10 @@ func newTexture(file string) (uint32, error) {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 	gl.GenerateMipmap(gl.TEXTURE_2D)
 
-	return texture, nil
+	return &Texture{
+		ID:   texture,
+		Name: name,
+	}, nil
 }
 
 // flip the image upside down so that opengl texture it properly

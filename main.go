@@ -92,9 +92,9 @@ func realMain() error {
 
 		glLogGLParams()
 
+		//gl.FrontFace(gl.CCW)
 		//gl.Enable(gl.CULL_FACE)
 		//gl.CullFace(gl.BACK)
-		//gl.FrontFace(gl.CCW)
 
 		gl.Enable(gl.DEPTH_TEST)
 		gl.DepthFunc(gl.LESS)
@@ -102,26 +102,14 @@ func realMain() error {
 		// should be on by default, but just to make sure
 		gl.Enable(gl.MULTISAMPLE)
 
-		//gl.ClearColor(0.45, 0.5, 0.5, 1.0)
 		gl.ClearColor(0.1, 0.1, 0.1, 1.0)
 
 		version := gl.GoStr(gl.GetString(gl.VERSION))
 		glLogln(fmt.Sprintf("OpenGL Version %s", version))
 	}
 
-	cam := newCamera()
-
 	// load Mesh(es)
 	cubeMesh := newCubeMesh()
-
-	diffuseTexture, err := newTexture("textures/crate0/crate0_diffuse.png")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	specularTexture, err := newTexture("textures/specular.png")
-	if err != nil {
-		log.Fatalln(err)
-	}
 
 	ourShader, err := NewShader("material", "material")
 	if err != nil {
@@ -132,6 +120,8 @@ func realMain() error {
 	if err != nil {
 		return err
 	}
+
+	cam := newCamera()
 
 	// this is pretty static for now. will need to be updated if window can change size
 	projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
@@ -196,15 +186,6 @@ func realMain() error {
 			viewPosLoc := uniformLocation(ourShader, "viewPos")
 			gl.Uniform3f(viewPosLoc, cam.position[0], cam.position[1], cam.position[2])
 
-			gl.ActiveTexture(gl.TEXTURE0)
-			gl.BindTexture(gl.TEXTURE_2D, diffuseTexture)
-			gl.Uniform1i(uniformLocation(ourShader, "materialDiffuse"), 0)
-
-			gl.ActiveTexture(gl.TEXTURE1)
-			gl.BindTexture(gl.TEXTURE_2D, specularTexture)
-			gl.Uniform1i(uniformLocation(ourShader, "materialSpecular"), 1)
-			gl.Uniform1f(uniformLocation(ourShader, "materialShininess"), 32.0)
-
 			for i := range lightPositions {
 				name := fmt.Sprintf("lights[%d]", i)
 				gl.Uniform4f(uniformLocation(ourShader, name+".vector"), lightPositions[i][0], lightPositions[i][1], lightPositions[i][2], 1)
@@ -221,13 +202,9 @@ func realMain() error {
 				trans = trans.Mul4(mgl32.HomogRotate3D(float32(i*20.0), mgl32.Vec3{0, 1, 0}))
 				setUniformMatrix4fv(whiteShader, "transform", trans)
 				gl.BindVertexArray(cubeMesh.vao)
-				gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cubeMesh.Vertices)))
+				cubeMesh.Draw(ourShader)
 			}
-			// set back defaults, from the book of good practices
-			//for i := range cubeMesh.Textures {
-			//	gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-			//	gl.BindTexture(gl.TEXTURE_2D, 0)
-			//}
+
 		}
 
 		// draw the lamp
