@@ -7,25 +7,10 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
-func newCubeMesh() *Mesh {
-
-	const perRowSize = 8
-
-	if len(cubeData)%perRowSize != 0 {
-		panic("the mesh data is not a multiple of 8, want [3]Pos, [3]Normals, [2]TexCoords")
-	}
-
-	var vertices []Vertex
-	var indices []uint32
-	for i := 0; i < len(cubeData); i += perRowSize {
-		var vertex Vertex
-		copy(vertex.Position[:], cubeData[i:i+3])
-		copy(vertex.Normal[:], cubeData[i+3:i+6])
-		copy(vertex.TexCoords[:], cubeData[i+6:i+8])
-		vertices = append(vertices, vertex)
-	}
-
+func newCrateMesh() *Mesh {
+	vertices := getVertices(cubeData)
 	var textures []*Texture
+	var indices []uint32
 
 	diffuseTexture, err := newTexture("diffuse", "textures/crate0/crate0_diffuse.png")
 	if err != nil {
@@ -37,7 +22,13 @@ func newCubeMesh() *Mesh {
 		log.Fatalln(err)
 	}
 	textures = append(textures, specularTexture)
+	return NewMesh(vertices, indices, textures)
+}
 
+func newLightMesh() *Mesh {
+	vertices := getVertices(cubeData)
+	var textures []*Texture
+	var indices []uint32
 	return NewMesh(vertices, indices, textures)
 }
 
@@ -88,7 +79,11 @@ func (s *Mesh) Draw(shader *Shader) {
 		gl.Uniform1i(uniformLocation(shader, uniformName), int32(i))
 		gl.BindTexture(gl.TEXTURE_2D, texture.ID)
 	}
-	gl.Uniform1f(uniformLocation(shader, "mat.shininess"), 32.0)
+
+	location := gl.GetUniformLocation(shader.Program, gl.Str("mat.shininess\x00"))
+	if location > 0 {
+		gl.Uniform1f(location, 32.0)
+	}
 
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.Vertices)))
 
@@ -131,6 +126,24 @@ func (s *Mesh) init() {
 
 	// reset, so no other mesh accidentally changes this vao
 	gl.BindVertexArray(0)
+}
+
+func getVertices(meshdata []float32) []Vertex {
+	const stride = 8
+
+	if len(meshdata)%stride != 0 {
+		panic("the mesh data is not a multiple of 8, want [3]Pos, [3]Normals, [2]TexCoords")
+	}
+	var vertices []Vertex
+
+	for i := 0; i < len(meshdata); i += stride {
+		var vertex Vertex
+		copy(vertex.Position[:], meshdata[i:i+3])
+		copy(vertex.Normal[:], meshdata[i+3:i+6])
+		copy(vertex.TexCoords[:], meshdata[i+6:i+8])
+		vertices = append(vertices, vertex)
+	}
+	return vertices
 }
 
 var cubeData = []float32{

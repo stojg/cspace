@@ -109,7 +109,8 @@ func realMain() error {
 	}
 
 	// load Mesh(es)
-	cubeMesh := newCubeMesh()
+	cubeMesh := newCrateMesh()
+	lightMesh := newLightMesh()
 
 	ourShader, err := NewShader("material", "material")
 	if err != nil {
@@ -225,7 +226,7 @@ func realMain() error {
 
 		}
 
-		// draw the lamp
+		// draw the lamps
 		{
 			whiteShader.Use()
 			for i := range lightPositions {
@@ -235,8 +236,7 @@ func realMain() error {
 
 				gl.Uniform3f(uniformLocation(whiteShader, "emissive"), lightColours[i][0], lightColours[i][1], lightColours[i][2])
 
-				gl.BindVertexArray(cubeMesh.vao)
-				gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cubeMesh.Vertices)))
+				lightMesh.Draw(whiteShader)
 			}
 		}
 
