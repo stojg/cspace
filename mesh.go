@@ -44,6 +44,21 @@ func newLightMesh() *Mesh {
 	return NewMesh(vertices, indices, textures)
 }
 
+func newPlaneMesh() *Mesh {
+	var data = []float32{
+		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
+		0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
+		0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 1.0, 1.0, // top-right
+		0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
+		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
+		-0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0, // bottom-left
+	}
+	vertices := getVertices(data)
+	var textures []*Texture
+	var indices []uint32
+	return NewMesh(vertices, indices, textures)
+}
+
 type Vertex struct {
 	Position  [3]float32
 	Normal    [3]float32

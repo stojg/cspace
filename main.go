@@ -111,6 +111,7 @@ func realMain() error {
 	// load Mesh(es)
 	cubeMesh := newCrateMesh()
 	lightMesh := newLightMesh()
+	floor := newPlaneMesh()
 
 	ourShader, err := NewShader("material", "material")
 	if err != nil {
@@ -118,6 +119,11 @@ func realMain() error {
 	}
 
 	whiteShader, err := NewShader("white", "white")
+	if err != nil {
+		return err
+	}
+
+	floorShader, err := NewShader("material", "floor")
 	if err != nil {
 		return err
 	}
@@ -154,14 +160,14 @@ func realMain() error {
 		{1.5, 2.0, -2.5},
 		{1.5, 0.2, -1.5},
 		{-1.3, 1.0, -1.5},
-		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*20 - 10, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
+		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
 	}
 
 	lightColours := [][]float32{
@@ -222,6 +228,27 @@ func realMain() error {
 				setUniformMatrix4fv(whiteShader, "transform", trans)
 				cubeMesh.Draw(ourShader)
 			}
+		}
+		_ = floorShader
+
+		{
+			floorShader.Use()
+			viewPosLoc := uniformLocation(floorShader, "viewPos")
+			gl.Uniform3f(viewPosLoc, cam.position[0], cam.position[1], cam.position[2])
+			trans := mgl32.Translate3D(0, -5, 0)
+			trans = trans.Mul4(mgl32.Scale3D(100, 0.1, 100))
+			setUniformMatrix4fv(floorShader, "transform", trans)
+			for i := range lightPositions {
+				name := fmt.Sprintf("lights[%d]", i)
+				gl.Uniform4f(uniformLocation(floorShader, name+".vector"), lightPositions[i][0], lightPositions[i][1], lightPositions[i][2], 1)
+				gl.Uniform3f(uniformLocation(floorShader, name+".ambient"), lightColours[i][0]/10, lightColours[i][1]/10, lightColours[i][2]/10)
+				gl.Uniform3f(uniformLocation(floorShader, name+".diffuse"), lightColours[i][0], lightColours[i][1], lightColours[i][2])
+				gl.Uniform3f(uniformLocation(floorShader, name+".specular"), 1.0, 1.0, 1.0)
+				gl.Uniform1f(uniformLocation(floorShader, name+".constant"), 1.0)
+				gl.Uniform1f(uniformLocation(floorShader, name+".linear"), 0.14)
+				gl.Uniform1f(uniformLocation(floorShader, name+".quadratic"), 0.07)
+			}
+			floor.Draw(floorShader)
 		}
 
 		// draw the lamps
