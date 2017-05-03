@@ -11,7 +11,21 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
-func newTexture(name string, file string) (*Texture, error) {
+type TextureType string
+
+const (
+	Diffuse  TextureType = "diffuse"
+	Specular TextureType = "specular"
+	Normal   TextureType = "normal"
+	Bump     TextureType = "bump"
+)
+
+type Texture struct {
+	ID          uint32
+	textureType TextureType // type of texture, like diffuse, specular or bump
+}
+
+func newTexture(name TextureType, file string) (*Texture, error) {
 	imgFile, err := os.Open(file)
 	if err != nil {
 		return nil, fmt.Errorf("Texture %q not found on disk: %v", file, err)
@@ -53,8 +67,8 @@ func newTexture(name string, file string) (*Texture, error) {
 	gl.GenerateMipmap(gl.TEXTURE_2D)
 
 	return &Texture{
-		ID:   texture,
-		Name: name,
+		ID:          texture,
+		textureType: name,
 	}, nil
 }
 
