@@ -220,10 +220,8 @@ func realMain() error {
 				trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
 				trans = trans.Mul4(mgl32.HomogRotate3D(float32(i*20.0), mgl32.Vec3{0, 1, 0}))
 				setUniformMatrix4fv(whiteShader, "transform", trans)
-				gl.BindVertexArray(cubeMesh.vao)
 				cubeMesh.Draw(ourShader)
 			}
-
 		}
 
 		// draw the lamps
