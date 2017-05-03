@@ -1,20 +1,18 @@
 #version 410
+#define NR_POINT_LIGHTS 10
 
 in vec3 Normal;
 in vec3 FragPos;
 in vec2 FragTexCoords;
-in mat3 TBN;
+in vec3 Tangent;
 
 out vec4 color;
 
 struct Light {
     vec4 vector;
-
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
-
-    // http://www.ogre3d.org/tikiwiki/tiki-index.php?page=-Point+Light+Attenuation
     float constant;
     float linear;
     float quadratic;
@@ -27,29 +25,22 @@ struct Material {
     float shininess;
 };
 
-#define NR_POINT_LIGHTS 4
 uniform Light lights[NR_POINT_LIGHTS];
-
 uniform Material mat;
-
 uniform vec3 viewPos;
-
 
 vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
+vec3 CalcBumpedNormal(vec3 normal, vec3 tangent);
+
 void main() {
-
-    vec3 norm = texture(mat.normal0, FragTexCoords).rgb;
-    norm = normalize(norm * 2.0 - 1.0);
-    norm = normalize(TBN * norm);
-
+    vec3 norm = CalcBumpedNormal(Normal, Tangent);
     vec3 viewDir = normalize(viewPos - FragPos);
 
     vec3 result = vec3(0,0,0);
     for(int i = 0; i < NR_POINT_LIGHTS; i++) {
-        result += CalcPointLight(lights[i], norm, FragPos, viewDir);
+        result += CalcPointLight(lights[i], Normal, FragPos, viewDir);
     }
-
     color = vec4(result, 1.0f);
 }
 
@@ -70,14 +61,29 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
     float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
     // Combine results
-    vec3 ambient = light.ambient * vec3(texture(mat.diffuse0, FragTexCoords));
-    vec3 diffuse = light.diffuse * diff * vec3(texture(mat.diffuse0, FragTexCoords));
-    vec3 specular = light.specular * (spec * vec3(texture(mat.specular0, FragTexCoords)));
+    vec3 ambient =  light.ambient  * vec3(texture(mat.diffuse0, FragTexCoords));
+    vec3 diffuse =  light.diffuse  * diff * vec3(texture(mat.diffuse0, FragTexCoords));
+    vec3 specular = light.specular * spec * vec3(texture(mat.specular0, FragTexCoords));
 
     ambient  *= attenuation;
     diffuse  *= attenuation;
     specular *= attenuation;
 
-    return (ambient + diffuse + specular);
+    return clamp(ambient + diffuse + specular, 0, 1);
+}
+
+vec3 CalcBumpedNormal(vec3 normal, vec3 tangent)
+{
+    vec3 Normal = normalize(normal);
+    vec3 Tangent = normalize(tangent);
+    Tangent = normalize(Tangent - dot(Tangent, Normal) * Normal);
+    vec3 Bitangent = cross(Tangent, Normal);
+    vec3 BumpMapNormal = texture(mat.normal0, FragTexCoords).xyz;
+    BumpMapNormal = 2.0 * BumpMapNormal - vec3(1.0, 1.0, 1.0);
+    vec3 NewNormal;
+    mat3 TBN = mat3(Tangent, Bitangent, Normal);
+    NewNormal = TBN * BumpMapNormal;
+    NewNormal = normalize(NewNormal);
+    return NewNormal;
 }
 

@@ -49,7 +49,6 @@ type Vertex struct {
 	Normal    [3]float32
 	TexCoords [2]float32
 	Tangent   [3]float32
-	BiTangent [3]float32
 }
 
 func NewMesh(vertices []Vertex, Indices []uint32, textures []*Texture) *Mesh {
@@ -146,10 +145,6 @@ func (s *Mesh) init() {
 	gl.VertexAttribPointer(3, 3, gl.FLOAT, false, size, gl.PtrOffset(8*sizeOfFloat))
 	gl.EnableVertexAttribArray(3)
 
-	// bi-tangents
-	gl.VertexAttribPointer(4, 3, gl.FLOAT, false, size, gl.PtrOffset(11*sizeOfFloat))
-	gl.EnableVertexAttribArray(4)
-
 	// reset, so no other mesh accidentally changes this vao
 	gl.BindVertexArray(0)
 }
@@ -192,81 +187,79 @@ func getVertices(meshdata []float32) []Vertex {
 
 	// calculate tangents and bi-tangents
 	for i := 0; i < len(vertices); i += 3 {
-		deltaPos1 := edge(vertices[i+1], vertices[i])
-		deltaPos2 := edge(vertices[i+2], vertices[i])
+		v0 := vertices[i]
+		v1 := vertices[i+1]
+		v2 := vertices[i+2]
 
-		deltaUV1 := deltaUV(vertices[i+1], vertices[i])
-		deltaUV2 := deltaUV(vertices[i+2], vertices[i])
+		edge1 := edge(v1, v0)
+		edge2 := edge(v2, v0)
 
-		f := 1.0 / (deltaUV1[0]*deltaUV2[1] - deltaUV2[0]*deltaUV1[1])
+		deltaU1 := v1.TexCoords[0] - v0.TexCoords[0]
+		deltaV1 := v1.TexCoords[1] - v0.TexCoords[1]
+		deltaU2 := v2.TexCoords[0] - v0.TexCoords[0]
+		deltaV2 := v2.TexCoords[1] - v0.TexCoords[1]
+
+		f := 1.0 / (deltaU1*deltaV2 - deltaU2*deltaV1)
 
 		var tangent [3]float32
-		tangent[0] = f * (deltaUV2[1]*deltaPos1[0] - deltaUV1[1]*deltaPos2[0])
-		tangent[1] = f * (deltaUV2[1]*deltaPos1[1] - deltaUV1[1]*deltaPos2[1])
-		tangent[2] = f * (deltaUV2[1]*deltaPos1[2] - deltaUV1[1]*deltaPos2[2])
+		tangent[0] = f * (deltaV2*edge1[0] - deltaV1*edge2[0])
+		tangent[1] = f * (deltaV2*edge1[1] - deltaV1*edge2[1])
+		tangent[2] = f * (deltaV2*edge1[2] - deltaV1*edge2[2])
+
 		tangent = normalise(tangent)
 
-		var biTangent [3]float32
-		biTangent[0] = f * (-deltaUV2[0]*deltaPos1[0] - deltaUV1[1]*deltaPos2[0])
-		biTangent[1] = f * (-deltaUV2[0]*deltaPos1[1] - deltaUV1[1]*deltaPos2[1])
-		biTangent[2] = f * (-deltaUV2[0]*deltaPos1[2] - deltaUV1[1]*deltaPos2[2])
-		biTangent = normalise(biTangent)
-
 		copy(vertices[i].Tangent[:], tangent[:])
-		copy(vertices[i].BiTangent[:], biTangent[:])
-
 		copy(vertices[i+1].Tangent[:], tangent[:])
-		copy(vertices[i+1].BiTangent[:], biTangent[:])
-
 		copy(vertices[i+2].Tangent[:], tangent[:])
-		copy(vertices[i+2].BiTangent[:], biTangent[:])
 	}
 
+	//fmt.Println(vertices)
+	//os.Exit(1)
 	return vertices
 }
 
 var cubeData = []float32{
 	// Positions      Normals         Texture Coords
-	-0.5, -0.5, -0.5, 0.0, 0.0, -1.0, 0.0, 0.0,
-	0.5, -0.5, -0.5, 0.0, 0.0, -1.0, 1.0, 0.0,
-	0.5, 0.5, -0.5, 0.0, 0.0, -1.0, 1.0, 1.0,
-
-	0.5, 0.5, -0.5, 0.0, 0.0, -1.0, 1.0, 1.0,
-	-0.5, 0.5, -0.5, 0.0, 0.0, -1.0, 0.0, 1.0,
-	-0.5, -0.5, -0.5, 0.0, 0.0, -1.0, 0.0, 0.0,
-
-	-0.5, -0.5, 0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
-	0.5, -0.5, 0.5, 0.0, 0.0, 1.0, 1.0, 0.0,
-	0.5, 0.5, 0.5, 0.0, 0.0, 1.0, 1.0, 1.0,
-	0.5, 0.5, 0.5, 0.0, 0.0, 1.0, 1.0, 1.0,
-	-0.5, 0.5, 0.5, 0.0, 0.0, 1.0, 0.0, 1.0,
-	-0.5, -0.5, 0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
-
-	-0.5, 0.5, 0.5, -1.0, 0.0, 0.0, 1.0, 0.0,
-	-0.5, 0.5, -0.5, -1.0, 0.0, 0.0, 1.0, 1.0,
-	-0.5, -0.5, -0.5, -1.0, 0.0, 0.0, 0.0, 1.0,
-	-0.5, -0.5, -0.5, -1.0, 0.0, 0.0, 0.0, 1.0,
-	-0.5, -0.5, 0.5, -1.0, 0.0, 0.0, 0.0, 0.0,
-	-0.5, 0.5, 0.5, -1.0, 0.0, 0.0, 1.0, 0.0,
-
-	0.5, 0.5, 0.5, 1.0, 0.0, 0.0, 1.0, 0.0,
-	0.5, 0.5, -0.5, 1.0, 0.0, 0.0, 1.0, 1.0,
-	0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 0.0, 1.0,
-	0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 0.0, 1.0,
-	0.5, -0.5, 0.5, 1.0, 0.0, 0.0, 0.0, 0.0,
-	0.5, 0.5, 0.5, 1.0, 0.0, 0.0, 1.0, 0.0,
-
-	-0.5, -0.5, -0.5, 0.0, -1.0, 0.0, 0.0, 1.0,
-	0.5, -0.5, -0.5, 0.0, -1.0, 0.0, 1.0, 1.0,
-	0.5, -0.5, 0.5, 0.0, -1.0, 0.0, 1.0, 0.0,
-	0.5, -0.5, 0.5, 0.0, -1.0, 0.0, 1.0, 0.0,
-	-0.5, -0.5, 0.5, 0.0, -1.0, 0.0, 0.0, 0.0,
-	-0.5, -0.5, -0.5, 0.0, -1.0, 0.0, 0.0, 1.0,
-
-	-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0,
-	0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 1.0, 1.0,
-	0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0,
-	0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0,
-	-0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0,
-	-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0,
+	// Back face
+	-0.5, -0.5, -0.5, 0.0, 0.0, -1.0, 0.0, 0.0, // Bottom-left
+	0.5, 0.5, -0.5, 0.0, 0.0, -1.0, 1.0, 1.0,   // top-right
+	0.5, -0.5, -0.5, 0.0, 0.0, -1.0, 1.0, 0.0,  // bottom-right
+	0.5, 0.5, -0.5, 0.0, 0.0, -1.0, 1.0, 1.0,   // top-right
+	-0.5, -0.5, -0.5, 0.0, 0.0, -1.0, 0.0, 0.0, // bottom-left
+	-0.5, 0.5, -0.5, 0.0, 0.0, -1.0, 0.0, 1.0,  // top-left
+	// Front face
+	-0.5, -0.5, 0.5, 0.0, 0.0, 1.0, 0.0, 0.0, // bottom-left
+	0.5, -0.5, 0.5, 0.0, 0.0, 1.0, 1.0, 0.0,  // bottom-right
+	0.5, 0.5, 0.5, 0.0, 0.0, 1.0, 1.0, 1.0,   // top-right
+	0.5, 0.5, 0.5, 0.0, 0.0, 1.0, 1.0, 1.0,   // top-right
+	-0.5, 0.5, 0.5, 0.0, 0.0, 1.0, 0.0, 1.0,  // top-left
+	-0.5, -0.5, 0.5, 0.0, 0.0, 1.0, 0.0, 0.0, // bottom-left
+	// Left face
+	-0.5, 0.5, 0.5, -1.0, 0.0, 0.0, 1.0, 0.0,   // top-right
+	-0.5, 0.5, -0.5, -1.0, 0.0, 0.0, 1.0, 1.0,  // top-left
+	-0.5, -0.5, -0.5, -1.0, 0.0, 0.0, 0.0, 1.0, // bottom-left
+	-0.5, -0.5, -0.5, -1.0, 0.0, 0.0, 0.0, 1.0, // bottom-left
+	-0.5, -0.5, 0.5, -1.0, 0.0, 0.0, 0.0, 0.0,  // bottom-right
+	-0.5, 0.5, 0.5, -1.0, 0.0, 0.0, 1.0, 0.0,   // top-right
+	// Right face
+	0.5, 0.5, 0.5, 1.0, 0.0, 0.0, 1.0, 0.0,   // top-left
+	0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 0.0, 1.0, // bottom-right
+	0.5, 0.5, -0.5, 1.0, 0.0, 0.0, 1.0, 1.0,  // top-right
+	0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 0.0, 1.0, // bottom-right
+	0.5, 0.5, 0.5, 1.0, 0.0, 0.0, 1.0, 0.0,   // top-left
+	0.5, -0.5, 0.5, 1.0, 0.0, 0.0, 0.0, 0.0,  // bottom-left
+	// Bottom face
+	-0.5, -0.5, -0.5, 0.0, -1.0, 0.0, 0.0, 1.0, // top-right
+	0.5, -0.5, -0.5, 0.0, -1.0, 0.0, 1.0, 1.0,  // top-left
+	0.5, -0.5, 0.5, 0.0, -1.0, 0.0, 1.0, 0.0,   // bottom-left
+	0.5, -0.5, 0.5, 0.0, -1.0, 0.0, 1.0, 0.0,   // bottom-left
+	-0.5, -0.5, 0.5, 0.0, -1.0, 0.0, 0.0, 0.0,  // bottom-right
+	-0.5, -0.5, -0.5, 0.0, -1.0, 0.0, 0.0, 1.0, // top-right
+	// Top face
+	-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
+	0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0,   // bottom-right
+	0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 1.0, 1.0,  // top-right
+	0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0,   // bottom-right
+	-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
+	-0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0,  // bottom-left
 }
