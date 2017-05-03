@@ -88,14 +88,25 @@ func glLogShader(shader *Shader) {
 	gl.GetProgramiv(program, gl.ATTACHED_SHADERS, &params)
 	glLogf("%d GL_ATTACHED_SHADERS\n", params)
 
+	gl.GetProgramiv(program, gl.ACTIVE_UNIFORM_BLOCKS, &params)
+	glLogf("%d GL_ACTIVE_UNIFORM_BLOCKS\n", params)
+	for i := int32(0); i < params; i++ {
+		var nameLength int32
+		var size int32
+		gl.GetActiveUniformBlockiv(program, uint32(i), gl.UNIFORM_BLOCK_NAME_LENGTH, &nameLength)
+		name := make([]byte, nameLength)
+		gl.GetActiveUniformBlockName(program, uint32(i), nameLength, &size, &name[0])
+		glLogf("\t%d) %s\n", i, name)
+	}
+
 	gl.GetProgramiv(program, gl.ACTIVE_ATTRIBUTES, &params)
 	glLogf("%d GL_ACTIVE_ATTRIBUTES\n", params)
 
 	for i := int32(0); i < params; i++ {
+		var maxLength int32 = 64
 		var actualLength int32
 		var size int32
 		var xType uint32
-		var maxLength int32 = 64
 		name := make([]byte, maxLength)
 
 		gl.GetActiveAttrib(program, uint32(i), maxLength, &actualLength, &size, &xType, &name[0])

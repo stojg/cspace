@@ -121,10 +121,28 @@ func realMain() error {
 		return err
 	}
 
+	uniformBlockIndex := gl.GetUniformBlockIndex(ourShader.Program, gl.Str("Matrices\x00"))
+	gl.UniformBlockBinding(ourShader.Program, uniformBlockIndex, 0)
+
+	var uboMatrices uint32
+
+	gl.GenBuffers(1, &uboMatrices)
+	gl.BindBuffer(gl.UNIFORM_BUFFER, uboMatrices)
+	gl.BufferData(gl.UNIFORM_BUFFER, 2*4*16, nil, gl.STATIC_DRAW)
+	gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
+
+	gl.BindBufferRange(gl.UNIFORM_BUFFER, 0, uboMatrices, 0, 2*16)
+
+	//// this is pretty static for now. will need to be updated if window can change size
+	projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
+	gl.BindBuffer(gl.UNIFORM_BUFFER, uboMatrices)
+	gl.BufferSubData(gl.UNIFORM_BUFFER, 0, 4*16, gl.Ptr(&projection[0]))
+	gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
+
 	cam := newCamera()
 
 	// this is pretty static for now. will need to be updated if window can change size
-	projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
+	//projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
 
 	positions := []mgl32.Vec3{
 		{2.0, 5.0, -15.0},
@@ -166,6 +184,9 @@ func realMain() error {
 
 		// update and get the camera view
 		view := cam.View(elapsed)
+		gl.BindBuffer(gl.UNIFORM_BUFFER, uboMatrices)
+		gl.BufferSubData(gl.UNIFORM_BUFFER, 4*16, 4*16, gl.Ptr(&view[0]))
+		gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
 
 		lightPositions := [][]float32{
 			{-0.4, 1.4, -3.5},
@@ -180,9 +201,6 @@ func realMain() error {
 		// draw the test meshes
 		{
 			ourShader.Use()
-			setUniformMatrix4fv(ourShader, "projection", projection)
-			setUniformMatrix4fv(ourShader, "view", view)
-
 			viewPosLoc := uniformLocation(ourShader, "viewPos")
 			gl.Uniform3f(viewPosLoc, cam.position[0], cam.position[1], cam.position[2])
 
@@ -210,9 +228,6 @@ func realMain() error {
 		// draw the lamp
 		{
 			whiteShader.Use()
-			setUniformMatrix4fv(whiteShader, "projection", projection)
-			setUniformMatrix4fv(whiteShader, "view", view)
-
 			for i := range lightPositions {
 				trans := mgl32.Translate3D(lightPositions[i][0], lightPositions[i][1], lightPositions[i][2])
 				trans = trans.Mul4(mgl32.Scale3D(0.2, 0.2, 0.2))
