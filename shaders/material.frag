@@ -39,7 +39,7 @@ void main() {
 
     vec3 result = vec3(0,0,0);
     for(int i = 0; i < NR_POINT_LIGHTS; i++) {
-        result += CalcPointLight(lights[i], Normal, FragPos, viewDir);
+        result += CalcPointLight(lights[i], norm, FragPos, viewDir);
     }
     color = vec4(result, 1.0f);
 }

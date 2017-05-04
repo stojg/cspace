@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 type Shader struct {
@@ -15,6 +16,12 @@ type Shader struct {
 
 func (s *Shader) Use() {
 	gl.UseProgram(s.Program)
+}
+
+func (s *Shader) UsePV(projection, view mgl32.Mat4) {
+	gl.UseProgram(s.Program)
+	setUniformMatrix4fv(s, "view", view)
+	setUniformMatrix4fv(s, "projection", projection)
 }
 
 func NewShader(vertex, frag string) (*Shader, error) {

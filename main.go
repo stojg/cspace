@@ -4,11 +4,9 @@ package main
 import (
 	"fmt"
 	"go/build"
-	"log"
-	"math"
-	"math/rand"
 	"os"
-	"runtime"
+
+	"math"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -21,11 +19,6 @@ const windowHeight = 200
 
 var keys map[glfw.Key]bool
 var cursor [2]float64
-
-func init() {
-	// GLFW event handling must run on the main OS thread
-	runtime.LockOSThread()
-}
 
 func main() {
 	err := realMain()
@@ -47,65 +40,14 @@ func realMain() error {
 	}
 	defer glLogln("Program stopped")
 
-	// initialise and setup a window with user inputs
-	var window *glfw.Window
-	{
-		if err := glfw.Init(); err != nil {
-			return fmt.Errorf("failed to initialize glfw: %s", err)
-		}
-		defer glfw.Terminate()
-
-		//glfw.SwapInterval(1) // enable vertical refresh
-
-		glfw.WindowHint(glfw.Resizable, glfw.False)
-		glfw.WindowHint(glfw.ContextVersionMajor, 4)
-		glfw.WindowHint(glfw.ContextVersionMinor, 1)
-		glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-		glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-		glfw.WindowHint(glfw.Samples, 16)
-
-		var err error
-		window, err = glfw.CreateWindow(windowWidth, windowHeight, "Cube", nil, nil)
-		if err != nil {
-			return err
-		}
-		window.MakeContextCurrent()
-		window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-			if action == glfw.Press {
-				keys[key] = true
-			} else if action == glfw.Release {
-				keys[key] = false
-			}
-		})
-		window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
-		window.SetCursorPosCallback(func(w *glfw.Window, xpos float64, ypos float64) {
-			cursor[0] = xpos
-			cursor[1] = ypos
-		})
+	window, err := initWindow(windowWidth, windowHeight)
+	if err != nil {
+		return err
 	}
+	defer glfw.Terminate()
 
-	// Initialize Glow
-	{
-		if err := gl.Init(); err != nil {
-			return err
-		}
-
-		glLogGLParams()
-
-		//gl.FrontFace(gl.CCW)
-		//gl.Enable(gl.CULL_FACE)
-		//gl.CullFace(gl.BACK)
-
-		gl.Enable(gl.DEPTH_TEST)
-		gl.DepthFunc(gl.LESS)
-
-		// should be on by default, but just to make sure
-		gl.Enable(gl.MULTISAMPLE)
-
-		gl.ClearColor(0.1, 0.1, 0.1, 1.0)
-
-		version := gl.GoStr(gl.GetString(gl.VERSION))
-		glLogln(fmt.Sprintf("OpenGL Version %s", version))
+	if err := initGL(); err != nil {
+		return err
 	}
 
 	// load Mesh(es)
@@ -118,7 +60,7 @@ func realMain() error {
 		return err
 	}
 
-	whiteShader, err := NewShader("white", "white")
+	lampShader, err := NewShader("simple", "emissive")
 	if err != nil {
 		return err
 	}
@@ -136,10 +78,8 @@ func realMain() error {
 
 	cam := newCamera()
 
-	// this is pretty static for now. will need to be updated if window can change size
-	//projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
-
 	positions := []mgl32.Vec3{
+		{0, 0, 0},
 		{2.0, 5.0, -15.0},
 		{-1.5, -2.2, -2.5},
 		{-3.8, -2.0, -12.3},
@@ -148,14 +88,13 @@ func realMain() error {
 		{1.5, 2.0, -2.5},
 		{1.5, 0.2, -1.5},
 		{-1.3, 1.0, -1.5},
-		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
-		{rand.Float32()*20 - 10, rand.Float32()*5 - 2.5, rand.Float32()*20 - 10},
+	}
+
+	lightPositions := [][]float32{
+		{-0.4, 1.4, -3.5},
+		{0.7, 0.2, 2.0},
+		{2.3, -3.3, -4.0},
+		{-4.0, 2.0, -12.0},
 	}
 
 	lightColours := [][]float32{
@@ -170,7 +109,6 @@ func realMain() error {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		fpsCounter(window)
-		glfw.PollEvents()
 
 		// update timers
 		now := glfw.GetTime()
@@ -180,109 +118,56 @@ func realMain() error {
 		// update and get the camera view
 		view := cam.View(elapsed)
 
-		lightPositions := [][]float32{
-			{-0.4, 1.4, -3.5},
-			{0.7, 0.2, 2.0},
-			{2.3, -3.3, -4.0},
-			{-4.0, 2.0, -12.0},
-		}
-		for i := 0; i < 3; i++ {
-			lightPositions[i][i] = lightPositions[i][i] + float32(math.Sin(glfw.GetTime())*2.0)
-		}
-
+		sin := float32(math.Sin(now))
 		// draw the test meshes
-		{
-			ourShader.Use()
-			setUniformMatrix4fv(ourShader, "view", view)
-			setUniformMatrix4fv(ourShader, "projection", projection)
-			viewPosLoc := uniformLocation(ourShader, "viewPos")
-			gl.Uniform3f(viewPosLoc, cam.position[0], cam.position[1], cam.position[2])
-
-			for i := range lightPositions {
-				name := fmt.Sprintf("lights[%d]", i)
-				gl.Uniform4f(uniformLocation(ourShader, name+".vector"), lightPositions[i][0], lightPositions[i][1], lightPositions[i][2], 1)
-				gl.Uniform3f(uniformLocation(ourShader, name+".ambient"), lightColours[i][0]/10, lightColours[i][1]/10, lightColours[i][2]/10)
-				gl.Uniform3f(uniformLocation(ourShader, name+".diffuse"), lightColours[i][0], lightColours[i][1], lightColours[i][2])
-				gl.Uniform3f(uniformLocation(ourShader, name+".specular"), 1.0, 1.0, 1.0)
-				gl.Uniform1f(uniformLocation(ourShader, name+".constant"), 1.0)
-				gl.Uniform1f(uniformLocation(ourShader, name+".linear"), 0.14)
-				gl.Uniform1f(uniformLocation(ourShader, name+".quadratic"), 0.07)
-			}
-
-			for i := range positions {
-				trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
-				trans = trans.Mul4(mgl32.HomogRotate3D(float32(i*20.0), mgl32.Vec3{0, 1, 0}))
-				setUniformMatrix4fv(whiteShader, "transform", trans)
-				cubeMesh.Draw(ourShader)
-			}
+		ourShader.UsePV(projection, view)
+		gl.Uniform3f(uniformLocation(ourShader, "viewPos"), cam.position[0], cam.position[1], cam.position[2])
+		setLights(floorShader, lightPositions, lightColours)
+		for i := range positions {
+			trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
+			trans = trans.Mul4(mgl32.HomogRotate3D(sin+float32(i*20.0), mgl32.Vec3{1, 1, 1}.Normalize()))
+			setUniformMatrix4fv(ourShader, "transform", trans)
+			cubeMesh.Draw(ourShader)
 		}
-		_ = floorShader
 
-		{
-			floorShader.Use()
-			setUniformMatrix4fv(floorShader, "view", view)
-			setUniformMatrix4fv(floorShader, "projection", projection)
-			viewPosLoc := uniformLocation(floorShader, "viewPos")
-			gl.Uniform3f(viewPosLoc, cam.position[0], cam.position[1], cam.position[2])
-			trans := mgl32.Translate3D(0, -5, 0)
-			trans = trans.Mul4(mgl32.Scale3D(100, 0.1, 100))
-			setUniformMatrix4fv(floorShader, "transform", trans)
-			for i := range lightPositions {
-				name := fmt.Sprintf("lights[%d]", i)
-				gl.Uniform4f(uniformLocation(floorShader, name+".vector"), lightPositions[i][0], lightPositions[i][1], lightPositions[i][2], 1)
-				gl.Uniform3f(uniformLocation(floorShader, name+".ambient"), lightColours[i][0]/10, lightColours[i][1]/10, lightColours[i][2]/10)
-				gl.Uniform3f(uniformLocation(floorShader, name+".diffuse"), lightColours[i][0], lightColours[i][1], lightColours[i][2])
-				gl.Uniform3f(uniformLocation(floorShader, name+".specular"), 1.0, 1.0, 1.0)
-				gl.Uniform1f(uniformLocation(floorShader, name+".constant"), 1.0)
-				gl.Uniform1f(uniformLocation(floorShader, name+".linear"), 0.14)
-				gl.Uniform1f(uniformLocation(floorShader, name+".quadratic"), 0.07)
-			}
-			floor.Draw(floorShader)
-		}
+		// draw the floor
+		floorShader.UsePV(projection, view)
+		gl.Uniform3f(uniformLocation(floorShader, "viewPos"), cam.position[0], cam.position[1], cam.position[2])
+		setLights(floorShader, lightPositions, lightColours)
+		trans := mgl32.Translate3D(0, -5, 0)
+		trans = trans.Mul4(mgl32.Scale3D(100, 0.1, 100))
+		setUniformMatrix4fv(floorShader, "transform", trans)
+		floor.Draw(floorShader)
 
 		// draw the lamps
-		{
-			whiteShader.Use()
-			setUniformMatrix4fv(whiteShader, "view", view)
-			setUniformMatrix4fv(whiteShader, "projection", projection)
-			for i := range lightPositions {
-				trans := mgl32.Translate3D(lightPositions[i][0], lightPositions[i][1], lightPositions[i][2])
-				trans = trans.Mul4(mgl32.Scale3D(0.2, 0.2, 0.2))
-				setUniformMatrix4fv(whiteShader, "transform", trans)
+		lampShader.UsePV(projection, view)
+		//gl.Uniform3f(uniformLocation(lampShader, "viewPos"), cam.position[0], cam.position[1], cam.position[2])
+		for i := range lightPositions {
+			trans := mgl32.Translate3D(lightPositions[i][0], lightPositions[i][1], lightPositions[i][2])
+			trans = trans.Mul4(mgl32.Scale3D(0.2, 0.2, 0.2))
+			setUniformMatrix4fv(lampShader, "transform", trans)
 
-				gl.Uniform3f(uniformLocation(whiteShader, "emissive"), lightColours[i][0], lightColours[i][1], lightColours[i][2])
+			gl.Uniform3f(uniformLocation(lampShader, "emissive"), lightColours[i][0], lightColours[i][1], lightColours[i][2])
 
-				lightMesh.Draw(whiteShader)
-			}
+			lightMesh.Draw(lampShader)
 		}
 
 		window.SwapBuffers()
+		glfw.PollEvents()
 	}
 	return nil
 }
 
-func setUniformMatrix4fv(shader *Shader, name string, matrix mgl32.Mat4) {
-	location := uniformLocation(shader, name)
-	gl.UniformMatrix4fv(location, 1, false, &matrix[0])
-}
-
-func uniformLocation(shader *Shader, name string) int32 {
-	location := gl.GetUniformLocation(shader.Program, gl.Str(name+"\x00"))
-	if location < 0 {
-		glError(fmt.Errorf("uniform location for shader.Program '%d' and name '%s' not found", shader.Program, name))
-	}
-	return location
-}
-
-// Set the working directory to the root of Go package, so that its assets can be accessed.
-func init() {
-	dir, err := importPathToDir("github.com/stojg/cspace")
-	if err != nil {
-		log.Fatalln("Unable to find Go package in your GOPATH, it's needed to load assets:", err)
-	}
-	err = os.Chdir(dir)
-	if err != nil {
-		log.Panicln("os.Chdir:", err)
+func setLights(shader *Shader, pos, color [][]float32) {
+	for i := range pos {
+		name := fmt.Sprintf("lights[%d]", i)
+		gl.Uniform4f(uniformLocation(shader, name+".vector"), pos[i][0], pos[i][1], pos[i][2], 1)
+		gl.Uniform3f(uniformLocation(shader, name+".ambient"), color[i][0]/10, color[i][1]/10, color[i][2]/10)
+		gl.Uniform3f(uniformLocation(shader, name+".diffuse"), color[i][0], color[i][1], color[i][2])
+		gl.Uniform3f(uniformLocation(shader, name+".specular"), 1.0, 1.0, 1.0)
+		gl.Uniform1f(uniformLocation(shader, name+".constant"), 1.0)
+		gl.Uniform1f(uniformLocation(shader, name+".linear"), 0.14)
+		gl.Uniform1f(uniformLocation(shader, name+".quadratic"), 0.07)
 	}
 }
 
