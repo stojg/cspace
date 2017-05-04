@@ -6,12 +6,8 @@ layout (location = 2) in vec2 texCoords;
 layout (location = 3) in vec3 tangent;
 layout (location = 4) in vec3 bitangent;
 
-layout (std140) uniform Matrices
-{
-    mat4 projection;
-    mat4 view;
-};
-
+uniform mat4 projection;
+uniform mat4 view;
 uniform mat4 transform;
 
 out vec3 Normal;
