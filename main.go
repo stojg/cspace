@@ -3,7 +3,6 @@ package main
 
 import (
 	"fmt"
-	"go/build"
 	"os"
 
 	"math"
@@ -50,6 +49,10 @@ func realMain() error {
 		return err
 	}
 
+	// this is pretty static for now. will need to be updated if window can change size
+	projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
+	cam := newCamera()
+
 	// load Mesh(es)
 	cubeMesh := newCrateMesh()
 	lightMesh := newLightMesh()
@@ -70,16 +73,7 @@ func realMain() error {
 		return err
 	}
 
-	uniformBlockIndex := gl.GetUniformBlockIndex(ourShader.Program, gl.Str("Matrices\x00"))
-	gl.UniformBlockBinding(ourShader.Program, uniformBlockIndex, 0)
-
-	//// this is pretty static for now. will need to be updated if window can change size
-	projection := mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/windowHeight, 0.1, 100.0)
-
-	cam := newCamera()
-
 	positions := []mgl32.Vec3{
-		{0, 0, 0},
 		{2.0, 5.0, -15.0},
 		{-1.5, -2.2, -2.5},
 		{-3.8, -2.0, -12.3},
@@ -90,19 +84,9 @@ func realMain() error {
 		{-1.3, 1.0, -1.5},
 	}
 
-	lightPositions := [][]float32{
-		{-0.4, 1.4, -3.5},
-		{0.7, 0.2, 2.0},
-		{2.3, -3.3, -4.0},
-		{-4.0, 2.0, -12.0},
-	}
-
-	lightColours := [][]float32{
-		{0.8, 0.5, 0.5},
-		{0.5, 0.8, 0.5},
-		{0.5, 0.5, 0.8},
-		{1.000, 0.749, 0.000},
-	}
+	lightPositions := [][]float32{{0.0, 0.0, -3.0}}
+	//lightColours := [][]float32{{1.000, 0.749, 0.000}}
+	lightColours := [][]float32{{1, 1, 1}}
 
 	previousTime := glfw.GetTime()
 	for !window.ShouldClose() {
@@ -119,6 +103,7 @@ func realMain() error {
 		view := cam.View(elapsed)
 
 		sin := float32(math.Sin(now))
+
 		// draw the test meshes
 		ourShader.UsePV(projection, view)
 		gl.Uniform3f(uniformLocation(ourShader, "viewPos"), cam.position[0], cam.position[1], cam.position[2])
@@ -141,7 +126,6 @@ func realMain() error {
 
 		// draw the lamps
 		lampShader.UsePV(projection, view)
-		//gl.Uniform3f(uniformLocation(lampShader, "viewPos"), cam.position[0], cam.position[1], cam.position[2])
 		for i := range lightPositions {
 			trans := mgl32.Translate3D(lightPositions[i][0], lightPositions[i][1], lightPositions[i][2])
 			trans = trans.Mul4(mgl32.Scale3D(0.2, 0.2, 0.2))
@@ -169,15 +153,4 @@ func setLights(shader *Shader, pos, color [][]float32) {
 		gl.Uniform1f(uniformLocation(shader, name+".linear"), 0.14)
 		gl.Uniform1f(uniformLocation(shader, name+".quadratic"), 0.07)
 	}
-}
-
-// importPathToDir resolves the absolute path from importPath.
-// There doesn't need to be a valid Go package inside that import path,
-// but the directory must exist.
-func importPathToDir(importPath string) (string, error) {
-	p, err := build.Import(importPath, "", build.FindOnly)
-	if err != nil {
-		return "", err
-	}
-	return p.Dir, nil
 }
