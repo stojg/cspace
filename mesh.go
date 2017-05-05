@@ -112,7 +112,7 @@ func (s *Mesh) Draw(shader *Shader) {
 
 	location := gl.GetUniformLocation(shader.Program, gl.Str("mat.shininess\x00"))
 	if location > 0 {
-		gl.Uniform1f(location, 64.0)
+		gl.Uniform1f(location, 128.0)
 	}
 
 	gl.BindVertexArray(s.vao)

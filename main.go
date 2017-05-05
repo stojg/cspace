@@ -3,9 +3,8 @@ package main
 
 import (
 	"fmt"
-	"os"
-
 	"math"
+	"os"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -84,9 +83,19 @@ func realMain() error {
 		{-1.3, 1.0, -1.5},
 	}
 
-	lightPositions := [][]float32{{0.0, 0.0, -3.0}}
+	lightPositions := [][]float32{
+		{0.0, 0.0, -3.0},
+		{0.0, 0.0, 3.0},
+		{-2.0, 0.0, 0},
+		{2.0, 0.0, 0},
+	}
 	//lightColours := [][]float32{{1.000, 0.749, 0.000}}
-	lightColours := [][]float32{{1, 1, 1}}
+	lightColours := [][]float32{
+		{1, 1, 1},
+		{1, 1, 1},
+		{1, 1, 1},
+		{1, 1, 1},
+	}
 
 	useNormalMapping := true
 
