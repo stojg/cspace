@@ -13,8 +13,8 @@ import (
 )
 
 const logFile = "gl.log"
-const windowWidth = 320
-const windowHeight = 200
+const windowWidth = 1000
+const windowHeight = 800
 
 var keys map[glfw.Key]bool
 var cursor [2]float64
@@ -88,9 +88,18 @@ func realMain() error {
 	//lightColours := [][]float32{{1.000, 0.749, 0.000}}
 	lightColours := [][]float32{{1, 1, 1}}
 
+	useNormalMapping := true
+
 	previousTime := glfw.GetTime()
 	for !window.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		if keys[glfw.Key1] {
+			useNormalMapping = true
+		}
+		if keys[glfw.Key2] {
+			useNormalMapping = false
+		}
 
 		fpsCounter(window)
 
@@ -112,6 +121,12 @@ func realMain() error {
 			trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
 			trans = trans.Mul4(mgl32.HomogRotate3D(sin+float32(i*20.0), mgl32.Vec3{1, 1, 1}.Normalize()))
 			setUniformMatrix4fv(ourShader, "transform", trans)
+			location := uniformLocation(ourShader, "useNormalMapping")
+			if useNormalMapping {
+				gl.Uniform1f(location, 1.0)
+			} else {
+				gl.Uniform1f(location, 0.0)
+			}
 			cubeMesh.Draw(ourShader)
 		}
 

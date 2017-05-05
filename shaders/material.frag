@@ -28,18 +28,23 @@ struct Material {
 uniform Light lights[NR_POINT_LIGHTS];
 uniform Material mat;
 uniform vec3 viewPos;
+uniform float useNormalMapping;
 
 vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 vec3 CalcBumpedNormal(vec3 normal, vec3 tangent);
 
 void main() {
-    vec3 norm = CalcBumpedNormal(Normal, Tangent);
+    vec3 norm = Normal;
+    if(useNormalMapping > 0) {
+        norm = CalcBumpedNormal(Normal, Tangent);
+    }
+
     vec3 viewDir = normalize(viewPos - FragPos);
 
     vec3 result = vec3(0,0,0);
     for(int i = 0; i < NR_POINT_LIGHTS; i++) {
-        result += CalcPointLight(lights[i], Normal, FragPos, viewDir);
+        result += CalcPointLight(lights[i], norm, FragPos, viewDir);
     }
     color = vec4(result, 1.0f);
 }
