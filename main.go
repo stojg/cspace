@@ -83,21 +83,9 @@ func realMain() error {
 		{-1.3, 1.0, -1.5},
 	}
 
-	lightPositions := [][]float32{
-		{0.0, 0.0, -3.0},
-		{0.0, 0.0, 3.0},
-		{-2.0, 0.0, 0},
-		{2.0, 0.0, 0},
-	}
-	//lightColours := [][]float32{{1.000, 0.749, 0.000}}
-	lightColours := [][]float32{
-		{1, 1, 1},
-		{1, 1, 1},
-		{1, 1, 1},
-		{1, 1, 1},
-	}
-
 	useNormalMapping := true
+
+	directionalColor := [3]float32{1.000, 0.99, 0.9}
 
 	previousTime := glfw.GetTime()
 	for !window.ShouldClose() {
@@ -125,7 +113,8 @@ func realMain() error {
 		// draw the test meshes
 		ourShader.UsePV(projection, view)
 		gl.Uniform3f(uniformLocation(ourShader, "viewPos"), cam.position[0], cam.position[1], cam.position[2])
-		setLights(floorShader, lightPositions, lightColours)
+		setDirectionalLight(ourShader, [3]float32{0, -5, 0}, directionalColor)
+		//setLights(floorShader, lightPositions, lightColours)
 		for i := range positions {
 			trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
 			trans = trans.Mul4(mgl32.HomogRotate3D(sin+float32(i*20.0), mgl32.Vec3{1, 1, 1}.Normalize()))
@@ -142,23 +131,21 @@ func realMain() error {
 		// draw the floor
 		floorShader.UsePV(projection, view)
 		gl.Uniform3f(uniformLocation(floorShader, "viewPos"), cam.position[0], cam.position[1], cam.position[2])
-		setLights(floorShader, lightPositions, lightColours)
+		setDirectionalLight(ourShader, [3]float32{0, -5, 0}, directionalColor)
 		trans := mgl32.Translate3D(0, -5, 0)
 		trans = trans.Mul4(mgl32.Scale3D(100, 0.1, 100))
 		setUniformMatrix4fv(floorShader, "transform", trans)
 		floor.Draw(floorShader)
 
 		// draw the lamps
+		//_ = lampShader
+		//_ = lightMesh
 		lampShader.UsePV(projection, view)
-		for i := range lightPositions {
-			trans := mgl32.Translate3D(lightPositions[i][0], lightPositions[i][1], lightPositions[i][2])
-			trans = trans.Mul4(mgl32.Scale3D(0.2, 0.2, 0.2))
-			setUniformMatrix4fv(lampShader, "transform", trans)
-
-			gl.Uniform3f(uniformLocation(lampShader, "emissive"), lightColours[i][0], lightColours[i][1], lightColours[i][2])
-
-			lightMesh.Draw(lampShader)
-		}
+		trans = mgl32.Translate3D(0, 5, 0)
+		trans = trans.Mul4(mgl32.Scale3D(0.2, 0.2, 0.2))
+		setUniformMatrix4fv(lampShader, "transform", trans)
+		gl.Uniform3f(uniformLocation(lampShader, "emissive"), 1, 1, 1)
+		lightMesh.Draw(lampShader)
 
 		window.SwapBuffers()
 		glfw.PollEvents()
@@ -166,13 +153,21 @@ func realMain() error {
 	return nil
 }
 
+func setDirectionalLight(shader *Shader, direction, color [3]float32) {
+	name := fmt.Sprint("lights[0]")
+	gl.Uniform4f(uniformLocation(shader, name+".vector"), direction[0], direction[1], direction[2], 0)
+	gl.Uniform3f(uniformLocation(shader, name+".diffuse"), color[0], color[1], color[2])
+	gl.Uniform3f(uniformLocation(shader, name+".ambient"), color[0]/10, color[1]/10, color[2]/10)
+	gl.Uniform3f(uniformLocation(shader, name+".specular"), 1.0, 1.0, 1.0)
+}
+
 func setLights(shader *Shader, pos, color [][]float32) {
 	for i := range pos {
 		name := fmt.Sprintf("lights[%d]", i)
 		gl.Uniform4f(uniformLocation(shader, name+".vector"), pos[i][0], pos[i][1], pos[i][2], 1)
-		gl.Uniform3f(uniformLocation(shader, name+".ambient"), color[i][0]/10, color[i][1]/10, color[i][2]/10)
 		gl.Uniform3f(uniformLocation(shader, name+".diffuse"), color[i][0], color[i][1], color[i][2])
-		gl.Uniform3f(uniformLocation(shader, name+".specular"), 1.0, 1.0, 1.0)
+		gl.Uniform3f(uniformLocation(shader, name+".ambient"), color[i][0]/10, color[i][1]/10, color[i][2]/10)
+		gl.Uniform3f(uniformLocation(shader, name+".specular"), color[i][0], color[i][1], color[i][2])
 		gl.Uniform1f(uniformLocation(shader, name+".constant"), 1.0)
 		gl.Uniform1f(uniformLocation(shader, name+".linear"), 0.14)
 		gl.Uniform1f(uniformLocation(shader, name+".quadratic"), 0.07)

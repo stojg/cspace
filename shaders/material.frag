@@ -1,5 +1,5 @@
 #version 410
-#define NR_POINT_LIGHTS 4
+#define NR_POINT_LIGHTS 1
 
 in vec3 Normal;
 in vec3 FragPos;
@@ -52,7 +52,13 @@ void main() {
 // Calculates the color when using a point light.
 vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
-    vec3 lightDir = normalize(light.vector.xyz - fragPos);
+    vec3 lightDir;
+
+    if(light.vector.w > 0) {
+        lightDir = normalize(light.vector.xyz - fragPos);
+    } else {
+        lightDir = normalize(-light.vector.xyz);
+    }
 
     // Diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
@@ -61,18 +67,20 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), mat.shininess);
 
-    // Attenuation
-    float distance = length(light.vector.xyz - fragPos);
-    float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
     // Combine results
     vec3 ambient =  light.ambient  * vec3(texture(mat.diffuse0, FragTexCoords));
     vec3 diffuse =  light.diffuse  * diff * vec3(texture(mat.diffuse0, FragTexCoords));
     vec3 specular = light.specular * spec * vec3(texture(mat.specular0, FragTexCoords));
 
-    ambient  *= attenuation;
-    diffuse  *= attenuation;
-    specular *= attenuation;
+    if(light.vector.w > 0) {
+        // Attenuation
+        float distance = length(light.vector.xyz - fragPos);
+        float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+        ambient  *= attenuation;
+        diffuse  *= attenuation;
+        specular *= attenuation;
+    }
 
     return clamp(ambient + diffuse + specular, 0, 1);
 }
