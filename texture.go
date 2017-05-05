@@ -17,7 +17,7 @@ const (
 	Diffuse  TextureType = "diffuse"
 	Specular TextureType = "specular"
 	Normal   TextureType = "normal"
-	Bump     TextureType = "bump"
+	Depth     TextureType = "depth"
 )
 
 type Texture struct {

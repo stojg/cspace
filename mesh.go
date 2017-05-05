@@ -16,23 +16,31 @@ func newCrateMesh() *Mesh {
 	var textures []*Texture
 	var indices []uint32
 
-	diffuseTexture, err := newTexture(Diffuse, "textures/rock/diffuse.jpg")
+	name := "rock"
+
+	diffuseTexture, err := newTexture(Diffuse, fmt.Sprintf("textures/%s/diffuse.jpg", name))
 	if err != nil {
 		log.Fatalln(err)
 	}
 	textures = append(textures, diffuseTexture)
 
-	specularTexture, err := newTexture(Specular, "textures/rock/specular.jpg")
+	specularTexture, err := newTexture(Specular, fmt.Sprintf("textures/%s/specular.jpg", name))
 	if err != nil {
 		log.Fatalln(err)
 	}
 	textures = append(textures, specularTexture)
 
-	normalTexture, err := newTexture(Normal, "textures/rock/normal.jpg")
+	normalTexture, err := newTexture(Normal, fmt.Sprintf("textures/%s/normal.jpg", name))
 	if err != nil {
 		log.Fatalln(err)
 	}
 	textures = append(textures, normalTexture)
+
+	depthTexture, err := newTexture(Depth, fmt.Sprintf("textures/%s/depth.jpg", name))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	textures = append(textures, depthTexture)
 
 	return NewMesh(vertices, indices, textures)
 }
@@ -88,6 +96,7 @@ func (s *Mesh) Draw(shader *Shader) {
 	diffuseNr := 0
 	specularNr := 0
 	normalNr := 0
+	depthNr := 0
 	for i, texture := range s.Textures {
 		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
 		var number int
@@ -101,6 +110,9 @@ func (s *Mesh) Draw(shader *Shader) {
 		case Normal:
 			number = normalNr
 			normalNr++
+		case Depth:
+			number = depthNr
+			depthNr++
 		default:
 			panic("unknown texture type ")
 		}

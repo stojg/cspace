@@ -67,11 +67,11 @@ func realMain() error {
 	if err != nil {
 		return err
 	}
-
-	floorShader, err := NewShader("material", "floor")
-	if err != nil {
-		return err
-	}
+	//
+	//floorShader, err := NewShader("material", "floor")
+	//if err != nil {
+	//	return err
+	//}
 
 	positions := []mgl32.Vec3{
 		{2.0, 5.0, -15.0},
@@ -84,9 +84,19 @@ func realMain() error {
 		{-1.3, 1.0, -1.5},
 	}
 
-	lightPositions := [][]float32{{0.0, 0.0, -3.0}}
+	lightPositions := [][]float32{
+		{0.0, 0.0, 0.0},
+		//{3.0, 0.0, -3.0},
+		//{0.0, -3.0, -3.0},
+		//{0.0, 3.0, -3.0},
+	}
 	//lightColours := [][]float32{{1.000, 0.749, 0.000}}
-	lightColours := [][]float32{{1, 1, 1}}
+	lightColours := [][]float32{
+		{1, 1, 1},
+		//{1, 1, 1},
+		//{1, 1, 1},
+		//{1, 1, 1},
+	}
 
 	previousTime := glfw.GetTime()
 	for !window.ShouldClose() {
@@ -107,22 +117,28 @@ func realMain() error {
 		// draw the test meshes
 		ourShader.UsePV(projection, view)
 		gl.Uniform3f(uniformLocation(ourShader, "viewPos"), cam.position[0], cam.position[1], cam.position[2])
-		setLights(floorShader, lightPositions, lightColours)
+		setLights(ourShader, lightPositions, lightColours)
 		for i := range positions {
 			trans := mgl32.Translate3D(positions[i][0], positions[i][1], positions[i][2])
 			trans = trans.Mul4(mgl32.HomogRotate3D(sin+float32(i*20.0), mgl32.Vec3{1, 1, 1}.Normalize()))
 			setUniformMatrix4fv(ourShader, "transform", trans)
+			gl.Uniform3f(uniformLocation(ourShader, "lightPos"), 0, 0, 0)
 			cubeMesh.Draw(ourShader)
 		}
 
-		// draw the floor
-		floorShader.UsePV(projection, view)
-		gl.Uniform3f(uniformLocation(floorShader, "viewPos"), cam.position[0], cam.position[1], cam.position[2])
-		setLights(floorShader, lightPositions, lightColours)
-		trans := mgl32.Translate3D(0, -5, 0)
-		trans = trans.Mul4(mgl32.Scale3D(100, 0.1, 100))
-		setUniformMatrix4fv(floorShader, "transform", trans)
-		floor.Draw(floorShader)
+		_ = floor
+		//_ = floorShader
+		//// draw the floor
+		//floorShader.UsePV(projection, view)
+		//gl.Uniform3f(uniformLocation(floorShader, "viewPos"), cam.position[0], cam.position[1], cam.position[2])
+		//setLights(floorShader, lightPositions, lightColours)
+		//trans := mgl32.Translate3D(0, -5, 0)
+		//trans = trans.Mul4(mgl32.Scale3D(100, 0.1, 100))
+		//setUniformMatrix4fv(floorShader, "transform", trans)
+		//floor.Draw(floorShader)
+
+		//_ = lightMesh
+		//_ = lampShader
 
 		// draw the lamps
 		lampShader.UsePV(projection, view)
@@ -130,9 +146,7 @@ func realMain() error {
 			trans := mgl32.Translate3D(lightPositions[i][0], lightPositions[i][1], lightPositions[i][2])
 			trans = trans.Mul4(mgl32.Scale3D(0.2, 0.2, 0.2))
 			setUniformMatrix4fv(lampShader, "transform", trans)
-
 			gl.Uniform3f(uniformLocation(lampShader, "emissive"), lightColours[i][0], lightColours[i][1], lightColours[i][2])
-
 			lightMesh.Draw(lampShader)
 		}
 
@@ -148,9 +162,9 @@ func setLights(shader *Shader, pos, color [][]float32) {
 		gl.Uniform4f(uniformLocation(shader, name+".vector"), pos[i][0], pos[i][1], pos[i][2], 1)
 		gl.Uniform3f(uniformLocation(shader, name+".ambient"), color[i][0]/10, color[i][1]/10, color[i][2]/10)
 		gl.Uniform3f(uniformLocation(shader, name+".diffuse"), color[i][0], color[i][1], color[i][2])
-		gl.Uniform3f(uniformLocation(shader, name+".specular"), 1.0, 1.0, 1.0)
+		gl.Uniform3f(uniformLocation(shader, name+".specular"), color[i][0], color[i][1], color[i][2])
 		gl.Uniform1f(uniformLocation(shader, name+".constant"), 1.0)
-		gl.Uniform1f(uniformLocation(shader, name+".linear"), 0.14)
-		gl.Uniform1f(uniformLocation(shader, name+".quadratic"), 0.07)
+		gl.Uniform1f(uniformLocation(shader, name+".linear"), 0.35)
+		gl.Uniform1f(uniformLocation(shader, name+".quadratic"), 0.44)
 	}
 }

@@ -1,5 +1,5 @@
 #version 410
-#define NR_POINT_LIGHTS 4
+#define NR_POINT_LIGHTS 1
 
 in vec3 Normal;
 in vec3 FragPos;
