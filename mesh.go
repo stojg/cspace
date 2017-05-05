@@ -16,19 +16,19 @@ func newCrateMesh() *Mesh {
 	var textures []*Texture
 	var indices []uint32
 
-	diffuseTexture, err := newTexture(Diffuse, "textures/crate0/crate0_diffuse.png")
+	diffuseTexture, err := newTexture(Diffuse, "textures/rock/diffuse.jpg")
 	if err != nil {
 		log.Fatalln(err)
 	}
 	textures = append(textures, diffuseTexture)
 
-	specularTexture, err := newTexture(Specular, "textures/specular.png")
+	specularTexture, err := newTexture(Specular, "textures/rock/specular.jpg")
 	if err != nil {
 		log.Fatalln(err)
 	}
 	textures = append(textures, specularTexture)
 
-	normalTexture, err := newTexture(Normal, "textures/crate0/crate0_normal.png")
+	normalTexture, err := newTexture(Normal, "textures/rock/normal.jpg")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -112,7 +112,7 @@ func (s *Mesh) Draw(shader *Shader) {
 
 	location := gl.GetUniformLocation(shader.Program, gl.Str("mat.shininess\x00"))
 	if location > 0 {
-		gl.Uniform1f(location, 32.0)
+		gl.Uniform1f(location, 64.0)
 	}
 
 	gl.BindVertexArray(s.vao)
