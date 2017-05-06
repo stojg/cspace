@@ -35,7 +35,7 @@ func initWindow(width, height int) (*glfw.Window, error) {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	glfw.WindowHint(glfw.Samples, 16)
+	glfw.WindowHint(glfw.Samples, 0)
 
 	var err error
 	window, err = glfw.CreateWindow(windowWidth, windowHeight, "Cube", nil, nil)
@@ -67,6 +67,7 @@ func initGL() error {
 	glLogGLParams()
 
 	gl.Enable(gl.DEPTH_TEST)
+
 	//gl.DepthFunc(gl.LESS)
 
 	// should be on by default, but just to make sure

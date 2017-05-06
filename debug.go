@@ -202,30 +202,16 @@ func glLogGLParams() {
 		"GL_MAX_DRAW_BUFFERS",
 		"GL_MAX_FRAGMENT_UNIFORM_COMPONENTS",
 		"GL_MAX_TEXTURE_IMAGE_UNITS",
-		"GL_MAX_TEXTURE_SIZE",
-		"GL_MAX_VARYING_FLOATS",
 		"GL_MAX_VERTEX_ATTRIBS",
-		"GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS",
-		"GL_MAX_VERTEX_UNIFORM_COMPONENTS",
-		"GL_MAX_VIEWPORT_DIMS",
-		"GL_STEREO",
 	}
 
 	glLogln("GL Context Params:\n")
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 6; i++ {
 		var v int32
 		gl.GetIntegerv(params[i], &v)
 		glLogln(fmt.Sprintf("%s %d", names[i], v))
 	}
-
-	var v int32
-	gl.GetIntegerv(params[10], &v)
-	glLogln(fmt.Sprintf("%s %d", names[10], v))
-
-	var b bool
-	gl.GetBooleanv(params[11], &b)
-	glLogln(fmt.Sprintf("%s %t", names[11], b))
 }
 
 //func CaptureRGBA(im *image.RGBA) {

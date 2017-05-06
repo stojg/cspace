@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 
 	"time"
@@ -10,14 +11,11 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+const numLights = 32
+
 func NewScene(WindowWidth, WindowHeight int32) *Scene {
 
 	gShader, err := NewShader("gbuffer", "gbuffer")
-	if err != nil {
-		panic(err)
-	}
-
-	debugDepthQuad, err := NewShader("debugDepthQuad", "debugDepthQuad")
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +43,6 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 			transform: &origin,
 		},
 		gBufferShader:  gShader,
-		debug:          debugDepthQuad,
 		shaderLighting: shaderLighting,
 		shaderLightBox: shaderLightBox,
 	}
@@ -53,10 +50,10 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 	rand.Seed(time.Now().Unix())
 	for i := 0; i < numLights; i++ {
 		// Calculate slightly random offsets
-		xPos := rand.Float32()*20 - 10
-		yPos := float32(1.2)
+		xPos := rand.Float32()*30 - 15
+		yPos := rand.Float32() + float32(1.2)
 		//zPos := rand.Float32()*5.0 - 2.5
-		zPos := rand.Float32()*20 - 10
+		zPos := rand.Float32()*30 - 15
 		s.lightPositions = append(s.lightPositions, [3]float32{xPos, yPos, zPos})
 		// Also calculate random color
 		rColor := rand.Float32()/2 + 0.5 // Between 0.5 and 1.0
@@ -70,7 +67,21 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 	return s
 }
 
-const numLights = 32
+func chkError() {
+	err := gl.GetError()
+	if err == 0 {
+		return
+	}
+	switch err {
+	case gl.INVALID_OPERATION:
+		fmt.Printf("GL Error: INVALID_OPERATION 0x0%x\n", err)
+	case gl.INVALID_ENUM:
+		fmt.Printf("GL Error: INVALID_ENUM 0x0%x\n", err)
+	default:
+		fmt.Printf("GL Error: 0x0%x\n", err)
+	}
+	panic("nope")
+}
 
 type Scene struct {
 	width, height  int32
@@ -80,7 +91,6 @@ type Scene struct {
 	camera         *Camera
 	graph          *Node
 	gbuffer        *Gbuffer
-	simple         *Shader
 	gBufferShader  *Shader
 	debug          *Shader
 	shaderLighting *Shader
@@ -91,11 +101,6 @@ type Scene struct {
 }
 
 func (s *Scene) Render() {
-
-	gl.Disable(gl.BLEND)
-	gl.Enable(gl.DEPTH_TEST)
-	gl.DepthMask(true)
-
 	s.updateTimers()
 	s.camera.View(s.elapsed)
 
@@ -106,15 +111,9 @@ func (s *Scene) Render() {
 	s.graph.Render(s.gBufferShader)
 
 	// deferred pass
-
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 	gl.ClearColor(0.1, 0.1, 0.1, 0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	gl.Enable(gl.BLEND)
-	//gl.BlendEquation(gl.FUNC_ADD)
-	//gl.BlendFunc(gl.ONE, gl.ONE)
-	gl.Disable(gl.DEPTH_TEST)
-	gl.DepthMask(false)
 
 	s.shaderLighting.Use()
 
@@ -131,28 +130,25 @@ func (s *Scene) Render() {
 	gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gAlbedoSpec)
 
 	setLights(s.shaderLighting, s.lightPositions, s.lightColors)
-
 	loc := gl.GetUniformLocation(s.shaderLighting.Program, gl.Str("viewPos\x00"))
 	if loc < 0 {
-		//panic("oh noes")
+		panic("oh noes")
 	}
 	gl.Uniform3fv(loc, 1, &s.camera.position[0])
 
 	renderQuad()
 
 	// 2.5. Copy content of geometry's depth buffer to default framebuffer's depth buffer
-	//gl.BindFramebuffer(gl.READ_FRAMEBUFFER, s.gbuffer.fbo)
-	//gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0) // Write to default framebuffer
+	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, s.gbuffer.fbo)
+	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0) // Write to default framebuffer
 	//// blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
 	//// the internal formats are implementation defined. This works on all of my systems, but if it doesn't on yours you'll likely have to write to the
 	//// depth buffer in another shader stage (or somehow see to match the default framebuffer's internal format with the FBO's internal format).
-	//gl.BlitFramebuffer(0, 0, s.width, s.height, 0, 0, s.width, s.height, gl.DEPTH_BUFFER_BIT, gl.NEAREST)
-	//gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+	gl.BlitFramebuffer(0, 0, s.width, s.height, 0, 0, s.width, s.height, gl.DEPTH_BUFFER_BIT, gl.NEAREST)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 
 	// 3. Render lights on top of scene, by blitting
 
-	//gl.DepthMask(false)
-	//gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	s.shaderLightBox.UsePV(s.projection, view)
 	for i := 0; i < numLights; i++ {
 		model := mgl32.Translate3D(s.lightPositions[i][0], s.lightPositions[i][1], s.lightPositions[i][2])
@@ -163,33 +159,11 @@ func (s *Scene) Render() {
 		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
 		gl.BindVertexArray(0)
 	}
-
-	//renderQuad()
-
+	//chkError()
 }
 
 func (s *Scene) updateTimers() {
 	now := glfw.GetTime()
 	s.elapsed = float32(now - s.previousTime)
 	s.previousTime = now
-}
-
-func DSGeometryPass(s *Scene) {
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	s.gbuffer.BindForWriting()
-	s.graph.Render(s.gBufferShader)
-
-	//glClear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-	//p := &Pipeline{}
-	//p.Scale(0.1, 0.1, 0.1)
-	//p.Rotate(0, 0, 0)
-	//p.WorldPos(-0.8, -1, 12)
-	//p.SetCamera(s.camera.position, s.camera.front, s.camera.up)
-	//p.SetPerspectiveProj(s.projection)
-
-	//m_DSGeomPassTech.SetWVP(p.GetWVPTrans());
-	//m_DSGeomPassTech.SetWorldMatrix(p.GetWorldTrans());
-	//m_mesh.Render();
-
 }

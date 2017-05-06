@@ -58,9 +58,8 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER)
 
 	if status != gl.FRAMEBUFFER_COMPLETE {
-		panic(fmt.Sprintf("FB error, status: 0x%x\n", status))
+		panic(fmt.Sprintf("FRAMEBUFFER_COMPLETE error, status: 0x%x\n", status))
 	}
-	fmt.Println(status)
 
 	// restore default FBO
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
