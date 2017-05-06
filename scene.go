@@ -52,7 +52,6 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 		// Calculate slightly random offsets
 		xPos := rand.Float32()*30 - 15
 		yPos := rand.Float32() + float32(1.2)
-		//zPos := rand.Float32()*5.0 - 2.5
 		zPos := rand.Float32()*30 - 15
 		s.lightPositions = append(s.lightPositions, [3]float32{xPos, yPos, zPos})
 		// Also calculate random color
@@ -63,36 +62,22 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 	}
 
 	s.lightMesh = newLightMesh()
-
 	return s
 }
 
-func chkError() {
-	err := gl.GetError()
-	if err == 0 {
-		return
-	}
-	switch err {
-	case gl.INVALID_OPERATION:
-		fmt.Printf("GL Error: INVALID_OPERATION 0x0%x\n", err)
-	case gl.INVALID_ENUM:
-		fmt.Printf("GL Error: INVALID_ENUM 0x0%x\n", err)
-	default:
-		fmt.Printf("GL Error: 0x0%x\n", err)
-	}
-	panic("nope")
-}
-
 type Scene struct {
-	width, height  int32
-	previousTime   float64
-	elapsed        float32
-	projection     mgl32.Mat4
-	camera         *Camera
-	graph          *Node
-	gbuffer        *Gbuffer
-	gBufferShader  *Shader
+	width, height int32
+	previousTime  float64
+	elapsed       float32
+	projection    mgl32.Mat4
+	camera        *Camera
+	graph         *Node
+
+	gbuffer       *Gbuffer
+	gBufferShader *Shader
+
 	shaderLighting *Shader
+
 	shaderLightBox *Shader
 	lightPositions [][3]float32
 	lightColors    [][3]float32
@@ -103,19 +88,19 @@ func (s *Scene) Render() {
 	s.updateTimers()
 	view := s.camera.View(s.elapsed)
 
-	// render the gBuffer
-	gl.BindFramebuffer(gl.FRAMEBUFFER, s.gbuffer.fbo)
+	// 1. render the gBuffer
+	s.gbuffer.BindForWriting()
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
 	s.gBufferShader.UsePV(s.projection, view)
 	s.graph.Render(s.gBufferShader)
 
-	// deferred pass
+	// 2. deferred pass
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 	gl.ClearColor(0.1, 0.1, 0.1, 0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 	s.shaderLighting.Use()
-
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.Uniform1i(uniformLocation(s.shaderLighting, "gPosition"), 0)
 	gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gPosition)
@@ -129,11 +114,7 @@ func (s *Scene) Render() {
 	gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gAlbedoSpec)
 
 	setLights(s.shaderLighting, s.lightPositions, s.lightColors)
-	loc := gl.GetUniformLocation(s.shaderLighting.Program, gl.Str("viewPos\x00"))
-	if loc < 0 {
-		panic("oh noes")
-	}
-	gl.Uniform3fv(loc, 1, &s.camera.position[0])
+	gl.Uniform3fv(uniformLocation(s.shaderLighting, "viewPos"), 1, &s.camera.position[0])
 	renderQuad()
 
 	// 2.5. Copy content of geometry's depth buffer to default framebuffer's depth buffer
@@ -146,7 +127,6 @@ func (s *Scene) Render() {
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 
 	// 3. Render lights on top of scene, by blitting
-
 	s.shaderLightBox.UsePV(s.projection, view)
 	for i := 0; i < numLights; i++ {
 		model := mgl32.Translate3D(s.lightPositions[i][0], s.lightPositions[i][1], s.lightPositions[i][2])
@@ -164,4 +144,20 @@ func (s *Scene) updateTimers() {
 	now := glfw.GetTime()
 	s.elapsed = float32(now - s.previousTime)
 	s.previousTime = now
+}
+
+func chkError() {
+	err := gl.GetError()
+	if err == 0 {
+		return
+	}
+	switch err {
+	case gl.INVALID_OPERATION:
+		fmt.Printf("GL Error: INVALID_OPERATION 0x0%x\n", err)
+	case gl.INVALID_ENUM:
+		fmt.Printf("GL Error: INVALID_ENUM 0x0%x\n", err)
+	default:
+		fmt.Printf("GL Error: 0x0%x\n", err)
+	}
+	panic("nope")
 }
