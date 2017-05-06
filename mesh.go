@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"math"
@@ -85,44 +84,45 @@ type Mesh struct {
 }
 
 func (s *Mesh) Draw(shader *Shader) {
-	diffuseNr := 0
-	specularNr := 0
-	normalNr := 0
-	for i, texture := range s.Textures {
-		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-		var number int
-		switch texture.textureType {
-		case Specular:
-			number = specularNr
-			specularNr++
-		case Diffuse:
-			number = diffuseNr
-			diffuseNr++
-		case Normal:
-			number = normalNr
-			normalNr++
-		default:
-			panic("unknown texture type ")
-		}
+	//diffuseNr := 0
+	//specularNr := 0
+	//normalNr := 0
+	//for i, texture := range s.Textures {
+	//	gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+	//	var number int
+	//	switch texture.textureType {
+	//	case Specular:
+	//		number = specularNr
+	//		specularNr++
+	//	case Diffuse:
+	//		number = diffuseNr
+	//		diffuseNr++
+	//	case Normal:
+	//		number = normalNr
+	//		normalNr++
+	//	default:
+	//		panic("unknown texture type ")
+	//	}
 
-		uniformName := fmt.Sprintf("mat.%s%d", texture.textureType, number)
-		gl.Uniform1i(uniformLocation(shader, uniformName), int32(i))
-		gl.BindTexture(gl.TEXTURE_2D, texture.ID)
-	}
+	//uniformName := fmt.Sprintf("mat.%s%d", texture.textureType, number)
+	//gl.Uniform1i(uniformLocation(shader, uniformName), int32(i))
+	//gl.BindTexture(gl.TEXTURE_2D, texture.ID)
+	//}
 
-	location := gl.GetUniformLocation(shader.Program, gl.Str("mat.shininess\x00"))
-	if location > 0 {
-		gl.Uniform1f(location, 128.0)
-	}
+	//location := gl.GetUniformLocation(shader.Program, gl.Str("mat.shininess\x00"))
+	//if location > 0 {
+	//	gl.Uniform1f(location, 128.0)
+	//}
 
 	gl.BindVertexArray(s.vao)
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.Vertices)))
+	gl.BindVertexArray(0)
 
 	// reset textures to they don't leak into some other poor mesh
-	for i := range s.Textures {
-		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-		gl.BindTexture(gl.TEXTURE_2D, 0)
-	}
+	//for i := range s.Textures {
+	//	gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+	//	gl.BindTexture(gl.TEXTURE_2D, 0)
+	//}
 }
 
 func (s *Mesh) init() {
