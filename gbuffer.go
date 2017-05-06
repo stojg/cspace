@@ -53,8 +53,8 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	gl.BindRenderbuffer(gl.RENDERBUFFER, gbuffer.rboDepth)
 	gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT)
 	gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, gbuffer.rboDepth)
-	// - Finally check if framebuffer is complete
 
+	// - Finally check if framebuffer is complete
 	status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER)
 
 	if status != gl.FRAMEBUFFER_COMPLETE {

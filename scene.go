@@ -92,7 +92,6 @@ type Scene struct {
 	graph          *Node
 	gbuffer        *Gbuffer
 	gBufferShader  *Shader
-	debug          *Shader
 	shaderLighting *Shader
 	shaderLightBox *Shader
 	lightPositions [][3]float32
@@ -102,11 +101,11 @@ type Scene struct {
 
 func (s *Scene) Render() {
 	s.updateTimers()
-	s.camera.View(s.elapsed)
+	view := s.camera.View(s.elapsed)
 
+	// render the gBuffer
 	gl.BindFramebuffer(gl.FRAMEBUFFER, s.gbuffer.fbo)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	view := s.camera.View(s.elapsed)
 	s.gBufferShader.UsePV(s.projection, view)
 	s.graph.Render(s.gBufferShader)
 
@@ -135,7 +134,6 @@ func (s *Scene) Render() {
 		panic("oh noes")
 	}
 	gl.Uniform3fv(loc, 1, &s.camera.position[0])
-
 	renderQuad()
 
 	// 2.5. Copy content of geometry's depth buffer to default framebuffer's depth buffer
@@ -159,7 +157,7 @@ func (s *Scene) Render() {
 		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
 		gl.BindVertexArray(0)
 	}
-	//chkError()
+	chkError()
 }
 
 func (s *Scene) updateTimers() {
