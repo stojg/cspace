@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"os"
 
+	"math/rand"
+
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
 const logFile = "gl.log"
-const windowWidth = 800
-const windowHeight = 600
+const windowWidth = 1200
+const windowHeight = 750
 
 var keys map[glfw.Key]bool
 var cursor [2]float64
@@ -51,8 +53,17 @@ func realMain() error {
 
 	crate := NewCrateModel()
 	for i := 0; i < 10; i++ {
-		t := mgl32.Translate3D(float32(i)*1.1, 0, 0)
+		t := mgl32.Translate3D(rand.Float32()*20-10, 0.5, rand.Float32()*20-10)
+		t = t.Mul4(mgl32.HomogRotate3D(rand.Float32()*360, mgl32.Vec3{0, 1, 0}.Normalize()))
 		scene.graph.Add(crate, t)
+	}
+	grass := NewGrassMesh()
+	for x := 0; x < 10; x++ {
+		for z := 0; z < 10; z++ {
+			grassT := mgl32.Translate3D(float32(x)*3-15, 0, float32(z)*3-15)
+			grassT = grassT.Mul4(mgl32.Scale3D(3, 0.1, 3))
+			scene.graph.Add(grass, grassT)
+		}
 	}
 
 	for !window.ShouldClose() {
@@ -71,11 +82,18 @@ func renderQuad() {
 	if quadVAO == 0 {
 		quadVertices := []float32{
 			// Positions        // Texture Coords
-			0.5, 1.0, 0.0, 0.0, 1.0,
-			0.5, 0.5, 0.0, 0.0, 0.0,
+			-1, 1.0, 0.0, 0.0, 1.0,
+			-1, -1, 0.0, 0.0, 0.0,
 			1.0, 1.0, 0.0, 1.0, 1.0,
-			1.0, 0.5, 0.0, 1.0, 0.0,
+			1.0, -1, 0.0, 1.0, 0.0,
 		}
+		//quadVertices := []float32{
+		//	// Positions        // Texture Coords
+		//	-1, 1.0, 0.0, 0.0, 1.0,
+		//	-1, 1.0, 0.0, 0.0, 0.0,
+		//	1.0, 1.0, 0.0, 1.0, 1.0,
+		//	1.0, 1.0, 0.0, 1.0, 0.0,
+		//}
 		// Setup plane VAO
 		gl.GenVertexArrays(1, &quadVAO)
 		gl.GenBuffers(1, &quadVBO)
@@ -124,15 +142,15 @@ func setDirectionalLight(shader *Shader, direction, color [3]float32) {
 	gl.Uniform3f(uniformLocation(shader, name+".specular"), 1.0, 1.0, 1.0)
 }
 
-func setLights(shader *Shader, pos, color [][]float32) {
+func setLights(shader *Shader, pos, color [][3]float32) {
 	for i := range pos {
 		name := fmt.Sprintf("lights[%d]", i)
-		gl.Uniform4f(uniformLocation(shader, name+".vector"), pos[i][0], pos[i][1], pos[i][2], 1)
-		gl.Uniform3f(uniformLocation(shader, name+".diffuse"), color[i][0], color[i][1], color[i][2])
-		gl.Uniform3f(uniformLocation(shader, name+".ambient"), color[i][0]/10, color[i][1]/10, color[i][2]/10)
-		gl.Uniform3f(uniformLocation(shader, name+".specular"), color[i][0], color[i][1], color[i][2])
-		gl.Uniform1f(uniformLocation(shader, name+".constant"), 1.0)
-		gl.Uniform1f(uniformLocation(shader, name+".linear"), 0.14)
-		gl.Uniform1f(uniformLocation(shader, name+".quadratic"), 0.07)
+		gl.Uniform3f(uniformLocation(shader, name+".Position"), pos[i][0], pos[i][1], pos[i][2])
+		gl.Uniform3f(uniformLocation(shader, name+".Color"), color[i][0], color[i][1], color[i][2])
+		//gl.Uniform3f(uniformLocation(shader, name+".ambient"), color[i][0]/10, color[i][1]/10, color[i][2]/10)
+		//gl.Uniform3f(uniformLocation(shader, name+".specular"), color[i][0], color[i][1], color[i][2])
+		//gl.Uniform1f(uniformLocation(shader, name+".constant"), 1.0)
+		gl.Uniform1f(uniformLocation(shader, name+".Linear"), 0.7)
+		gl.Uniform1f(uniformLocation(shader, name+".Quadratic"), 1.8)
 	}
 }

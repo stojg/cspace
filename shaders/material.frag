@@ -24,9 +24,9 @@ struct Material {
     sampler2D normal0;
     float shininess;
 };
+uniform Material mat;
 
 uniform Light lights[NR_POINT_LIGHTS];
-uniform Material mat;
 uniform vec3 viewPos;
 uniform float useNormalMapping;
 

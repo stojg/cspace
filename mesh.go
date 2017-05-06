@@ -17,19 +17,19 @@ func NewCrateModel() *Mesh {
 	var textures []*Texture
 	var indices []uint32
 
-	diffuseTexture, err := newTexture(Diffuse, "textures/rock/diffuse.jpg")
+	diffuseTexture, err := newTexture(Diffuse, "textures/rock/diffuse.jpg", false)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	textures = append(textures, diffuseTexture)
 
-	specularTexture, err := newTexture(Specular, "textures/rock/specular.jpg")
+	specularTexture, err := newTexture(Specular, "textures/rock/specular.jpg", false)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	textures = append(textures, specularTexture)
 
-	normalTexture, err := newTexture(Normal, "textures/rock/normal.jpg")
+	normalTexture, err := newTexture(Normal, "textures/rock/normal.jpg", false)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -41,6 +41,38 @@ func NewCrateModel() *Mesh {
 func newLightMesh() *Mesh {
 	vertices := getVertices(cubeData)
 	var textures []*Texture
+	var indices []uint32
+	return NewMesh(vertices, indices, textures)
+}
+
+func NewGrassMesh() *Mesh {
+	var data = []float32{
+		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
+		0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
+		0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 1.0, 1.0, // top-right
+		0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
+		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
+		-0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0, // bottom-left
+	}
+	vertices := getVertices(data)
+	var textures []*Texture
+	diffuseTexture, err := newTexture(Diffuse, "textures/grass/grass01.jpg", true)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	textures = append(textures, diffuseTexture)
+
+	specularTexture, err := newTexture(Specular, "textures/grass/grass01_s.jpg", true)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	textures = append(textures, specularTexture)
+
+	normalTexture, err := newTexture(Normal, "textures/grass/grass01_n.jpg", true)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	textures = append(textures, normalTexture)
 	var indices []uint32
 	return NewMesh(vertices, indices, textures)
 }

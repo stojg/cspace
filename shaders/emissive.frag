@@ -1,6 +1,5 @@
 #version 410
 
-
 uniform vec3 emissive;
 
 out vec4 color;

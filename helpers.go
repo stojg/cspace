@@ -67,12 +67,12 @@ func initGL() error {
 	glLogGLParams()
 
 	gl.Enable(gl.DEPTH_TEST)
-	gl.DepthFunc(gl.LESS)
+	//gl.DepthFunc(gl.LESS)
 
 	// should be on by default, but just to make sure
-	gl.Enable(gl.MULTISAMPLE)
+	//gl.Enable(gl.MULTISAMPLE)
 
-	gl.ClearColor(0.1, 0.1, 0.1, 1.0)
+	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	glLogln(fmt.Sprintf("OpenGL Version %s", version))
