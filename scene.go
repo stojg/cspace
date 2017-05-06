@@ -44,8 +44,8 @@ func (s *Scene) Render() {
 	view := s.camera.View(s.elapsed)
 	s.simple.UsePV(s.projection, view)
 
-	pos := [][]float32{{1, 0, 1}}
-	colors := [][]float32{{1, 1, 1}}
+	pos := [][]float32{{1, 0, 1}, {5, 2, 1}}
+	colors := [][]float32{{1.000, 0.749, 0.000}, {1, 1, 1}}
 
 	setLights(s.simple, pos, colors)
 	SimpleRender(s)
