@@ -7,8 +7,8 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-func newCamera() *camera {
-	c := &camera{
+func NewCamera() *Camera {
+	c := &Camera{
 		position:   mgl32.Vec3{0, 1.8, 3},
 		front:      mgl32.Vec3{0, 0, -1},
 		up:         mgl32.Vec3{0, 1, 0},
@@ -24,7 +24,7 @@ func newCamera() *camera {
 	return c
 }
 
-type camera struct {
+type Camera struct {
 	position   mgl32.Vec3
 	front      mgl32.Vec3
 	up         mgl32.Vec3
@@ -37,7 +37,7 @@ type camera struct {
 	view       mgl32.Mat4
 }
 
-func (cam *camera) View(elapsed float32) mgl32.Mat4 {
+func (cam *Camera) View(elapsed float32) mgl32.Mat4 {
 	changed := false
 	if cam.handleKeyboard(elapsed) {
 		changed = true
@@ -52,7 +52,7 @@ func (cam *camera) View(elapsed float32) mgl32.Mat4 {
 	return cam.view
 }
 
-func (cam *camera) handleKeyboard(elapsed float32) bool {
+func (cam *Camera) handleKeyboard(elapsed float32) bool {
 	changed := false
 	if keys[glfw.KeyW] {
 		change := cam.front.Mul(cam.speed * elapsed)
@@ -77,7 +77,7 @@ func (cam *camera) handleKeyboard(elapsed float32) bool {
 	return changed
 }
 
-func (cam *camera) handleCursor(elapsed float32) bool {
+func (cam *Camera) handleCursor(elapsed float32) bool {
 	xpos := cursor[0]
 	ypos := cursor[1]
 
@@ -114,7 +114,7 @@ func (cam *camera) handleCursor(elapsed float32) bool {
 	return true
 }
 
-func (cam *camera) updateVectors() {
+func (cam *Camera) updateVectors() {
 	pitchRad := float64(mgl32.DegToRad(cam.pitch))
 	yawRad := float64(mgl32.DegToRad(cam.yaw))
 	cam.front[0] = float32(math.Cos(yawRad) * math.Cos(pitchRad))

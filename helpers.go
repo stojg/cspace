@@ -66,10 +66,6 @@ func initGL() error {
 
 	glLogGLParams()
 
-	//gl.FrontFace(gl.CCW)
-	//gl.Enable(gl.CULL_FACE)
-	//gl.CullFace(gl.BACK)
-
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
 

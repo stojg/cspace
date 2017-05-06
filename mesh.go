@@ -7,10 +7,12 @@ import (
 
 	"unsafe"
 
+	"fmt"
+
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
-func newCrateMesh() *Mesh {
+func NewCrateModel() *Mesh {
 	vertices := getVertices(cubeData)
 	var textures []*Texture
 	var indices []uint32
@@ -83,46 +85,49 @@ type Mesh struct {
 	vbo, vao, ebo uint32
 }
 
-func (s *Mesh) Draw(shader *Shader) {
-	//diffuseNr := 0
-	//specularNr := 0
-	//normalNr := 0
-	//for i, texture := range s.Textures {
-	//	gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-	//	var number int
-	//	switch texture.textureType {
-	//	case Specular:
-	//		number = specularNr
-	//		specularNr++
-	//	case Diffuse:
-	//		number = diffuseNr
-	//		diffuseNr++
-	//	case Normal:
-	//		number = normalNr
-	//		normalNr++
-	//	default:
-	//		panic("unknown texture type ")
-	//	}
+func (s *Mesh) Render(shader *Shader) {
+	diffuseNr := 0
+	specularNr := 0
+	normalNr := 0
+	for i, texture := range s.Textures {
+		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+		var number int
+		switch texture.textureType {
+		case Specular:
+			number = specularNr
+			specularNr++
+		case Diffuse:
+			number = diffuseNr
+			diffuseNr++
+		case Normal:
+			number = normalNr
+			normalNr++
+		default:
+			panic("unknown texture type ")
+		}
 
-	//uniformName := fmt.Sprintf("mat.%s%d", texture.textureType, number)
-	//gl.Uniform1i(uniformLocation(shader, uniformName), int32(i))
-	//gl.BindTexture(gl.TEXTURE_2D, texture.ID)
-	//}
+		uniformName := fmt.Sprintf("mat.%s%d", texture.textureType, number)
+		gl.Uniform1i(uniformLocation(shader, uniformName), int32(i))
+		gl.BindTexture(gl.TEXTURE_2D, texture.ID)
+	}
 
-	//location := gl.GetUniformLocation(shader.Program, gl.Str("mat.shininess\x00"))
-	//if location > 0 {
-	//	gl.Uniform1f(location, 128.0)
-	//}
+	location := gl.GetUniformLocation(shader.Program, gl.Str("mat.shininess\x00"))
+	if location > 0 {
+		gl.Uniform1f(location, 128.0)
+	} else {
+		panic("oh noes, no mat.shininess")
+	}
 
 	gl.BindVertexArray(s.vao)
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.Vertices)))
+	// reset
 	gl.BindVertexArray(0)
 
-	// reset textures to they don't leak into some other poor mesh
-	//for i := range s.Textures {
-	//	gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-	//	gl.BindTexture(gl.TEXTURE_2D, 0)
-	//}
+	// reset textures
+	for i := range s.Textures {
+		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+		gl.BindTexture(gl.TEXTURE_2D, 0)
+	}
 }
 
 func (s *Mesh) init() {
@@ -161,7 +166,7 @@ func (s *Mesh) init() {
 	gl.VertexAttribPointer(3, 3, gl.FLOAT, false, size, gl.PtrOffset(8*sizeOfFloat))
 	gl.EnableVertexAttribArray(3)
 
-	// reset, so no other mesh accidentally changes this vao
+	// reset, so no other graph accidentally changes this vao
 	gl.BindVertexArray(0)
 }
 
@@ -189,7 +194,7 @@ func getVertices(meshdata []float32) []Vertex {
 	const stride = 8
 
 	if len(meshdata)%stride != 0 {
-		panic("the mesh data is not a multiple of 8, want [3]Pos, [3]Normals, [2]TexCoords")
+		panic("the graph data is not a multiple of 8, want [3]Pos, [3]Normals, [2]TexCoords")
 	}
 	var vertices []Vertex
 

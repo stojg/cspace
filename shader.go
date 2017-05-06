@@ -20,8 +20,8 @@ func (s *Shader) Use() {
 
 func (s *Shader) UsePV(projection, view mgl32.Mat4) {
 	gl.UseProgram(s.Program)
-	//setUniformMatrix4fv(s, "view", view)
-	//setUniformMatrix4fv(s, "projection", projection)
+	setUniformMatrix4fv(s, "projection", projection)
+	setUniformMatrix4fv(s, "view", view)
 }
 
 func NewShader(vertex, frag string) (*Shader, error) {
