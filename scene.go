@@ -6,12 +6,14 @@ import (
 
 	"time"
 
+	"math"
+
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-const numLights = 32
+const numLights = 16
 
 func NewScene(WindowWidth, WindowHeight int32) *Scene {
 
@@ -37,11 +39,12 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 	for i := 0; i < numLights; i++ {
 		att := ligthAtt[13]
 		s.pointLights = append(s.pointLights, &PointLight{
-			Position: [3]float32{rand.Float32()*30 - 15, 1.2, rand.Float32()*30 - 15},
+			Position: [3]float32{rand.Float32()*30 - 15, 1 + rand.Float32()*2, rand.Float32()*30 - 15},
 			Color:    [3]float32{rand.Float32()/2 + 0.5, rand.Float32()/2 + 0.5, rand.Float32()/2 + 0.5},
 			Constant: att.Constant,
 			Linear:   att.Linear,
 			Exp:      att.Exp,
+			rand:     rand.Float32(),
 		})
 	}
 	return s
@@ -70,6 +73,7 @@ type Scene struct {
 func (s *Scene) Render() {
 	s.updateTimers()
 	view := s.camera.View(s.elapsed)
+	sin := float32(math.Sin(glfw.GetTime() * 0.5))
 
 	s.gbuffer.StartFrame()
 
@@ -137,11 +141,20 @@ func (s *Scene) Render() {
 
 			gl.Uniform2f(uniformLocation(s.pointLightShader, "gScreenSize"), float32(s.width), float32(s.height))
 
-			s.pointLightShader.SetLight(s.pointLights[i])
+			cp := PointLight{
+				Position: s.pointLights[i].Position,
+				Color:    s.pointLights[i].Color,
+				Constant: s.pointLights[i].Constant,
+				Linear:   s.pointLights[i].Linear,
+				Exp:      s.pointLights[i].Exp,
+				radius:   s.pointLights[i].radius,
+			}
+			cp.Position[1] += sin * s.pointLights[i].rand
+			s.pointLightShader.SetLight(&cp)
 
 			gl.Uniform3fv(uniformLocation(s.pointLightShader, "viewPos"), 1, &s.camera.position[0])
 
-			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
+			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin*s.pointLights[i].rand, s.pointLights[i].Position[2])
 			rad := s.pointLights[i].Radius()
 			model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
 			setUniformMatrix4fv(s.pointLightShader, "model", model)
@@ -160,7 +173,7 @@ func (s *Scene) Render() {
 	{
 		directionLight := &DirectionalLight{
 			Direction: normalise([3]float32{1, 1, 1}),
-			Color:     [3]float32{0.2, 0.2, 0.4},
+			Color:     [3]float32{0.1, 0.1, 0.2},
 		}
 
 		ident := mgl32.Ident4()
@@ -185,7 +198,7 @@ func (s *Scene) Render() {
 	gl.Enable(gl.DEPTH_TEST)
 
 	for i := range s.pointLights {
-		model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
+		model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin*s.pointLights[i].rand, s.pointLights[i].Position[2])
 		model = model.Mul4(mgl32.Scale3D(0.1, 0.1, 0.1))
 		setUniformMatrix4fv(s.lightBoxShader, "model", model)
 		gl.Uniform3fv(uniformLocation(s.lightBoxShader, "emissive"), 1, &s.pointLights[i].Color[0])

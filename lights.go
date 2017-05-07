@@ -14,6 +14,7 @@ type PointLight struct {
 	Linear   float32
 	Exp      float32
 	radius   float32
+	rand     float32
 }
 
 func (l *PointLight) Radius() float32 {
