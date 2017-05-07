@@ -110,7 +110,7 @@ func (s *Scene) Render() {
 
 	// 2. deferred pass
 	{
-		s.shaderLighting.Use()
+		s.shaderLighting.UsePV(s.projection, view)
 
 		gl.Enable(gl.BLEND)
 		gl.BlendEquation(gl.FUNC_ADD)
@@ -121,21 +121,30 @@ func (s *Scene) Render() {
 		gl.ClearColor(0.1, 0.1, 0.1, 0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		for i, light := range s.pointLights {
-			name := fmt.Sprintf("lights[%d]", i)
+		gl.Uniform2f(uniformLocation(s.shaderLighting, "gScreenSize"), float32(s.width), float32(s.height))
+		for _, light := range s.pointLights {
+			name := fmt.Sprint("pointLight")
 			gl.Uniform3f(uniformLocation(s.shaderLighting, name+".Position"), light.Position[0], light.Position[1], light.Position[2])
 			gl.Uniform3f(uniformLocation(s.shaderLighting, name+".Color"), light.Color[0], light.Color[1], light.Color[2])
 			gl.Uniform1f(uniformLocation(s.shaderLighting, name+".Radius"), light.Radius())
 			gl.Uniform1f(uniformLocation(s.shaderLighting, name+".Linear"), light.Linear)
 			gl.Uniform1f(uniformLocation(s.shaderLighting, name+".Quadratic"), light.Exp)
-			//gl.Uniform1f(uniformLocation(shader, name+".AmbientIntensity"), light.AmbientIntensity)
 			gl.Uniform1f(uniformLocation(s.shaderLighting, name+".DiffuseIntensity"), light.DiffuseIntensity)
+			gl.Uniform3fv(uniformLocation(s.shaderLighting, "viewPos"), 1, &s.camera.position[0])
+
+			model := mgl32.Translate3D(light.Position[0], light.Position[1], light.Position[2])
+			model = model.Mul4(mgl32.Scale3D(4, 4, 4))
+			//rad := l.Radius()
+			//model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
+			setUniformMatrix4fv(s.shaderLighting, "model", model)
+			gl.BindVertexArray(s.lightMesh.vao)
+			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
+			gl.BindVertexArray(0)
 		}
-		gl.Uniform3fv(uniformLocation(s.shaderLighting, "viewPos"), 1, &s.camera.position[0])
-		renderQuad()
+
 	}
 
-	//// 2.5. Copy content of geometry's depth buffer to default framebuffer's depth buffer
+	// 2.5. Copy content of geometry's depth buffer to default framebuffer's depth buffer
 	//gl.BindFramebuffer(gl.READ_FRAMEBUFFER, s.gbuffer.fbo)
 	//gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0) // Write to default framebuffer
 	////// blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
