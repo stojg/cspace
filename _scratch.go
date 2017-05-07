@@ -58,3 +58,30 @@ func blach() {
 	gl.ActiveTexture(gl.TEXTURE1)
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 }
+
+func emesiive() {
+
+	// 2.5. Copy content of geometry's depth buffer to default framebuffer's depth buffer
+	//gl.BindFramebuffer(gl.READ_FRAMEBUFFER, s.gbuffer.fbo)
+	//gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0) // Write to default framebuffer
+	////// blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
+	////// the internal formats are implementation defined. This works on all of my systems, but if it doesn't on yours you'll likely have to write to the
+	////// depth buffer in another shader stage (or somehow see to match the default framebuffer's internal format with the FBO's internal format).
+	//gl.BlitFramebuffer(0, 0, s.width, s.height, 0, 0, s.width, s.height, gl.DEPTH_BUFFER_BIT, gl.NEAREST)
+	//gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+	//
+	//// 3. Render lights on top of scene, by blitting
+	//s.shaderLightBox.UsePV(s.projection, view)
+	//
+	//for _, l := range s.pointLights {
+	//	model := mgl32.Translate3D(l.Position[0], l.Position[1], l.Position[2])
+	//	model = model.Mul4(mgl32.Scale3D(0.02, 0.02, 0.02))
+	//	//rad := l.Radius()
+	//	//model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
+	//	setUniformMatrix4fv(s.shaderLightBox, "model", model)
+	//	gl.Uniform3f(uniformLocation(s.shaderLightBox, "emissive"), l.Color[0], l.Color[1], l.Color[2])
+	//	gl.BindVertexArray(s.lightMesh.vao)
+	//	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
+	//	gl.BindVertexArray(0)
+	//}
+}

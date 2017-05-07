@@ -116,23 +116,25 @@ func (s *Scene) Render() {
 		gl.BlendEquation(gl.FUNC_ADD)
 		gl.BlendFunc(gl.ONE, gl.ONE)
 
+		gl.Enable(gl.CULL_FACE)
+		gl.CullFace(gl.BACK)
+
 		s.gbuffer.BindForReading(s.shaderLighting)
 
 		gl.ClearColor(0.1, 0.1, 0.1, 0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
 		gl.Uniform2f(uniformLocation(s.shaderLighting, "gScreenSize"), float32(s.width), float32(s.height))
-		for _, light := range s.pointLights {
-			name := fmt.Sprint("pointLight")
-			gl.Uniform3f(uniformLocation(s.shaderLighting, name+".Position"), light.Position[0], light.Position[1], light.Position[2])
-			gl.Uniform3f(uniformLocation(s.shaderLighting, name+".Color"), light.Color[0], light.Color[1], light.Color[2])
-			gl.Uniform1f(uniformLocation(s.shaderLighting, name+".Radius"), light.Radius())
-			gl.Uniform1f(uniformLocation(s.shaderLighting, name+".Linear"), light.Linear)
-			gl.Uniform1f(uniformLocation(s.shaderLighting, name+".Quadratic"), light.Exp)
-			gl.Uniform1f(uniformLocation(s.shaderLighting, name+".DiffuseIntensity"), light.DiffuseIntensity)
+		for i := range s.pointLights {
+			gl.Uniform3f(uniformLocation(s.shaderLighting, "pointLight.Position"), s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
+			gl.Uniform3f(uniformLocation(s.shaderLighting, "pointLight.Color"), s.pointLights[i].Color[0], s.pointLights[i].Color[1], s.pointLights[i].Color[2])
+			gl.Uniform1f(uniformLocation(s.shaderLighting, "pointLight.Radius"), s.pointLights[i].Radius())
+			gl.Uniform1f(uniformLocation(s.shaderLighting, "pointLight.Linear"), s.pointLights[i].Linear)
+			gl.Uniform1f(uniformLocation(s.shaderLighting, "pointLight.Quadratic"), s.pointLights[i].Exp)
+			gl.Uniform1f(uniformLocation(s.shaderLighting, "pointLight.DiffuseIntensity"), s.pointLights[i].DiffuseIntensity)
 			gl.Uniform3fv(uniformLocation(s.shaderLighting, "viewPos"), 1, &s.camera.position[0])
 
-			model := mgl32.Translate3D(light.Position[0], light.Position[1], light.Position[2])
+			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
 			model = model.Mul4(mgl32.Scale3D(4, 4, 4))
 			//rad := l.Radius()
 			//model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
@@ -141,32 +143,7 @@ func (s *Scene) Render() {
 			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
 			gl.BindVertexArray(0)
 		}
-
 	}
-
-	// 2.5. Copy content of geometry's depth buffer to default framebuffer's depth buffer
-	//gl.BindFramebuffer(gl.READ_FRAMEBUFFER, s.gbuffer.fbo)
-	//gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0) // Write to default framebuffer
-	////// blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
-	////// the internal formats are implementation defined. This works on all of my systems, but if it doesn't on yours you'll likely have to write to the
-	////// depth buffer in another shader stage (or somehow see to match the default framebuffer's internal format with the FBO's internal format).
-	//gl.BlitFramebuffer(0, 0, s.width, s.height, 0, 0, s.width, s.height, gl.DEPTH_BUFFER_BIT, gl.NEAREST)
-	//gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-	//
-	//// 3. Render lights on top of scene, by blitting
-	//s.shaderLightBox.UsePV(s.projection, view)
-	//
-	//for _, l := range s.pointLights {
-	//	model := mgl32.Translate3D(l.Position[0], l.Position[1], l.Position[2])
-	//	model = model.Mul4(mgl32.Scale3D(0.02, 0.02, 0.02))
-	//	//rad := l.Radius()
-	//	//model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
-	//	setUniformMatrix4fv(s.shaderLightBox, "model", model)
-	//	gl.Uniform3f(uniformLocation(s.shaderLightBox, "emissive"), l.Color[0], l.Color[1], l.Color[2])
-	//	gl.BindVertexArray(s.lightMesh.vao)
-	//	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
-	//	gl.BindVertexArray(0)
-	//}
 	chkError()
 }
 
