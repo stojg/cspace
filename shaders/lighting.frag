@@ -24,23 +24,14 @@ vec2 CalcTexCoord() {
 
 void main()
 {
-//    FragColor = vec4(1.0f);
-//    return;
     vec2 TexCoords = CalcTexCoord();
-    // Retrieve data from gbuffer
     vec3 FragPos = texture(gPosition, TexCoords).rgb;
     vec3 Normal = texture(gNormal, TexCoords).rgb;
     Normal = normalize(Normal);
     vec3 Diffuse = texture(gAlbedoSpec, TexCoords).rgb;
     float Specular = texture(gAlbedoSpec, TexCoords).a;
 
-
-
-//    FragColor = vec4(Diffuse, 1.0f);
-//    return;
-
-    // Then calculate lighting as usual
-    vec3 lighting  = Diffuse * 0.02; // hard-coded ambient component
+    vec3 lighting  = Diffuse * 0.02;
     vec3 viewDir  = normalize(viewPos - FragPos);
 
     float distance = length(pointLight.Position - FragPos);
