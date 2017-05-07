@@ -51,12 +51,12 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 
 	for i := 0; i < numLights; i++ {
 		// Calculate slightly random offsets
+		att := ligthAtt[7]
 		l := &PointLight{
-			Constant:         1,
-			Linear:           0.7,
-			Exp:              1.8,
-			DiffuseIntensity: 0.5,
-			AmbientIntensity: 0.1,
+			Constant:         att.Constant,
+			Linear:           att.Linear,
+			Exp:              att.Exp,
+			DiffuseIntensity: 1.0,
 		}
 		l.Position[0] = rand.Float32()*30 - 15
 		l.Position[1] = rand.Float32() + float32(1.2)
@@ -136,7 +136,9 @@ func (s *Scene) Render() {
 
 	for _, l := range s.pointLights {
 		model := mgl32.Translate3D(l.Position[0], l.Position[1], l.Position[2])
-		model = model.Mul4(mgl32.Scale3D(0.05, 0.05, 0.05))
+		model = model.Mul4(mgl32.Scale3D(0.02, 0.02, 0.02))
+		//rad := l.Radius()
+		//model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
 		setUniformMatrix4fv(s.shaderLightBox, "model", model)
 		gl.Uniform3f(uniformLocation(s.shaderLightBox, "emissive"), l.Color[0], l.Color[1], l.Color[2])
 		gl.BindVertexArray(s.lightMesh.vao)

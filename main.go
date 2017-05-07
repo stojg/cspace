@@ -147,7 +147,9 @@ func setLights(shader *Shader, lights []*PointLight) {
 		gl.Uniform3f(uniformLocation(shader, name+".Position"), light.Position[0], light.Position[1], light.Position[2])
 		gl.Uniform3f(uniformLocation(shader, name+".Color"), light.Color[0], light.Color[1], light.Color[2])
 		gl.Uniform1f(uniformLocation(shader, name+".Radius"), light.Radius())
-		gl.Uniform1f(uniformLocation(shader, name+".Linear"), 0.7)
-		gl.Uniform1f(uniformLocation(shader, name+".Quadratic"), 1.8)
+		gl.Uniform1f(uniformLocation(shader, name+".Linear"), light.Linear)
+		gl.Uniform1f(uniformLocation(shader, name+".Quadratic"), light.Exp)
+		//gl.Uniform1f(uniformLocation(shader, name+".AmbientIntensity"), light.AmbientIntensity)
+		gl.Uniform1f(uniformLocation(shader, name+".DiffuseIntensity"), light.DiffuseIntensity)
 	}
 }
