@@ -71,8 +71,20 @@ func (g *Gbuffer) BindForWriting() {
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, g.fbo)
 }
 
-func (g *Gbuffer) BindForReading() {
-	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, g.fbo)
+func (g *Gbuffer) BindForReading(s *Shader) {
+	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.Uniform1i(uniformLocation(s, "gPosition"), 0)
+	gl.BindTexture(gl.TEXTURE_2D, g.gPosition)
+
+	gl.ActiveTexture(gl.TEXTURE1)
+	gl.Uniform1i(uniformLocation(s, "gNormal"), 1)
+	gl.BindTexture(gl.TEXTURE_2D, g.gNormal)
+
+	gl.ActiveTexture(gl.TEXTURE2)
+	gl.Uniform1i(uniformLocation(s, "gAlbedoSpec"), 2)
+	gl.BindTexture(gl.TEXTURE_2D, g.gAlbedoSpec)
 }
 
 func (g *Gbuffer) SetReadBuffer(textureType uint32) {

@@ -12,9 +12,7 @@ struct Light {
     vec3 Position;
     vec3 Color;
     float Radius;
-
     float DiffuseIntensity;
-
     float Linear;
     float Quadratic;
 };
