@@ -16,23 +16,108 @@ type ShaderI interface {
 	Program() uint32
 }
 
-type LightShader struct {
+type GbufferLightShader interface {
+	ShaderI
+	UniformPosLoc() int32
+	UniformNormalLoc() int32
+	UniformAlbedoSpecLoc() int32
+}
+
+type PointLightShader struct {
 	*Shader
 	uniformPosLoc        int32
 	uniformNormalLoc     int32
 	uniformAlbedoSpecLoc int32
+
+	uniformLightPosLoc              int32
+	uniformLightColorLoc            int32
+	uniformLightDiffuseIntensityLoc int32
+	uniformLightLinearLoc           int32
+	uniformLightQuadraticLoc        int32
 }
 
-func NewLightShader(vertex, frag string) (*LightShader, error) {
+func (s *PointLightShader) UniformPosLoc() int32 {
+	return s.uniformPosLoc
+}
+
+func (s *PointLightShader) UniformNormalLoc() int32 {
+	return s.uniformNormalLoc
+}
+
+func (s *PointLightShader) UniformAlbedoSpecLoc() int32 {
+	return s.uniformAlbedoSpecLoc
+}
+
+func (s *PointLightShader) SetLight(light *PointLight) {
+	gl.Uniform3f(s.uniformLightPosLoc, light.Position[0], light.Position[1], light.Position[2])
+	gl.Uniform3f(s.uniformLightColorLoc, light.Color[0], light.Color[1], light.Color[2])
+	gl.Uniform1f(s.uniformLightDiffuseIntensityLoc, light.DiffuseIntensity)
+	gl.Uniform1f(s.uniformLightLinearLoc, light.Linear)
+	gl.Uniform1f(s.uniformLightQuadraticLoc, light.Exp)
+}
+
+func NewPointLightShader(vertex, frag string) (*PointLightShader, error) {
 	c, err := NewShader(vertex, frag)
 	if err != nil {
 		return nil, err
 	}
-	s := &LightShader{
+	s := &PointLightShader{
 		Shader:               c,
 		uniformPosLoc:        uniformLocation(c, "gPosition"),
 		uniformNormalLoc:     uniformLocation(c, "gNormal"),
 		uniformAlbedoSpecLoc: uniformLocation(c, "gAlbedoSpec"),
+
+		uniformLightPosLoc:              uniformLocation(c, "pointLight.Position"),
+		uniformLightColorLoc:            uniformLocation(c, "pointLight.Color"),
+		uniformLightDiffuseIntensityLoc: uniformLocation(c, "pointLight.DiffuseIntensity"),
+		uniformLightLinearLoc:           uniformLocation(c, "pointLight.Linear"),
+		uniformLightQuadraticLoc:        uniformLocation(c, "pointLight.Quadratic"),
+	}
+	return s, nil
+}
+
+type DirLightShader struct {
+	*Shader
+	uniformPosLoc        int32
+	uniformNormalLoc     int32
+	uniformAlbedoSpecLoc int32
+
+	uniformLightDirectionLoc        int32
+	uniformLightColorLoc            int32
+	uniformLightDiffuseIntensityLoc int32
+}
+
+func (s *DirLightShader) UniformPosLoc() int32 {
+	return s.uniformPosLoc
+}
+
+func (s *DirLightShader) UniformNormalLoc() int32 {
+	return s.uniformNormalLoc
+}
+
+func (s *DirLightShader) UniformAlbedoSpecLoc() int32 {
+	return s.uniformAlbedoSpecLoc
+}
+
+func (s *DirLightShader) SetLight(light *DirectionalLight) {
+	gl.Uniform3f(s.uniformLightDirectionLoc, light.Direction[0], light.Direction[1], light.Direction[2])
+	gl.Uniform3f(s.uniformLightColorLoc, light.Color[0], light.Color[1], light.Color[2])
+	gl.Uniform1f(s.uniformLightDiffuseIntensityLoc, light.DiffuseIntensity)
+}
+
+func NewDirLightShader(vertex, frag string) (*DirLightShader, error) {
+	c, err := NewShader(vertex, frag)
+	if err != nil {
+		return nil, err
+	}
+	s := &DirLightShader{
+		Shader:                          c,
+		uniformPosLoc:                   uniformLocation(c, "gPosition"),
+		uniformNormalLoc:                uniformLocation(c, "gNormal"),
+		uniformAlbedoSpecLoc:            uniformLocation(c, "gAlbedoSpec"),
+		uniformLightDirectionLoc:        uniformLocation(c, "dirLight.Direction"),
+		uniformLightColorLoc:            uniformLocation(c, "dirLight.Color"),
+		uniformLightDiffuseIntensityLoc: uniformLocation(c, "dirLight.DiffuseIntensity"),
 	}
 	return s, nil
 }

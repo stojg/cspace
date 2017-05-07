@@ -11,7 +11,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-const numLights = 16
+const numLights = 64
 
 func NewScene(WindowWidth, WindowHeight int32) *Scene {
 
@@ -20,12 +20,12 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 		panic(err)
 	}
 
-	shaderLighting, err := NewLightShader("lighting", "lighting")
+	shaderLighting, err := NewPointLightShader("lighting", "lighting")
 	if err != nil {
 		panic(err)
 	}
 
-	shaderDirection, err := NewLightShader("lighting", "dirlighting")
+	shaderDirection, err := NewDirLightShader("lighting", "dirlighting")
 	if err != nil {
 		panic(err)
 	}
@@ -88,8 +88,8 @@ type Scene struct {
 	gbuffer       *Gbuffer
 	gBufferShader *Shader
 
-	pointShader     *LightShader
-	directionShader *LightShader
+	pointShader     *PointLightShader
+	directionShader *DirLightShader
 
 	shaderLightBox *Shader
 	pointLights    []*PointLight
@@ -146,8 +146,6 @@ func (s *Scene) Render() {
 			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
 			rad := s.pointLights[i].Radius()
 			model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
-			//rad := l.Radius()
-			//model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
 			setUniformMatrix4fv(s.nullShader, "model", model)
 			gl.BindVertexArray(s.lightMesh.vao)
 			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
@@ -172,19 +170,14 @@ func (s *Scene) Render() {
 			gl.CullFace(gl.FRONT)
 
 			gl.Uniform2f(uniformLocation(s.pointShader, "gScreenSize"), float32(s.width), float32(s.height))
-			gl.Uniform3f(uniformLocation(s.pointShader, "pointLight.Position"), s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
-			gl.Uniform3f(uniformLocation(s.pointShader, "pointLight.Color"), s.pointLights[i].Color[0], s.pointLights[i].Color[1], s.pointLights[i].Color[2])
-			gl.Uniform1f(uniformLocation(s.pointShader, "pointLight.Linear"), s.pointLights[i].Linear)
-			gl.Uniform1f(uniformLocation(s.pointShader, "pointLight.Quadratic"), s.pointLights[i].Exp)
-			gl.Uniform1f(uniformLocation(s.pointShader, "pointLight.DiffuseIntensity"), s.pointLights[i].DiffuseIntensity)
+
+			s.pointShader.SetLight(s.pointLights[i])
+
 			gl.Uniform3fv(uniformLocation(s.pointShader, "viewPos"), 1, &s.camera.position[0])
 
 			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
 			rad := s.pointLights[i].Radius()
 			model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
-			//fmt.Println(s.pointLights[i].Radius())
-			//rad := s.pointLights[i].Radius()
-			//model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
 			setUniformMatrix4fv(s.pointShader, "model", model)
 
 			gl.BindVertexArray(s.lightMesh.vao)
@@ -218,9 +211,7 @@ func (s *Scene) Render() {
 		gl.BlendFunc(gl.ONE, gl.ONE)
 
 		gl.Uniform2f(uniformLocation(s.directionShader, "gScreenSize"), float32(s.width), float32(s.height))
-		gl.Uniform3f(uniformLocation(s.directionShader, "dirLight.Direction"), directionLight.Direction[0], directionLight.Direction[1], directionLight.Direction[2])
-		gl.Uniform3f(uniformLocation(s.directionShader, "dirLight.Color"), directionLight.Color[0], directionLight.Color[1], directionLight.Color[2])
-		gl.Uniform1f(uniformLocation(s.directionShader, "dirLight.DiffuseIntensity"), directionLight.DiffuseIntensity)
+		s.directionShader.SetLight(directionLight)
 		gl.Uniform3fv(uniformLocation(s.directionShader, "viewPos"), 1, &s.camera.position[0])
 		setUniformMatrix4fv(s.directionShader, "model", ident)
 

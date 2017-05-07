@@ -96,19 +96,19 @@ func (g *Gbuffer) BindForStencilPass() {
 	//gl.ColorMask(false, false, false, false)
 }
 
-func (g *Gbuffer) BindForLightPass(s *LightShader) {
+func (g *Gbuffer) BindForLightPass(s GbufferLightShader) {
 	gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
 
 	gl.ActiveTexture(gl.TEXTURE0)
-	gl.Uniform1i(s.uniformPosLoc, 0)
+	gl.Uniform1i(s.UniformPosLoc(), 0)
 	gl.BindTexture(gl.TEXTURE_2D, g.gPosition)
 
 	gl.ActiveTexture(gl.TEXTURE1)
-	gl.Uniform1i(s.uniformNormalLoc, 1)
+	gl.Uniform1i(s.UniformNormalLoc(), 1)
 	gl.BindTexture(gl.TEXTURE_2D, g.gNormal)
 
 	gl.ActiveTexture(gl.TEXTURE2)
-	gl.Uniform1i(s.uniformAlbedoSpecLoc, 2)
+	gl.Uniform1i(s.UniformAlbedoSpecLoc(), 2)
 	gl.BindTexture(gl.TEXTURE_2D, g.gAlbedoSpec)
 }
 
