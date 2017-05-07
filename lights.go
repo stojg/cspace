@@ -3,27 +3,30 @@ package main
 import "math"
 
 type DirectionalLight struct {
-	Direction        [3]float32
-	Color            [3]float32
-	DiffuseIntensity float32
+	Direction [3]float32
+	Color     [3]float32
 }
 
 type PointLight struct {
-	Position         [3]float32
-	Color            [3]float32
-	DiffuseIntensity float32
-	Constant         float32
-	Linear           float32
-	Exp              float32
+	Position [3]float32
+	Color    [3]float32
+	Constant float32
+	Linear   float32
+	Exp      float32
+	radius   float32
 }
 
 func (l *PointLight) Radius() float32 {
+	if l.radius != 0 {
+		return l.radius
+	}
 	maxChannel := float32(math.Max(math.Max(float64(l.Color[0]), float64(l.Color[1])), float64(l.Color[2])))
-	inner := l.Linear*l.Linear - 4*l.Exp*(l.Exp-(256)*maxChannel*l.DiffuseIntensity)
+	inner := l.Linear*l.Linear - 4*l.Exp*(l.Exp-(256/5)*maxChannel)
 	ret := -l.Linear + float32(math.Sqrt(float64(inner)))/(2*l.Exp)
 	if math.IsNaN(float64(ret)) {
 		panic("CalcPointLightBSphere calculated a NaN")
 	}
+	l.radius = ret
 	return ret
 
 }

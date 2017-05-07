@@ -9,11 +9,10 @@ import (
 type Gbuffer struct {
 	fbo uint32
 
-	gPosition   uint32
-	gNormal     uint32
-	gAlbedoSpec uint32
-	rboDepth    uint32
-
+	gPosition    uint32
+	gNormal      uint32
+	gAlbedoSpec  uint32
+	gDepth       uint32
 	finalTexture uint32
 }
 
@@ -46,11 +45,11 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT2, gl.TEXTURE_2D, gbuffer.gAlbedoSpec, 0)
 
-	// depth
-	gl.GenTextures(1, &gbuffer.rboDepth)
-	gl.BindTexture(gl.TEXTURE_2D, gbuffer.rboDepth)
+	// gDepth
+	gl.GenTextures(1, &gbuffer.gDepth)
+	gl.BindTexture(gl.TEXTURE_2D, gbuffer.gDepth)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.DEPTH32F_STENCIL8, SCR_WIDTH, SCR_HEIGHT, 0, gl.DEPTH_STENCIL, gl.FLOAT_32_UNSIGNED_INT_24_8_REV, nil)
-	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, gbuffer.rboDepth, 0)
+	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, gbuffer.gDepth, 0)
 
 	// final
 	gl.GenTextures(1, &gbuffer.finalTexture)
@@ -58,15 +57,8 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGB, gl.FLOAT, nil)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT4, gl.TEXTURE_2D, gbuffer.finalTexture, 0)
 
-	//// - Create and attach depth buffer (renderbuffer)
-	//gl.GenRenderbuffers(1, &gbuffer.rboDepth)
-	//gl.BindRenderbuffer(gl.RENDERBUFFER, gbuffer.rboDepth)
-	//gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT)
-	//gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, gbuffer.rboDepth)
-
 	// - Finally check if framebuffer is complete
 	status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER)
-
 	if status != gl.FRAMEBUFFER_COMPLETE {
 		panic(fmt.Sprintf("FRAMEBUFFER_COMPLETE error, status: 0x%x\n", status))
 	}
@@ -85,15 +77,12 @@ func (g *Gbuffer) StartFrame() {
 
 func (g *Gbuffer) BindForGeomPass() {
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, g.fbo)
-	// - Tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
 	var attachments = [3]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.COLOR_ATTACHMENT2}
 	gl.DrawBuffers(3, &attachments[0])
 }
 
 func (g *Gbuffer) BindForStencilPass() {
 	gl.DrawBuffer(gl.NONE)
-	//gl.ReadBuffer(gl.NONE)
-	//gl.ColorMask(false, false, false, false)
 }
 
 func (g *Gbuffer) BindForLightPass(s GbufferLightShader) {

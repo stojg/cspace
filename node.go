@@ -8,7 +8,7 @@ type Node struct {
 	mesh      *Mesh
 }
 
-func (n *Node) Render(shader *Shader) {
+func (n *Node) Render(shader *DefaultShader) {
 
 	for _, child := range n.children {
 		if child.transform != nil {

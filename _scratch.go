@@ -61,7 +61,7 @@ func blach() {
 
 func emesiive() {
 
-	// 2.5. Copy content of geometry's depth buffer to default framebuffer's depth buffer
+	// 2.5. Copy content of geometry's gDepth buffer to default framebuffer's gDepth buffer
 	//gl.BindFramebuffer(gl.READ_FRAMEBUFFER, s.gbuffer.fbo)
 	//gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0) // Write to default framebuffer
 	////// blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.

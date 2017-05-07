@@ -24,7 +24,7 @@ type GbufferLightShader interface {
 }
 
 type PointLightShader struct {
-	*Shader
+	*DefaultShader
 	uniformPosLoc        int32
 	uniformNormalLoc     int32
 	uniformAlbedoSpecLoc int32
@@ -51,33 +51,28 @@ func (s *PointLightShader) UniformAlbedoSpecLoc() int32 {
 func (s *PointLightShader) SetLight(light *PointLight) {
 	gl.Uniform3f(s.uniformLightPosLoc, light.Position[0], light.Position[1], light.Position[2])
 	gl.Uniform3f(s.uniformLightColorLoc, light.Color[0], light.Color[1], light.Color[2])
-	gl.Uniform1f(s.uniformLightDiffuseIntensityLoc, light.DiffuseIntensity)
 	gl.Uniform1f(s.uniformLightLinearLoc, light.Linear)
 	gl.Uniform1f(s.uniformLightQuadraticLoc, light.Exp)
 }
 
-func NewPointLightShader(vertex, frag string) (*PointLightShader, error) {
-	c, err := NewShader(vertex, frag)
-	if err != nil {
-		return nil, err
-	}
+func NewPointLightShader(vertex, frag string) *PointLightShader {
+	c := NewDefaultShader(vertex, frag)
 	s := &PointLightShader{
-		Shader:               c,
+		DefaultShader:        c,
 		uniformPosLoc:        uniformLocation(c, "gPosition"),
 		uniformNormalLoc:     uniformLocation(c, "gNormal"),
 		uniformAlbedoSpecLoc: uniformLocation(c, "gAlbedoSpec"),
 
-		uniformLightPosLoc:              uniformLocation(c, "pointLight.Position"),
-		uniformLightColorLoc:            uniformLocation(c, "pointLight.Color"),
-		uniformLightDiffuseIntensityLoc: uniformLocation(c, "pointLight.DiffuseIntensity"),
-		uniformLightLinearLoc:           uniformLocation(c, "pointLight.Linear"),
-		uniformLightQuadraticLoc:        uniformLocation(c, "pointLight.Quadratic"),
+		uniformLightPosLoc:       uniformLocation(c, "pointLight.Position"),
+		uniformLightColorLoc:     uniformLocation(c, "pointLight.Color"),
+		uniformLightLinearLoc:    uniformLocation(c, "pointLight.Linear"),
+		uniformLightQuadraticLoc: uniformLocation(c, "pointLight.Quadratic"),
 	}
-	return s, nil
+	return s
 }
 
 type DirLightShader struct {
-	*Shader
+	*DefaultShader
 	uniformPosLoc        int32
 	uniformNormalLoc     int32
 	uniformAlbedoSpecLoc int32
@@ -102,63 +97,58 @@ func (s *DirLightShader) UniformAlbedoSpecLoc() int32 {
 func (s *DirLightShader) SetLight(light *DirectionalLight) {
 	gl.Uniform3f(s.uniformLightDirectionLoc, light.Direction[0], light.Direction[1], light.Direction[2])
 	gl.Uniform3f(s.uniformLightColorLoc, light.Color[0], light.Color[1], light.Color[2])
-	gl.Uniform1f(s.uniformLightDiffuseIntensityLoc, light.DiffuseIntensity)
 }
 
-func NewDirLightShader(vertex, frag string) (*DirLightShader, error) {
-	c, err := NewShader(vertex, frag)
-	if err != nil {
-		return nil, err
-	}
+func NewDirLightShader(vertex, frag string) *DirLightShader {
+	c := NewDefaultShader(vertex, frag)
 	s := &DirLightShader{
-		Shader:                          c,
-		uniformPosLoc:                   uniformLocation(c, "gPosition"),
-		uniformNormalLoc:                uniformLocation(c, "gNormal"),
-		uniformAlbedoSpecLoc:            uniformLocation(c, "gAlbedoSpec"),
-		uniformLightDirectionLoc:        uniformLocation(c, "dirLight.Direction"),
-		uniformLightColorLoc:            uniformLocation(c, "dirLight.Color"),
-		uniformLightDiffuseIntensityLoc: uniformLocation(c, "dirLight.DiffuseIntensity"),
+		DefaultShader:            c,
+		uniformPosLoc:            uniformLocation(c, "gPosition"),
+		uniformNormalLoc:         uniformLocation(c, "gNormal"),
+		uniformAlbedoSpecLoc:     uniformLocation(c, "gAlbedoSpec"),
+		uniformLightDirectionLoc: uniformLocation(c, "dirLight.Direction"),
+		uniformLightColorLoc:     uniformLocation(c, "dirLight.Color"),
 	}
-	return s, nil
+	return s
 }
 
-type Shader struct {
+type DefaultShader struct {
 	program uint32
 }
 
-func (s *Shader) Program() uint32 {
+func (s *DefaultShader) Program() uint32 {
 	return s.program
 }
 
-func (s *Shader) Use() {
+func (s *DefaultShader) Use() {
 	gl.UseProgram(s.program)
 }
 
-func (s *Shader) UsePV(projection, view mgl32.Mat4) {
+func (s *DefaultShader) UsePV(projection, view mgl32.Mat4) {
 	gl.UseProgram(s.program)
 	setUniformMatrix4fv(s, "projection", projection)
 	setUniformMatrix4fv(s, "view", view)
 }
 
-func NewShader(vertex, frag string) (*Shader, error) {
-	shader := &Shader{}
+func NewDefaultShader(vertex, frag string) *DefaultShader {
+	shader := &DefaultShader{}
 	vertexShaderSource, err := loadVertexShader(vertex)
 	if err != nil {
-		return shader, err
+		panic(err)
 	}
 	fragmentShaderSource, err := loadFragShader(frag)
 	if err != nil {
-		return shader, err
+		panic(err)
 	}
 
 	vertexShader, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
 	if err != nil {
-		return shader, err
+		panic(err)
 	}
 
 	fragmentShader, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
 	if err != nil {
-		return shader, err
+		panic(err)
 	}
 
 	program := gl.CreateProgram()
@@ -176,7 +166,7 @@ func NewShader(vertex, frag string) (*Shader, error) {
 		l := strings.Repeat("\x00", int(logLength+1))
 		gl.GetProgramInfoLog(program, logLength, nil, gl.Str(l))
 
-		return shader, fmt.Errorf("failed to link program[%d]: %v", program, l)
+		panic(fmt.Errorf("failed to link program[%d]: %v", program, l))
 	}
 
 	gl.DeleteShader(vertexShader)
@@ -186,7 +176,7 @@ func NewShader(vertex, frag string) (*Shader, error) {
 
 	glLogShader(shader)
 
-	return shader, nil
+	return shader
 }
 
 func loadVertexShader(name string) (string, error) {

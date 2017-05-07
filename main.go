@@ -2,7 +2,6 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 	"os"
 
@@ -102,7 +101,7 @@ func renderQuad() {
 	gl.BindVertexArray(0)
 }
 
-func drawScene(shader *Shader, cubeMesh, floorMesh *Mesh) {
+func drawScene(shader *DefaultShader, cubeMesh, floorMesh *Mesh) {
 
 	trans := mgl32.Translate3D(0, -0.5, 0)
 	trans = trans.Mul4(mgl32.Scale3D(25, 0.1, 25))
@@ -124,25 +123,4 @@ func drawScene(shader *Shader, cubeMesh, floorMesh *Mesh) {
 	setUniformMatrix4fv(shader, "model", model)
 	cubeMesh.Render(shader)
 
-}
-
-func setDirectionalLight(shader *Shader, direction, color [3]float32) {
-	name := fmt.Sprint("lights[0]")
-	gl.Uniform4f(uniformLocation(shader, name+".vector"), direction[0], direction[1], direction[2], 0)
-	gl.Uniform3f(uniformLocation(shader, name+".diffuse"), color[0], color[1], color[2])
-	gl.Uniform3f(uniformLocation(shader, name+".ambient"), color[0]/10, color[1]/10, color[2]/10)
-	gl.Uniform3f(uniformLocation(shader, name+".specular"), 1.0, 1.0, 1.0)
-}
-
-func setLights(shader *Shader, lights []*PointLight) {
-	for i, light := range lights {
-		name := fmt.Sprintf("lights[%d]", i)
-		gl.Uniform3f(uniformLocation(shader, name+".Direction"), light.Position[0], light.Position[1], light.Position[2])
-		gl.Uniform3f(uniformLocation(shader, name+".Color"), light.Color[0], light.Color[1], light.Color[2])
-		gl.Uniform1f(uniformLocation(shader, name+".Radius"), light.Radius())
-		gl.Uniform1f(uniformLocation(shader, name+".Linear"), light.Linear)
-		gl.Uniform1f(uniformLocation(shader, name+".Quadratic"), light.Exp)
-		//gl.Uniform1f(uniformLocation(shader, name+".AmbientIntensity"), light.AmbientIntensity)
-		gl.Uniform1f(uniformLocation(shader, name+".DiffuseIntensity"), light.DiffuseIntensity)
-	}
 }

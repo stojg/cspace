@@ -1,4 +1,4 @@
-#version 410 core
+#version 330 core
 
 out vec4 FragColor;
 
@@ -9,7 +9,6 @@ uniform sampler2D gAlbedoSpec;
 struct Light {
     vec3 Direction;
     vec3 Color;
-    float DiffuseIntensity;
 };
 
 uniform Light dirLight;
@@ -36,14 +35,11 @@ void main()
 
     // Diffuse
     vec3 diffuse = max(dot(Normal, lightDir), 0.0) * Diffuse * dirLight.Color;
-    diffuse *= dirLight.DiffuseIntensity;
 
     // Specular
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(Normal, halfwayDir), 0.0), 32.0);
     vec3 specular = dirLight.Color * spec * Specular;
-
-    specular *= dirLight.DiffuseIntensity;
 
     vec3 color = ambient + diffuse + specular;
     FragColor = vec4(color, 1.0);
