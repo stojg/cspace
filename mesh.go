@@ -117,7 +117,7 @@ type Mesh struct {
 	vbo, vao, ebo uint32
 }
 
-func (s *Mesh) Render(shader *Shader) {
+func (s *Mesh) Render(shader ShaderI) {
 	diffuseNr := 0
 	specularNr := 0
 	normalNr := 0
@@ -143,7 +143,7 @@ func (s *Mesh) Render(shader *Shader) {
 		gl.BindTexture(gl.TEXTURE_2D, texture.ID)
 	}
 
-	location := gl.GetUniformLocation(shader.Program, gl.Str("mat.shininess\x00"))
+	location := gl.GetUniformLocation(shader.Program(), gl.Str("mat.shininess\x00"))
 	if location > 0 {
 		gl.Uniform1f(location, 128.0)
 	} else {

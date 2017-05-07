@@ -11,7 +11,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-const numLights = 32
+const numLights = 64
 
 func NewScene(WindowWidth, WindowHeight int32) *Scene {
 
@@ -20,12 +20,17 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 		panic(err)
 	}
 
-	shaderLighting, err := NewShader("lighting", "lighting")
+	shaderLighting, err := NewLightShader("lighting", "lighting")
 	if err != nil {
 		panic(err)
 	}
 
 	shaderLightBox, err := NewShader("lightbox", "lightbox")
+	if err != nil {
+		panic(err)
+	}
+
+	nullShader, err := NewShader("null", "null")
 	if err != nil {
 		panic(err)
 	}
@@ -45,6 +50,7 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 		gBufferShader:  gShader,
 		shaderLighting: shaderLighting,
 		shaderLightBox: shaderLightBox,
+		nullShader:     nullShader,
 	}
 
 	rand.Seed(time.Now().Unix())
@@ -82,50 +88,93 @@ type Scene struct {
 	gbuffer       *Gbuffer
 	gBufferShader *Shader
 
-	shaderLighting *Shader
+	shaderLighting *LightShader
 
 	shaderLightBox *Shader
 	pointLights    []*PointLight
 	lightMesh      *Mesh
+
+	nullShader *Shader
 }
 
 func (s *Scene) Render() {
 	s.updateTimers()
 	view := s.camera.View(s.elapsed)
 
+	s.gbuffer.StartFrame()
+
 	// 1. render the gBuffer
 	{
 		s.gBufferShader.UsePV(s.projection, view)
-		s.gbuffer.BindForWriting()
+
+		s.gbuffer.BindForGeomPass()
 		// Only the geometry pass updates the depth buffer
 		gl.DepthMask(true)
+		gl.ClearColor(0.1, 0.1, 0.1, 0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		gl.Enable(gl.DEPTH_TEST)
-		gl.Disable(gl.BLEND)
+
 		s.graph.Render(s.gBufferShader)
-		// When we get here the depth buffer is already populated and the stencil pass depends on it, but it does not write to it.
+		// When we get here the depth buffer is already populated and the stencil pass depends on it, but it does not
+		// write to it.
 		gl.DepthMask(false)
-		gl.Disable(gl.DEPTH_TEST)
 	}
 
-	// 2. deferred pass
-	{
-		s.shaderLighting.UsePV(s.projection, view)
+	// We need stencil to be enabled in the stencil pass to get the stencil buffer updated and we also need it in the
+	// light pass because we render the light only if the stencil passes.
+	gl.Enable(gl.STENCIL_TEST)
 
-		gl.Enable(gl.BLEND)
-		gl.BlendEquation(gl.FUNC_ADD)
-		gl.BlendFunc(gl.ONE, gl.ONE)
+	for i := range s.pointLights {
 
-		gl.Enable(gl.CULL_FACE)
-		gl.CullFace(gl.BACK)
+		// 2. stencil pass
+		{
+			s.nullShader.UsePV(s.projection, view)
 
-		s.gbuffer.BindForReading(s.shaderLighting)
+			s.gbuffer.BindForStencilPass()
 
-		gl.ClearColor(0.1, 0.1, 0.1, 0)
-		gl.Clear(gl.COLOR_BUFFER_BIT)
+			gl.Enable(gl.DEPTH_TEST)
 
-		gl.Uniform2f(uniformLocation(s.shaderLighting, "gScreenSize"), float32(s.width), float32(s.height))
-		for i := range s.pointLights {
+			gl.Disable(gl.CULL_FACE)
+
+			gl.Clear(gl.STENCIL_BUFFER_BIT)
+
+			// We need the stencil test to be enabled but we want it to succeed always. Only the depth test matters.
+			gl.StencilFunc(gl.ALWAYS, 0, 0)
+			gl.StencilOpSeparate(gl.BACK, gl.KEEP, gl.INCR_WRAP, gl.KEEP)
+			gl.StencilOpSeparate(gl.FRONT, gl.KEEP, gl.DECR_WRAP, gl.KEEP)
+
+			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
+			model = model.Mul4(mgl32.Scale3D(4, 4, 4))
+			//rad := l.Radius()
+			//model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
+			setUniformMatrix4fv(s.nullShader, "model", model)
+			gl.BindVertexArray(s.lightMesh.vao)
+			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
+			gl.BindVertexArray(0)
+
+		}
+
+		// 3. PointLight Pass
+		{
+
+			s.shaderLighting.UsePV(s.projection, view)
+			s.gbuffer.BindForLightPass(s.shaderLighting)
+
+			gl.StencilFunc(gl.NOTEQUAL, 0, 0xFF)
+
+			gl.Disable(gl.DEPTH_TEST)
+
+			gl.Enable(gl.BLEND)
+			gl.BlendEquation(gl.FUNC_ADD)
+			gl.BlendFunc(gl.ONE, gl.ONE)
+
+			gl.Enable(gl.CULL_FACE)
+			gl.CullFace(gl.FRONT)
+
+			//gl.ClearColor(0.1, 0.1, 0.1, 0)
+			//gl.Clear(gl.COLOR_BUFFER_BIT)
+
+			gl.Uniform2f(uniformLocation(s.shaderLighting, "gScreenSize"), float32(s.width), float32(s.height))
 			gl.Uniform3f(uniformLocation(s.shaderLighting, "pointLight.Position"), s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
 			gl.Uniform3f(uniformLocation(s.shaderLighting, "pointLight.Color"), s.pointLights[i].Color[0], s.pointLights[i].Color[1], s.pointLights[i].Color[2])
 			gl.Uniform1f(uniformLocation(s.shaderLighting, "pointLight.Radius"), s.pointLights[i].Radius())
@@ -139,12 +188,29 @@ func (s *Scene) Render() {
 			//rad := l.Radius()
 			//model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
 			setUniformMatrix4fv(s.shaderLighting, "model", model)
+
 			gl.BindVertexArray(s.lightMesh.vao)
 			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
 			gl.BindVertexArray(0)
+
+			gl.CullFace(gl.BACK)
+			gl.Disable(gl.BLEND)
 		}
 	}
+
+	// The directional light does not need a stencil test because its volume
+	// is unlimited and the final pass simply copies the texture.
+	gl.Disable(gl.STENCIL_TEST)
+	// 4. DSDirectionalLightPass();
+
+	// 4. final pass
+	{
+		s.gbuffer.BindForFinalPass()
+		gl.BlitFramebuffer(0, 0, s.width, s.height, 0, 0, s.width, s.height, gl.COLOR_BUFFER_BIT, gl.LINEAR)
+	}
+
 	chkError()
+
 }
 
 func (s *Scene) updateTimers() {

@@ -8,15 +8,15 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-func setUniformMatrix4fv(shader *Shader, name string, matrix mgl32.Mat4) {
+func setUniformMatrix4fv(shader ShaderI, name string, matrix mgl32.Mat4) {
 	location := uniformLocation(shader, name)
 	gl.UniformMatrix4fv(location, 1, false, &matrix[0])
 }
 
-func uniformLocation(shader *Shader, name string) int32 {
-	location := gl.GetUniformLocation(shader.Program, gl.Str(name+"\x00"))
+func uniformLocation(shader ShaderI, name string) int32 {
+	location := gl.GetUniformLocation(shader.Program(), gl.Str(name+"\x00"))
 	if location < 0 {
-		glError(fmt.Errorf("uniform location for shader.Program '%d' and name '%s' not found", shader.Program, name))
+		glError(fmt.Errorf("uniform location for shader.Program '%d' and name '%s' not found", shader.Program(), name))
 	}
 	return location
 }

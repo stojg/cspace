@@ -10,16 +10,47 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+type ShaderI interface {
+	Use()
+	UsePV(projection, view mgl32.Mat4)
+	Program() uint32
+}
+
+type LightShader struct {
+	*Shader
+	uniformPosLoc        int32
+	uniformNormalLoc     int32
+	uniformAlbedoSpecLoc int32
+}
+
+func NewLightShader(vertex, frag string) (*LightShader, error) {
+	c, err := NewShader(vertex, frag)
+	if err != nil {
+		return nil, err
+	}
+	s := &LightShader{
+		Shader:               c,
+		uniformPosLoc:        uniformLocation(c, "gPosition"),
+		uniformNormalLoc:     uniformLocation(c, "gNormal"),
+		uniformAlbedoSpecLoc: uniformLocation(c, "gAlbedoSpec"),
+	}
+	return s, nil
+}
+
 type Shader struct {
-	Program uint32
+	program uint32
+}
+
+func (s *Shader) Program() uint32 {
+	return s.program
 }
 
 func (s *Shader) Use() {
-	gl.UseProgram(s.Program)
+	gl.UseProgram(s.program)
 }
 
 func (s *Shader) UsePV(projection, view mgl32.Mat4) {
-	gl.UseProgram(s.Program)
+	gl.UseProgram(s.program)
 	setUniformMatrix4fv(s, "projection", projection)
 	setUniformMatrix4fv(s, "view", view)
 }
@@ -66,7 +97,7 @@ func NewShader(vertex, frag string) (*Shader, error) {
 	gl.DeleteShader(vertexShader)
 	gl.DeleteShader(fragmentShader)
 
-	shader.Program = program
+	shader.program = program
 
 	glLogShader(shader)
 

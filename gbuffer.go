@@ -13,6 +13,8 @@ type Gbuffer struct {
 	gNormal     uint32
 	gAlbedoSpec uint32
 	rboDepth    uint32
+
+	finalTexture uint32
 }
 
 func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
@@ -44,15 +46,23 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT2, gl.TEXTURE_2D, gbuffer.gAlbedoSpec, 0)
 
-	// - Tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
-	var attachments = [3]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.COLOR_ATTACHMENT2}
-	gl.DrawBuffers(3, &attachments[0])
+	// depth
+	gl.GenTextures(1, &gbuffer.rboDepth)
+	gl.BindTexture(gl.TEXTURE_2D, gbuffer.rboDepth)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.DEPTH32F_STENCIL8, SCR_WIDTH, SCR_HEIGHT, 0, gl.DEPTH_STENCIL, gl.FLOAT_32_UNSIGNED_INT_24_8_REV, nil)
+	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, gbuffer.rboDepth, 0)
 
-	// - Create and attach depth buffer (renderbuffer)
-	gl.GenRenderbuffers(1, &gbuffer.rboDepth)
-	gl.BindRenderbuffer(gl.RENDERBUFFER, gbuffer.rboDepth)
-	gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT)
-	gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, gbuffer.rboDepth)
+	// final
+	gl.GenTextures(1, &gbuffer.finalTexture)
+	gl.BindTexture(gl.TEXTURE_2D, gbuffer.finalTexture)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGB, gl.FLOAT, nil)
+	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT4, gl.TEXTURE_2D, gbuffer.finalTexture, 0)
+
+	//// - Create and attach depth buffer (renderbuffer)
+	//gl.GenRenderbuffers(1, &gbuffer.rboDepth)
+	//gl.BindRenderbuffer(gl.RENDERBUFFER, gbuffer.rboDepth)
+	//gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT)
+	//gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, gbuffer.rboDepth)
 
 	// - Finally check if framebuffer is complete
 	status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER)
@@ -67,26 +77,43 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	return gbuffer
 }
 
-func (g *Gbuffer) BindForWriting() {
+func (g *Gbuffer) StartFrame() {
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, g.fbo)
+	gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
+	gl.Clear(gl.COLOR_BUFFER_BIT)
 }
 
-func (g *Gbuffer) BindForReading(s *Shader) {
-	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+func (g *Gbuffer) BindForGeomPass() {
+	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, g.fbo)
+	// - Tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
+	var attachments = [3]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.COLOR_ATTACHMENT2}
+	gl.DrawBuffers(3, &attachments[0])
+}
+
+func (g *Gbuffer) BindForStencilPass() {
+	gl.DrawBuffer(gl.NONE)
+	//gl.ReadBuffer(gl.NONE)
+	//gl.ColorMask(false, false, false, false)
+}
+
+func (g *Gbuffer) BindForLightPass(s *LightShader) {
+	gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
 
 	gl.ActiveTexture(gl.TEXTURE0)
-	gl.Uniform1i(uniformLocation(s, "gPosition"), 0)
+	gl.Uniform1i(s.uniformPosLoc, 0)
 	gl.BindTexture(gl.TEXTURE_2D, g.gPosition)
 
 	gl.ActiveTexture(gl.TEXTURE1)
-	gl.Uniform1i(uniformLocation(s, "gNormal"), 1)
+	gl.Uniform1i(s.uniformNormalLoc, 1)
 	gl.BindTexture(gl.TEXTURE_2D, g.gNormal)
 
 	gl.ActiveTexture(gl.TEXTURE2)
-	gl.Uniform1i(uniformLocation(s, "gAlbedoSpec"), 2)
+	gl.Uniform1i(s.uniformAlbedoSpecLoc, 2)
 	gl.BindTexture(gl.TEXTURE_2D, g.gAlbedoSpec)
 }
 
-func (g *Gbuffer) SetReadBuffer(textureType uint32) {
-	gl.ReadBuffer(gl.COLOR_ATTACHMENT0 + uint32(textureType))
+func (g *Gbuffer) BindForFinalPass() {
+	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
+	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, g.fbo)
+	gl.ReadBuffer(gl.COLOR_ATTACHMENT4)
 }
