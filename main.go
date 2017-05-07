@@ -141,11 +141,11 @@ func setDirectionalLight(shader *Shader, direction, color [3]float32) {
 	gl.Uniform3f(uniformLocation(shader, name+".specular"), 1.0, 1.0, 1.0)
 }
 
-func setLights(shader *Shader, pos, color [][3]float32) {
-	for i := range pos {
+func setLights(shader *Shader, lights []*PointLight) {
+	for i, light := range lights {
 		name := fmt.Sprintf("lights[%d]", i)
-		gl.Uniform3f(uniformLocation(shader, name+".Position"), pos[i][0], pos[i][1], pos[i][2])
-		gl.Uniform3f(uniformLocation(shader, name+".Color"), color[i][0], color[i][1], color[i][2])
+		gl.Uniform3f(uniformLocation(shader, name+".Position"), light.Position[0], light.Position[1], light.Position[2])
+		gl.Uniform3f(uniformLocation(shader, name+".Color"), light.Color[0], light.Color[1], light.Color[2])
 		//gl.Uniform3f(uniformLocation(shader, name+".ambient"), color[i][0]/10, color[i][1]/10, color[i][2]/10)
 		//gl.Uniform3f(uniformLocation(shader, name+".specular"), color[i][0], color[i][1], color[i][2])
 		//gl.Uniform1f(uniformLocation(shader, name+".constant"), 1.0)

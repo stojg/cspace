@@ -48,17 +48,23 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 	}
 
 	rand.Seed(time.Now().Unix())
+
 	for i := 0; i < numLights; i++ {
 		// Calculate slightly random offsets
-		xPos := rand.Float32()*30 - 15
-		yPos := rand.Float32() + float32(1.2)
-		zPos := rand.Float32()*30 - 15
-		s.lightPositions = append(s.lightPositions, [3]float32{xPos, yPos, zPos})
-		// Also calculate random color
-		rColor := rand.Float32()/2 + 0.5 // Between 0.5 and 1.0
-		gColor := rand.Float32()/2 + 0.5
-		bColor := rand.Float32()/2 + 0.5
-		s.lightColors = append(s.lightColors, [3]float32{rColor, gColor, bColor})
+		l := &PointLight{
+			Constant:         1,
+			Linear:           0.7,
+			Exp:              1.8,
+			DiffuseIntensity: 0.5,
+			AmbientIntensity: 0.1,
+		}
+		l.Position[0] = rand.Float32()*30 - 15
+		l.Position[1] = rand.Float32() + float32(1.2)
+		l.Position[2] = rand.Float32()*30 - 15
+		l.Color[0] = rand.Float32()/2 + 0.5 // Between 0.5 and 1.0
+		l.Color[1] = rand.Float32()/2 + 0.5
+		l.Color[2] = rand.Float32()/2 + 0.5
+		s.pointLights = append(s.pointLights, l)
 	}
 
 	s.lightMesh = newLightMesh()
@@ -79,8 +85,7 @@ type Scene struct {
 	shaderLighting *Shader
 
 	shaderLightBox *Shader
-	lightPositions [][3]float32
-	lightColors    [][3]float32
+	pointLights    []*PointLight
 	lightMesh      *Mesh
 }
 
@@ -113,7 +118,7 @@ func (s *Scene) Render() {
 	gl.Uniform1i(uniformLocation(s.shaderLighting, "gAlbedoSpec"), 2)
 	gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gAlbedoSpec)
 
-	setLights(s.shaderLighting, s.lightPositions, s.lightColors)
+	setLights(s.shaderLighting, s.pointLights)
 	gl.Uniform3fv(uniformLocation(s.shaderLighting, "viewPos"), 1, &s.camera.position[0])
 	renderQuad()
 
@@ -128,11 +133,12 @@ func (s *Scene) Render() {
 
 	// 3. Render lights on top of scene, by blitting
 	s.shaderLightBox.UsePV(s.projection, view)
-	for i := 0; i < numLights; i++ {
-		model := mgl32.Translate3D(s.lightPositions[i][0], s.lightPositions[i][1], s.lightPositions[i][2])
+
+	for _, l := range s.pointLights {
+		model := mgl32.Translate3D(l.Position[0], l.Position[1], l.Position[2])
 		model = model.Mul4(mgl32.Scale3D(0.05, 0.05, 0.05))
 		setUniformMatrix4fv(s.shaderLightBox, "model", model)
-		gl.Uniform3f(uniformLocation(s.shaderLightBox, "emissive"), s.lightColors[i][0], s.lightColors[i][1], s.lightColors[i][2])
+		gl.Uniform3f(uniformLocation(s.shaderLightBox, "emissive"), l.Color[0], l.Color[1], l.Color[2])
 		gl.BindVertexArray(s.lightMesh.vao)
 		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
 		gl.BindVertexArray(0)
