@@ -11,7 +11,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-const numLights = 64
+const numLights = 16
 
 func NewScene(WindowWidth, WindowHeight int32) *Scene {
 
@@ -25,7 +25,7 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 		panic(err)
 	}
 
-	shaderLightBox, err := NewShader("lightbox", "lightbox")
+	shaderDirection, err := NewLightShader("lighting", "dirlighting")
 	if err != nil {
 		panic(err)
 	}
@@ -47,17 +47,17 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 		graph: &Node{
 			transform: &origin,
 		},
-		gBufferShader:  gShader,
-		shaderLighting: shaderLighting,
-		shaderLightBox: shaderLightBox,
-		nullShader:     nullShader,
+		gBufferShader:   gShader,
+		pointShader:     shaderLighting,
+		directionShader: shaderDirection,
+		nullShader:      nullShader,
 	}
 
 	rand.Seed(time.Now().Unix())
 
 	for i := 0; i < numLights; i++ {
 		// Calculate slightly random offsets
-		att := ligthAtt[13]
+		att := ligthAtt[1]
 		l := &PointLight{
 			Constant:         att.Constant,
 			Linear:           att.Linear,
@@ -65,7 +65,7 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 			DiffuseIntensity: 1.0,
 		}
 		l.Position[0] = rand.Float32()*30 - 15
-		l.Position[1] = rand.Float32() + float32(1.2)
+		l.Position[1] = 1
 		l.Position[2] = rand.Float32()*30 - 15
 		l.Color[0] = rand.Float32()/2 + 0.5 // Between 0.5 and 1.0
 		l.Color[1] = rand.Float32()/2 + 0.5
@@ -88,7 +88,8 @@ type Scene struct {
 	gbuffer       *Gbuffer
 	gBufferShader *Shader
 
-	shaderLighting *LightShader
+	pointShader     *LightShader
+	directionShader *LightShader
 
 	shaderLightBox *Shader
 	pointLights    []*PointLight
@@ -110,7 +111,7 @@ func (s *Scene) Render() {
 		s.gbuffer.BindForGeomPass()
 		// Only the geometry pass updates the depth buffer
 		gl.DepthMask(true)
-		gl.ClearColor(0.1, 0.1, 0.1, 0)
+		gl.ClearColor(0.0, 0.0, 0.0, 0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		gl.Enable(gl.DEPTH_TEST)
 
@@ -129,7 +130,6 @@ func (s *Scene) Render() {
 		// 2. stencil pass
 		{
 			s.nullShader.UsePV(s.projection, view)
-
 			s.gbuffer.BindForStencilPass()
 
 			gl.Enable(gl.DEPTH_TEST)
@@ -144,7 +144,8 @@ func (s *Scene) Render() {
 			gl.StencilOpSeparate(gl.FRONT, gl.KEEP, gl.DECR_WRAP, gl.KEEP)
 
 			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
-			model = model.Mul4(mgl32.Scale3D(4, 4, 4))
+			rad := s.pointLights[i].Radius()
+			model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
 			//rad := l.Radius()
 			//model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
 			setUniformMatrix4fv(s.nullShader, "model", model)
@@ -156,9 +157,8 @@ func (s *Scene) Render() {
 
 		// 3. PointLight Pass
 		{
-
-			s.shaderLighting.UsePV(s.projection, view)
-			s.gbuffer.BindForLightPass(s.shaderLighting)
+			s.pointShader.UsePV(s.projection, view)
+			s.gbuffer.BindForLightPass(s.pointShader)
 
 			gl.StencilFunc(gl.NOTEQUAL, 0, 0xFF)
 
@@ -171,23 +171,21 @@ func (s *Scene) Render() {
 			gl.Enable(gl.CULL_FACE)
 			gl.CullFace(gl.FRONT)
 
-			//gl.ClearColor(0.1, 0.1, 0.1, 0)
-			//gl.Clear(gl.COLOR_BUFFER_BIT)
-
-			gl.Uniform2f(uniformLocation(s.shaderLighting, "gScreenSize"), float32(s.width), float32(s.height))
-			gl.Uniform3f(uniformLocation(s.shaderLighting, "pointLight.Position"), s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
-			gl.Uniform3f(uniformLocation(s.shaderLighting, "pointLight.Color"), s.pointLights[i].Color[0], s.pointLights[i].Color[1], s.pointLights[i].Color[2])
-			gl.Uniform1f(uniformLocation(s.shaderLighting, "pointLight.Radius"), s.pointLights[i].Radius())
-			gl.Uniform1f(uniformLocation(s.shaderLighting, "pointLight.Linear"), s.pointLights[i].Linear)
-			gl.Uniform1f(uniformLocation(s.shaderLighting, "pointLight.Quadratic"), s.pointLights[i].Exp)
-			gl.Uniform1f(uniformLocation(s.shaderLighting, "pointLight.DiffuseIntensity"), s.pointLights[i].DiffuseIntensity)
-			gl.Uniform3fv(uniformLocation(s.shaderLighting, "viewPos"), 1, &s.camera.position[0])
+			gl.Uniform2f(uniformLocation(s.pointShader, "gScreenSize"), float32(s.width), float32(s.height))
+			gl.Uniform3f(uniformLocation(s.pointShader, "pointLight.Position"), s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
+			gl.Uniform3f(uniformLocation(s.pointShader, "pointLight.Color"), s.pointLights[i].Color[0], s.pointLights[i].Color[1], s.pointLights[i].Color[2])
+			gl.Uniform1f(uniformLocation(s.pointShader, "pointLight.Linear"), s.pointLights[i].Linear)
+			gl.Uniform1f(uniformLocation(s.pointShader, "pointLight.Quadratic"), s.pointLights[i].Exp)
+			gl.Uniform1f(uniformLocation(s.pointShader, "pointLight.DiffuseIntensity"), s.pointLights[i].DiffuseIntensity)
+			gl.Uniform3fv(uniformLocation(s.pointShader, "viewPos"), 1, &s.camera.position[0])
 
 			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
-			model = model.Mul4(mgl32.Scale3D(4, 4, 4))
-			//rad := l.Radius()
+			rad := s.pointLights[i].Radius()
+			model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
+			//fmt.Println(s.pointLights[i].Radius())
+			//rad := s.pointLights[i].Radius()
 			//model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
-			setUniformMatrix4fv(s.shaderLighting, "model", model)
+			setUniformMatrix4fv(s.pointShader, "model", model)
 
 			gl.BindVertexArray(s.lightMesh.vao)
 			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
@@ -198,10 +196,38 @@ func (s *Scene) Render() {
 		}
 	}
 
-	// The directional light does not need a stencil test because its volume
-	// is unlimited and the final pass simply copies the texture.
 	gl.Disable(gl.STENCIL_TEST)
-	// 4. DSDirectionalLightPass();
+	{
+		// The directional light does not need a stencil test because its volume
+		// is unlimited and the final pass simply copies the texture.
+
+		directionLight := &DirectionalLight{
+			Direction:        normalise([3]float32{1, 1, 0}),
+			Color:            [3]float32{0.9, 0.9, 1},
+			DiffuseIntensity: 0.1,
+		}
+
+		ident := mgl32.Ident4()
+
+		s.directionShader.UsePV(ident, ident)
+		s.gbuffer.BindForLightPass(s.directionShader)
+
+		gl.Disable(gl.DEPTH_TEST)
+		gl.Enable(gl.BLEND)
+		gl.BlendEquation(gl.FUNC_ADD)
+		gl.BlendFunc(gl.ONE, gl.ONE)
+
+		gl.Uniform2f(uniformLocation(s.directionShader, "gScreenSize"), float32(s.width), float32(s.height))
+		gl.Uniform3f(uniformLocation(s.directionShader, "dirLight.Direction"), directionLight.Direction[0], directionLight.Direction[1], directionLight.Direction[2])
+		gl.Uniform3f(uniformLocation(s.directionShader, "dirLight.Color"), directionLight.Color[0], directionLight.Color[1], directionLight.Color[2])
+		gl.Uniform1f(uniformLocation(s.directionShader, "dirLight.DiffuseIntensity"), directionLight.DiffuseIntensity)
+		gl.Uniform3fv(uniformLocation(s.directionShader, "viewPos"), 1, &s.camera.position[0])
+		setUniformMatrix4fv(s.directionShader, "model", ident)
+
+		renderQuad()
+	}
+
+	gl.Disable(gl.BLEND)
 
 	// 4. final pass
 	{

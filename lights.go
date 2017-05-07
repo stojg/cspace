@@ -2,6 +2,12 @@ package main
 
 import "math"
 
+type DirectionalLight struct {
+	Direction        [3]float32
+	Color            [3]float32
+	DiffuseIntensity float32
+}
+
 type PointLight struct {
 	Position         [3]float32
 	Color            [3]float32
@@ -29,6 +35,7 @@ type LightAttenuation struct {
 }
 
 var ligthAtt = map[int]LightAttenuation{
+	1:    {1, 0.9, 1.8},
 	7:    {1, 0.7, 1.8},
 	13:   {1.0, 0.35, 0.44},
 	20:   {1.0, 0.22, 0.20},

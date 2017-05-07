@@ -81,18 +81,11 @@ func renderQuad() {
 	if quadVAO == 0 {
 		quadVertices := []float32{
 			// Positions        // Texture Coords
-			-1, 1.0, 0.0, 0.0, 1.0,
+			-1, 1, 0.0, 0.0, 1.0,
 			-1, -1, 0.0, 0.0, 0.0,
-			1.0, 1.0, 0.0, 1.0, 1.0,
-			1.0, -1, 0.0, 1.0, 0.0,
+			1, 1, 0.0, 1.0, 1.0,
+			1, -1, 0.0, 1.0, 0.0,
 		}
-		//quadVertices := []float32{
-		//	// Positions        // Texture Coords
-		//	-1, 1.0, 0.0, 0.0, 1.0,
-		//	-1, 1.0, 0.0, 0.0, 0.0,
-		//	1.0, 1.0, 0.0, 1.0, 1.0,
-		//	1.0, 1.0, 0.0, 1.0, 0.0,
-		//}
 		// Setup plane VAO
 		gl.GenVertexArrays(1, &quadVAO)
 		gl.GenBuffers(1, &quadVBO)
@@ -144,7 +137,7 @@ func setDirectionalLight(shader *Shader, direction, color [3]float32) {
 func setLights(shader *Shader, lights []*PointLight) {
 	for i, light := range lights {
 		name := fmt.Sprintf("lights[%d]", i)
-		gl.Uniform3f(uniformLocation(shader, name+".Position"), light.Position[0], light.Position[1], light.Position[2])
+		gl.Uniform3f(uniformLocation(shader, name+".Direction"), light.Position[0], light.Position[1], light.Position[2])
 		gl.Uniform3f(uniformLocation(shader, name+".Color"), light.Color[0], light.Color[1], light.Color[2])
 		gl.Uniform1f(uniformLocation(shader, name+".Radius"), light.Radius())
 		gl.Uniform1f(uniformLocation(shader, name+".Linear"), light.Linear)

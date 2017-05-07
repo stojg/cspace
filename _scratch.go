@@ -74,7 +74,7 @@ func emesiive() {
 	//s.shaderLightBox.UsePV(s.projection, view)
 	//
 	//for _, l := range s.pointLights {
-	//	model := mgl32.Translate3D(l.Position[0], l.Position[1], l.Position[2])
+	//	model := mgl32.Translate3D(l.Direction[0], l.Direction[1], l.Direction[2])
 	//	model = model.Mul4(mgl32.Scale3D(0.02, 0.02, 0.02))
 	//	//rad := l.Radius()
 	//	//model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
