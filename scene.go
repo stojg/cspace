@@ -2,18 +2,16 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
-
-	"time"
-
 	"math"
+	"math/rand"
+	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-const numLights = 16
+const numLights = 64
 
 func NewScene(WindowWidth, WindowHeight int32) *Scene {
 

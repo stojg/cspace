@@ -28,8 +28,6 @@ func initWindow(width, height int) (*glfw.Window, error) {
 		return window, fmt.Errorf("failed to initialize glfw: %s", err)
 	}
 
-	//glfw.SwapInterval(1) // enable vertical refresh
-
 	glfw.WindowHint(glfw.Resizable, glfw.False)
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
@@ -43,6 +41,7 @@ func initWindow(width, height int) (*glfw.Window, error) {
 		return window, err
 	}
 	window.MakeContextCurrent()
+	glfw.SwapInterval(0) // disable vertical refresh (vsync)
 	window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
 			keys[key] = true
@@ -67,11 +66,6 @@ func initGL() error {
 	glLogGLParams()
 
 	gl.Enable(gl.DEPTH_TEST)
-
-	//gl.DepthFunc(gl.LESS)
-
-	// should be on by default, but just to make sure
-	//gl.Enable(gl.MULTISAMPLE)
 
 	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
 
