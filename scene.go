@@ -10,7 +10,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-const numLights = 24
+const numLights = 64
 
 var screenShader *DefaultShader
 
@@ -127,7 +127,7 @@ func (s *Scene) Render() {
 	// light pass because we render the light only if the stencil passes.
 	gl.Enable(gl.STENCIL_TEST)
 
-	var rad float32 = 14
+	var rad float32 = 4
 
 	for i := range s.pointLights {
 		// 2. stencil pass
