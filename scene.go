@@ -10,7 +10,9 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-const numLights = 64
+const numLights = 255
+
+var currentNumLights = 64
 
 var screenShader *DefaultShader
 
@@ -100,6 +102,24 @@ func (s *Scene) Render() {
 	view := s.camera.View(s.elapsed)
 	sin := float32(math.Sin(glfw.GetTime()))
 
+	if keys[glfw.Key1] {
+		currentNumLights = 0
+	} else if keys[glfw.Key2] {
+		currentNumLights = 4
+	} else if keys[glfw.Key3] {
+		currentNumLights = 8
+	} else if keys[glfw.Key4] {
+		currentNumLights = 16
+	} else if keys[glfw.Key5] {
+		currentNumLights = 32
+	} else if keys[glfw.Key6] {
+		currentNumLights = 64
+	} else if keys[glfw.Key7] {
+		currentNumLights = 128
+	} else if keys[glfw.Key8] {
+		currentNumLights = 255
+	}
+
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.gbuffer.fbo)
 	gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
@@ -129,7 +149,7 @@ func (s *Scene) Render() {
 
 	var rad float32 = 4
 
-	for i := range s.pointLights {
+	for i := range s.pointLights[:currentNumLights] {
 		// 2. stencil pass
 		{
 			s.nullShader.UsePV(s.projection, view)
@@ -236,7 +256,7 @@ func (s *Scene) Render() {
 		s.lightBoxShader.UsePV(s.projection, view)
 		gl.Enable(gl.DEPTH_TEST)
 
-		for i := range s.pointLights {
+		for i := range s.pointLights[:currentNumLights] {
 			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin*s.pointLights[i].rand, s.pointLights[i].Position[2])
 			model = model.Mul4(mgl32.Scale3D(0.05, 0.05, 0.05))
 
