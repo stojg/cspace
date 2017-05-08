@@ -58,9 +58,9 @@ func realMain() error {
 		scene.graph.Add(crate, t)
 	}
 	grass := NewGrassMesh()
-	for x := 0; x < 10; x++ {
-		for z := 0; z < 10; z++ {
-			grassT := mgl32.Translate3D(float32(x)*3-15, 0, float32(z)*3-15)
+	for x := 0; x < 20; x++ {
+		for z := 0; z < 20; z++ {
+			grassT := mgl32.Translate3D(float32(x)*3-30, 0, float32(z)*3-30)
 			grassT = grassT.Mul4(mgl32.Scale3D(3, 0.1, 3))
 			scene.graph.Add(grass, grassT)
 		}

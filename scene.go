@@ -10,7 +10,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-const numLights = 16
+const numLights = 24
 
 var screenShader *DefaultShader
 
@@ -127,7 +127,7 @@ func (s *Scene) Render() {
 	// light pass because we render the light only if the stencil passes.
 	gl.Enable(gl.STENCIL_TEST)
 
-	var rad float32 = 4
+	var rad float32 = 14
 
 	for i := range s.pointLights {
 		// 2. stencil pass
@@ -211,7 +211,7 @@ func (s *Scene) Render() {
 	{ // Render the directional term / ambient
 		directionLight := &DirectionalLight{
 			Direction: normalise([3]float32{1, 1, 1}),
-			Color:     [3]float32{0.1, 0.1, 0.2},
+			Color:     [3]float32{0.2, 0.2, 0.4},
 		}
 
 		ident := mgl32.Ident4()
