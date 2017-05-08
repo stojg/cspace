@@ -18,6 +18,8 @@ var keys map[glfw.Key]bool
 var cursor [2]float64
 
 func main() {
+	rand.Seed(19)
+
 	err := realMain()
 	if err != nil {
 		glError(err)

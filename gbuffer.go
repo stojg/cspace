@@ -45,13 +45,13 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT2, gl.TEXTURE_2D, gbuffer.gAlbedoSpec, 0)
 
-	// gDepth
+	// - Depth + stencil
 	gl.GenTextures(1, &gbuffer.gDepth)
 	gl.BindTexture(gl.TEXTURE_2D, gbuffer.gDepth)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.DEPTH32F_STENCIL8, SCR_WIDTH, SCR_HEIGHT, 0, gl.DEPTH_STENCIL, gl.FLOAT_32_UNSIGNED_INT_24_8_REV, nil)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, gbuffer.gDepth, 0)
 
-	// final
+	// - Final output texture for this FBO
 	gl.GenTextures(1, &gbuffer.finalTexture)
 	gl.BindTexture(gl.TEXTURE_2D, gbuffer.finalTexture)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGB, gl.FLOAT, nil)
@@ -67,22 +67,6 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 
 	return gbuffer
-}
-
-func (g *Gbuffer) StartFrame() {
-	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, g.fbo)
-	gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
-	gl.Clear(gl.COLOR_BUFFER_BIT)
-}
-
-func (g *Gbuffer) BindForGeomPass() {
-	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, g.fbo)
-	var attachments = [3]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.COLOR_ATTACHMENT2}
-	gl.DrawBuffers(3, &attachments[0])
-}
-
-func (g *Gbuffer) BindForStencilPass() {
-	gl.DrawBuffer(gl.NONE)
 }
 
 func (g *Gbuffer) BindForLightPass(s GbufferLightShader) {
