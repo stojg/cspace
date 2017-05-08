@@ -11,17 +11,22 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-const numLights = 64
+const numLights = 12
+
+var screenShader *DefaultShader
 
 func NewScene(WindowWidth, WindowHeight int32) *Scene {
 
+	screenShader = NewDefaultShader("fx", "fx_pass")
+
 	graphTransform := mgl32.Ident4()
 	s := &Scene{
+		gbuffer:          NewGbuffer(WindowWidth, WindowHeight),
+		fxFBO:            NewFXFbo(),
 		width:            WindowWidth,
 		height:           WindowHeight,
 		previousTime:     glfw.GetTime(),
 		camera:           NewCamera(),
-		gbuffer:          NewGbuffer(WindowWidth, WindowHeight),
 		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(WindowWidth)/float32(WindowHeight), 0.1, 200.0),
 		graph:            &Node{transform: &graphTransform},
 		gBufferShader:    NewDefaultShader("gbuffer", "gbuffer"),
@@ -56,6 +61,7 @@ type Scene struct {
 	camera        *Camera
 	graph         *Node
 
+	fxFBO   *FXFbo
 	gbuffer *Gbuffer
 
 	gBufferShader    *DefaultShader
@@ -217,9 +223,19 @@ func (s *Scene) Render() {
 
 	// 4. final pass
 	{
-		s.gbuffer.BindForFinalPass()
+		s.gbuffer.BindForFinalPass(s.fxFBO.id)
 		gl.BlitFramebuffer(0, 0, s.width, s.height, 0, 0, s.width, s.height, gl.COLOR_BUFFER_BIT, gl.LINEAR)
 	}
+
+	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
+	screenShader.Use()
+
+	gl.Disable(gl.DEPTH_TEST)
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.Uniform1i(uniformLocation(screenShader, "screenTexture"), 0)
+	gl.BindTexture(gl.TEXTURE_2D, s.fxFBO.textures[0])
+
+	renderQuad()
 
 	chkError()
 }

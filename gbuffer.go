@@ -101,8 +101,8 @@ func (g *Gbuffer) BindForLightPass(s GbufferLightShader) {
 	gl.BindTexture(gl.TEXTURE_2D, g.gAlbedoSpec)
 }
 
-func (g *Gbuffer) BindForFinalPass() {
-	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
+func (g *Gbuffer) BindForFinalPass(fb uint32) {
+	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, fb)
 	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, g.fbo)
 	gl.ReadBuffer(gl.COLOR_ATTACHMENT4)
 }
