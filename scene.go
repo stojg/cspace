@@ -11,7 +11,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-const numLights = 12
+const numLights = 8
 
 var screenShader *DefaultShader
 
