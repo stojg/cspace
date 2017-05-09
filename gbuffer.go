@@ -68,25 +68,3 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 
 	return gbuffer
 }
-
-func (g *Gbuffer) BindForLightPass(s GbufferLightShader) {
-	gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
-
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.Uniform1i(s.UniformPosLoc(), 0)
-	gl.BindTexture(gl.TEXTURE_2D, g.gPosition)
-
-	gl.ActiveTexture(gl.TEXTURE1)
-	gl.Uniform1i(s.UniformNormalLoc(), 1)
-	gl.BindTexture(gl.TEXTURE_2D, g.gNormal)
-
-	gl.ActiveTexture(gl.TEXTURE2)
-	gl.Uniform1i(s.UniformAlbedoSpecLoc(), 2)
-	gl.BindTexture(gl.TEXTURE_2D, g.gAlbedoSpec)
-}
-
-func (g *Gbuffer) BindForFinalPass(fb uint32) {
-	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, fb)
-	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, g.fbo)
-	gl.ReadBuffer(gl.COLOR_ATTACHMENT4)
-}

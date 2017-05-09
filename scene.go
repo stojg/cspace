@@ -185,7 +185,24 @@ func (s *Scene) Render() {
 		// 3. PointLight Pass
 		{
 			s.pointLightShader.UsePV(s.projection, view)
-			s.gbuffer.BindForLightPass(s.pointLightShader)
+
+			gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
+
+			gl.ActiveTexture(gl.TEXTURE0)
+			gl.Uniform1i(s.pointLightShader.UniformPosLoc(), 0)
+			gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gPosition)
+
+			gl.ActiveTexture(gl.TEXTURE1)
+			gl.Uniform1i(s.pointLightShader.UniformNormalLoc(), 1)
+			gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gNormal)
+
+			gl.ActiveTexture(gl.TEXTURE2)
+			gl.Uniform1i(s.pointLightShader.UniformAlbedoSpecLoc(), 2)
+			gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gAlbedoSpec)
+
+			gl.ActiveTexture(gl.TEXTURE3)
+			gl.Uniform1i(s.pointLightShader.UniformDepthLoc(), 3)
+			gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gDepth)
 
 			gl.StencilFunc(gl.NOTEQUAL, 0, 0xFF)
 
@@ -282,7 +299,12 @@ func (s *Scene) Render() {
 
 	// 4. final pass
 	{
-		s.gbuffer.BindForFinalPass(s.fxFBO.id)
+		//s.gbuffer.BindForFinalPass(s.fxFBO.id)
+
+		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.fxFBO.id)
+		gl.BindFramebuffer(gl.READ_FRAMEBUFFER, s.gbuffer.fbo)
+		gl.ReadBuffer(gl.COLOR_ATTACHMENT4)
+
 		gl.BlitFramebuffer(0, 0, s.width, s.height, 0, 0, s.width, s.height, gl.COLOR_BUFFER_BIT, gl.LINEAR)
 	}
 
