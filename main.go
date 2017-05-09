@@ -52,8 +52,8 @@ func realMain() error {
 	scene := NewScene(windowWidth, windowHeight)
 
 	crate := NewCrateModel()
-	for i := 0; i < 30; i++ {
-		t := mgl32.Translate3D(rand.Float32()*20-10, 0.5, rand.Float32()*20-10)
+	for i := 0; i < 50; i++ {
+		t := mgl32.Translate3D(rand.Float32()*30-15, 0.5, rand.Float32()*30-15)
 		t = t.Mul4(mgl32.HomogRotate3D(rand.Float32()*360, mgl32.Vec3{0, 1, 0}.Normalize()))
 		scene.graph.Add(crate, t)
 	}

@@ -21,6 +21,7 @@ type GbufferLightShader interface {
 	UniformPosLoc() int32
 	UniformNormalLoc() int32
 	UniformAlbedoSpecLoc() int32
+	UniformDepthLoc() int32
 }
 
 type PointLightShader struct {
@@ -28,6 +29,7 @@ type PointLightShader struct {
 	uniformPosLoc        int32
 	uniformNormalLoc     int32
 	uniformAlbedoSpecLoc int32
+	uniformDepthLoc      int32
 
 	uniformLightPosLoc              int32
 	uniformLightColorLoc            int32
@@ -48,6 +50,10 @@ func (s *PointLightShader) UniformAlbedoSpecLoc() int32 {
 	return s.uniformAlbedoSpecLoc
 }
 
+func (s *PointLightShader) UniformDepthLoc() int32 {
+	return s.uniformDepthLoc
+}
+
 func (s *PointLightShader) SetLight(light *PointLight) {
 	gl.Uniform3f(s.uniformLightPosLoc, light.Position[0], light.Position[1], light.Position[2])
 	gl.Uniform3f(s.uniformLightColorLoc, light.Color[0], light.Color[1], light.Color[2])
@@ -62,6 +68,7 @@ func NewPointLightShader(vertex, frag string) *PointLightShader {
 		uniformPosLoc:        uniformLocation(c, "gPosition"),
 		uniformNormalLoc:     uniformLocation(c, "gNormal"),
 		uniformAlbedoSpecLoc: uniformLocation(c, "gAlbedoSpec"),
+		uniformDepthLoc:      uniformLocation(c, "gDepth"),
 
 		uniformLightPosLoc:       uniformLocation(c, "pointLight.Position"),
 		uniformLightColorLoc:     uniformLocation(c, "pointLight.Color"),
@@ -76,6 +83,7 @@ type DirLightShader struct {
 	uniformPosLoc        int32
 	uniformNormalLoc     int32
 	uniformAlbedoSpecLoc int32
+	uniformDepthLoc      int32
 
 	uniformLightDirectionLoc        int32
 	uniformLightColorLoc            int32
@@ -94,6 +102,10 @@ func (s *DirLightShader) UniformAlbedoSpecLoc() int32 {
 	return s.uniformAlbedoSpecLoc
 }
 
+func (s *DirLightShader) UniformDepthLoc() int32 {
+	return s.uniformDepthLoc
+}
+
 func (s *DirLightShader) SetLight(light *DirectionalLight) {
 	gl.Uniform3f(s.uniformLightDirectionLoc, light.Direction[0], light.Direction[1], light.Direction[2])
 	gl.Uniform3f(s.uniformLightColorLoc, light.Color[0], light.Color[1], light.Color[2])
@@ -108,6 +120,7 @@ func NewDirLightShader(vertex, frag string) *DirLightShader {
 		uniformAlbedoSpecLoc:     uniformLocation(c, "gAlbedoSpec"),
 		uniformLightDirectionLoc: uniformLocation(c, "dirLight.Direction"),
 		uniformLightColorLoc:     uniformLocation(c, "dirLight.Color"),
+		uniformDepthLoc:          uniformLocation(c, "gDepth"),
 	}
 	return s
 }

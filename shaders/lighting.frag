@@ -5,6 +5,7 @@ out vec4 FragColor;
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
+uniform sampler2D gDepth;
 
 struct Light {
     vec3 Position;
@@ -16,6 +17,11 @@ struct Light {
 uniform Light pointLight;
 uniform vec3 viewPos;
 uniform vec2 gScreenSize;
+
+in vec3 PositionVS;
+
+float far = 200;
+float near = 0.1;
 
 vec2 CalcTexCoord() {
    return gl_FragCoord.xy / gScreenSize;
@@ -29,7 +35,7 @@ void main()
     vec3 Diffuse = texture(gAlbedoSpec, TexCoords).rgb;
     float Specular = texture(gAlbedoSpec, TexCoords).a;
 
-    vec3 lighting  = Diffuse * 0.02;
+    vec3 lighting  = vec3(0.0);
     vec3 viewDir  = normalize(viewPos - FragPos);
 
     float distance = length(pointLight.Position - FragPos);

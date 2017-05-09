@@ -46,7 +46,7 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 			Constant: att.Constant,
 			Linear:   att.Linear,
 			Exp:      att.Exp,
-			rand:     rand.Float32(),
+			rand:     rand.Float32() * 2,
 		})
 	}
 
@@ -147,8 +147,6 @@ func (s *Scene) Render() {
 	// light pass because we render the light only if the stencil passes.
 	gl.Enable(gl.STENCIL_TEST)
 
-	var rad float32 = 4
-
 	for i := range s.pointLights[:currentNumLights] {
 		// 2. stencil pass
 		{
@@ -172,6 +170,7 @@ func (s *Scene) Render() {
 			gl.StencilOpSeparate(gl.FRONT, gl.KEEP, gl.DECR_WRAP, gl.KEEP)
 
 			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
+			rad := s.pointLights[i].Radius()
 			model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
 
 			gl.UniformMatrix4fv(s.nullShaderModelLoc, 1, false, &model[0])
@@ -231,6 +230,7 @@ func (s *Scene) Render() {
 			gl.Uniform3fv(s.pointLightViewPosLoc, 1, &s.camera.position[0])
 
 			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin*s.pointLights[i].rand, s.pointLights[i].Position[2])
+			rad := s.pointLights[i].Radius()
 			model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
 			gl.UniformMatrix4fv(s.pointLightModelLoc, 1, false, &model[0])
 
@@ -242,18 +242,35 @@ func (s *Scene) Render() {
 			gl.Disable(gl.BLEND)
 		}
 	}
-	// we don't want to use the stencil testing any more
+
 	gl.Disable(gl.STENCIL_TEST)
 
 	{ // Render the directional term / ambient
 		directionLight := &DirectionalLight{
 			Direction: normalise([3]float32{1, 1, 1}),
-			Color:     [3]float32{0.2, 0.2, 0.4},
+			Color:     [3]float32{0.15, 0.15, 0.3},
 		}
 
 		ident := mgl32.Ident4()
 		s.dirLightShader.UsePV(ident, ident)
-		s.gbuffer.BindForLightPass(s.dirLightShader)
+
+		gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
+
+		gl.ActiveTexture(gl.TEXTURE0)
+		gl.Uniform1i(s.dirLightShader.UniformPosLoc(), 0)
+		gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gPosition)
+
+		gl.ActiveTexture(gl.TEXTURE1)
+		gl.Uniform1i(s.dirLightShader.UniformNormalLoc(), 1)
+		gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gNormal)
+
+		gl.ActiveTexture(gl.TEXTURE2)
+		gl.Uniform1i(s.dirLightShader.UniformAlbedoSpecLoc(), 2)
+		gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gAlbedoSpec)
+
+		gl.ActiveTexture(gl.TEXTURE3)
+		gl.Uniform1i(s.dirLightShader.UniformDepthLoc(), 3)
+		gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gDepth)
 
 		gl.Disable(gl.DEPTH_TEST)
 		gl.Enable(gl.BLEND)
@@ -299,19 +316,15 @@ func (s *Scene) Render() {
 
 	// 4. final pass
 	{
-		//s.gbuffer.BindForFinalPass(s.fxFBO.id)
-
 		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.fxFBO.id)
 		gl.BindFramebuffer(gl.READ_FRAMEBUFFER, s.gbuffer.fbo)
 		gl.ReadBuffer(gl.COLOR_ATTACHMENT4)
-
 		gl.BlitFramebuffer(0, 0, s.width, s.height, 0, 0, s.width, s.height, gl.COLOR_BUFFER_BIT, gl.LINEAR)
 	}
 
 	{ // post effect pass
 		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 		screenShader.Use()
-
 		gl.Disable(gl.DEPTH_TEST)
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.Uniform1i(uniformLocation(screenShader, "screenTexture"), 0)
@@ -319,7 +332,7 @@ func (s *Scene) Render() {
 	}
 	renderQuad()
 
-	DisplayFramebufferTexture(s.gbuffer.gPosition)
+	//DisplayFramebufferTexture(s.gbuffer.gNormal)
 
 	chkError()
 }
