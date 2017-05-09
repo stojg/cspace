@@ -10,6 +10,43 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
+var shaderDisplayFBOOutput *DefaultShader
+var vaoDebugTexturedRect uint32 = 0
+
+func DisplayFramebufferTexture(textureID uint32) {
+	if vaoDebugTexturedRect == 0 {
+		quadVertices := []float32{
+			0.5, 1, 0.0, 0.0, 1.0,
+			0.5, 0.5, 0.0, 0.0, 0.0,
+			1, 1, 0.0, 1.0, 1.0,
+			1, 0.5, 0.0, 1.0, 0.0,
+		}
+		// Setup plane VAO
+		gl.GenVertexArrays(1, &vaoDebugTexturedRect)
+		gl.GenBuffers(1, &vaoDebugTexturedRect)
+		gl.BindVertexArray(vaoDebugTexturedRect)
+		gl.BindBuffer(gl.ARRAY_BUFFER, vaoDebugTexturedRect)
+		gl.BufferData(gl.ARRAY_BUFFER, 4*len(quadVertices), gl.Ptr(quadVertices), gl.STATIC_DRAW)
+		gl.EnableVertexAttribArray(0)
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
+		gl.EnableVertexAttribArray(1)
+		gl.VertexAttribPointer(1, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+		shaderDisplayFBOOutput = NewDefaultShader("fbo_debug", "fbo_debug")
+	}
+
+	gl.ActiveTexture(gl.TEXTURE0)
+	shaderDisplayFBOOutput.Use()
+	gl.BindTexture(gl.TEXTURE_2D, textureID)
+	gl.BindVertexArray(vaoDebugTexturedRect)
+
+	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
+	gl.BindVertexArray(0)
+
+	//gl.DrawArrays(gl.TRIANGLES, 0, 12)
+	//gl.BindVertexArray(0)
+	gl.UseProgram(0)
+}
+
 func restartLog() error {
 	f, err := os.Create(logFile)
 	if err != nil {
@@ -84,13 +121,13 @@ func glLogShader(shader ShaderI) {
 
 	var params int32
 	gl.GetProgramiv(program, gl.LINK_STATUS, &params)
-	glLogf("GL_LINK_STATUS = %d\n", params)
+	glLogf("gl.LINK_STATUS = %d\n", params)
 
 	gl.GetProgramiv(program, gl.ATTACHED_SHADERS, &params)
-	glLogf("%d GL_ATTACHED_SHADERS\n", params)
+	glLogf("%d gl.ATTACHED_SHADERS\n", params)
 
 	gl.GetProgramiv(program, gl.ACTIVE_UNIFORM_BLOCKS, &params)
-	glLogf("%d GL_ACTIVE_UNIFORM_BLOCKS\n", params)
+	glLogf("%d gl.ACTIVE_UNIFORM_BLOCKS\n", params)
 	for i := int32(0); i < params; i++ {
 		var nameLength int32
 		var size int32
@@ -101,7 +138,7 @@ func glLogShader(shader ShaderI) {
 	}
 
 	gl.GetProgramiv(program, gl.ACTIVE_ATTRIBUTES, &params)
-	glLogf("%d GL_ACTIVE_ATTRIBUTES\n", params)
+	glLogf("%d gl.ACTIVE_ATTRIBUTES\n", params)
 
 	for i := int32(0); i < params; i++ {
 		var maxLength int32 = 64
@@ -124,7 +161,7 @@ func glLogShader(shader ShaderI) {
 	}
 
 	gl.GetProgramiv(program, gl.ACTIVE_UNIFORMS, &params)
-	glLogf("%d GL_ACTIVE_UNIFORMS\n", params)
+	glLogf("%d gl.ACTIVE_UNIFORMS\n", params)
 	for i := int32(0); i < params; i++ {
 		var actualLength int32
 		var size int32
@@ -198,12 +235,12 @@ func glLogGLParams() {
 	}
 
 	names := []string{
-		"GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS",
-		"GL_MAX_CUBE_MAP_TEXTURE_SIZE",
-		"GL_MAX_DRAW_BUFFERS",
-		"GL_MAX_FRAGMENT_UNIFORM_COMPONENTS",
-		"GL_MAX_TEXTURE_IMAGE_UNITS",
-		"GL_MAX_VERTEX_ATTRIBS",
+		"gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS",
+		"gl.MAX_CUBE_MAP_TEXTURE_SIZE",
+		"gl.MAX_DRAW_BUFFERS",
+		"gl.MAX_FRAGMENT_UNIFORM_COMPONENTS",
+		"gl.MAX_TEXTURE_IMAGE_UNITS",
+		"gl.MAX_VERTEX_ATTRIBS",
 	}
 
 	glLogln("GL Context Params:\n")

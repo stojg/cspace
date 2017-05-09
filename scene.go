@@ -295,8 +295,9 @@ func (s *Scene) Render() {
 		gl.Uniform1i(uniformLocation(screenShader, "screenTexture"), 0)
 		gl.BindTexture(gl.TEXTURE_2D, s.fxFBO.textures[0])
 	}
-
 	renderQuad()
+
+	DisplayFramebufferTexture(s.gbuffer.gPosition)
 
 	chkError()
 }

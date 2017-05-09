@@ -81,7 +81,6 @@ var quadVBO uint32 = 0
 func renderQuad() {
 	if quadVAO == 0 {
 		quadVertices := []float32{
-			// Positions        // Texture Coords
 			-1, 1, 0.0, 0.0, 1.0,
 			-1, -1, 0.0, 0.0, 0.0,
 			1, 1, 0.0, 1.0, 1.0,
