@@ -12,7 +12,7 @@ import (
 
 const numLights = 255
 
-var currentNumLights = 64
+var currentNumLights = 16
 
 var screenShader *DefaultShader
 var bloomColShader *DefaultShader
@@ -239,12 +239,12 @@ func (s *Scene) Render() {
 				Exp:      s.pointLights[i].Exp,
 				radius:   s.pointLights[i].radius,
 			}
-			cp.Position[1] += sin * s.pointLights[i].rand
+			cp.Position[1] += sin + s.pointLights[i].rand
 			s.pointLightShader.SetLight(&cp)
 
 			gl.Uniform3fv(s.pointLightViewPosLoc, 1, &s.camera.position[0])
 
-			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin*s.pointLights[i].rand, s.pointLights[i].Position[2])
+			model := mgl32.Translate3D(s.pointLights[i].Position[0], cp.Position[1], s.pointLights[i].Position[2])
 			rad := s.pointLights[i].Radius()
 			model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
 			gl.UniformMatrix4fv(s.pointLightModelLoc, 1, false, &model[0])
@@ -263,7 +263,7 @@ func (s *Scene) Render() {
 	{ // Render the directional term / ambient
 		directionLight := &DirectionalLight{
 			Direction: normalise([3]float32{1, 1, 1}),
-			Color:     [3]float32{0.15, 0.15, 0.3},
+			Color:     [3]float32{0.05, 0.05, 0.1},
 		}
 
 		ident := mgl32.Ident4()
@@ -310,7 +310,7 @@ func (s *Scene) Render() {
 			if !s.pointLights[i].enabled {
 				continue
 			}
-			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin*s.pointLights[i].rand, s.pointLights[i].Position[2])
+			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin+s.pointLights[i].rand, s.pointLights[i].Position[2])
 			model = model.Mul4(mgl32.Scale3D(0.05, 0.05, 0.05))
 
 			gl.UniformMatrix4fv(s.lightBoxModelLoc, 1, false, &model[0])
