@@ -7,13 +7,13 @@ import (
 
 func NewGBufferPipeline() *GBufferPipeline {
 	return &GBufferPipeline{
-		shader:     NewDefaultShader("gbuffer", "gbuffer"),
+		shader:     NewGbufferShader(),
 		nullShader: NewDefaultShader("null", "null"),
 	}
 }
 
 type GBufferPipeline struct {
-	shader     *DefaultShader
+	shader     *GbufferShader
 	nullShader *DefaultShader
 }
 

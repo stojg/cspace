@@ -7,8 +7,6 @@ import (
 
 	"unsafe"
 
-	"fmt"
-
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
@@ -117,12 +115,12 @@ type Mesh struct {
 	vbo, vao, ebo uint32
 }
 
-func (s *Mesh) Render(shader ShaderI) {
+func (s *Mesh) Render(shader ModelShader) {
 	diffuseNr := 0
 	specularNr := 0
 	normalNr := 0
 	for i, texture := range s.Textures {
-		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+
 		var number int
 		switch texture.textureType {
 		case Specular:
@@ -138,17 +136,19 @@ func (s *Mesh) Render(shader ShaderI) {
 			panic("unknown texture type ")
 		}
 
-		uniformName := fmt.Sprintf("mat.%s%d", texture.textureType, number)
-		gl.Uniform1i(uniformLocation(shader, uniformName), int32(i))
+		//uniformName := fmt.Sprintf("mat.%s%d", texture.textureType, number)
+		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+		gl.Uniform1i(shader.TextureUniform(texture.textureType, number), int32(i))
 		gl.BindTexture(gl.TEXTURE_2D, texture.ID)
 	}
 
-	location := gl.GetUniformLocation(shader.Program(), gl.Str("mat.shininess\x00"))
-	if location > 0 {
-		gl.Uniform1f(location, 128.0)
-	} else {
-		panic("oh noes, no mat.shininess")
-	}
+	//shader.Shiniess
+	//location := gl.GetUniformLocation(shader.Program(), gl.Str("mat.shininess\x00"))
+	//if location > 0 {
+	//	gl.Uniform1f(location, 128.0)
+	//} else {
+	//	panic("oh noes, no mat.shininess")
+	//}
 
 	gl.BindVertexArray(s.vao)
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.Vertices)))
@@ -207,13 +207,6 @@ func edge(a, b Vertex) [3]float32 {
 		a.Position[0] - b.Position[0],
 		a.Position[1] - b.Position[1],
 		a.Position[2] - b.Position[2],
-	}
-}
-
-func deltaUV(a, b Vertex) [2]float32 {
-	return [2]float32{
-		a.TexCoords[0] - b.TexCoords[0],
-		a.TexCoords[1] - b.TexCoords[1],
 	}
 }
 

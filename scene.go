@@ -14,16 +14,21 @@ const numLights = 255
 
 var bloom = false
 
-var currentNumLights = 32
+var currentNumLights = 8
 
-var passthroughShader *DefaultShader
+var directionLight = &DirectionalLight{
+	Direction: normalise([3]float32{1, 1, 1}),
+	Color:     [3]float32{0.1, 0.1, 0.1},
+}
+
+var passthroughShader *PassthroughShader
 var bloomColShader *DefaultShader
 var shaderBlur *DefaultShader
 var bloomBlender *DefaultShader
 
 func NewScene(WindowWidth, WindowHeight int32) *Scene {
 
-	passthroughShader = NewDefaultShader("fx", "fx_text_pass")
+	passthroughShader = NewPassthroughShader()
 	bloomColShader = NewDefaultShader("fx", "fx_brigthness_sep")
 	shaderBlur = NewDefaultShader("fx", "fx_guassian_blur")
 	bloomBlender = NewDefaultShader("fx", "fx_bloom_blender")
@@ -246,11 +251,6 @@ func (s *Scene) Render() {
 	gl.Disable(gl.STENCIL_TEST)
 
 	{ // Render the directional term / ambient
-		directionLight := &DirectionalLight{
-			Direction: normalise([3]float32{1, 1, 1}),
-			Color:     [3]float32{0.05, 0.05, 0.1},
-		}
-
 		ident := mgl32.Ident4()
 		s.dirLightShader.UsePV(ident, ident)
 
@@ -268,9 +268,9 @@ func (s *Scene) Render() {
 		gl.Uniform1i(s.dirLightShader.UniformAlbedoSpecLoc(), 2)
 		gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gAlbedoSpec)
 
-		gl.ActiveTexture(gl.TEXTURE3)
-		gl.Uniform1i(s.dirLightShader.UniformDepthLoc(), 3)
-		gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gDepth)
+		//gl.ActiveTexture(gl.TEXTURE3)
+		//gl.Uniform1i(s.dirLightShader.UniformDepthLoc(), 3)
+		//gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gDepth)
 
 		gl.Disable(gl.DEPTH_TEST)
 		gl.Enable(gl.BLEND)
@@ -328,11 +328,9 @@ func (s *Scene) Render() {
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 	passthroughShader.Use()
 	gl.ActiveTexture(gl.TEXTURE0)
-	gl.Uniform1i(uniformLocation(passthroughShader, "screenTexture"), 0)
+	gl.Uniform1i(passthroughShader.uniformScreenTextureLoc, 0)
 	gl.BindTexture(gl.TEXTURE_2D, out)
 	renderQuad()
-
-	//DisplayFramebufferTexture(s.gbuffer.finalTexture)
 	chkError()
 }
 

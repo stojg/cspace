@@ -10,18 +10,75 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-type ShaderI interface {
+type Shader interface {
 	Use()
 	UsePV(projection, view mgl32.Mat4)
 	Program() uint32
 }
 
+type ModelShader interface {
+	Shader
+	TextureUniform(TextureType, int) int32
+	ModelUniform() int32
+}
+
 type GbufferLightShader interface {
-	ShaderI
+	Shader
 	UniformPosLoc() int32
 	UniformNormalLoc() int32
 	UniformAlbedoSpecLoc() int32
 	UniformDepthLoc() int32
+}
+
+type GbufferShader struct {
+	Shader
+	uniformDiffuseLoc  int32
+	uniformNormalLoc   int32
+	uniformSpecularLoc int32
+	uniformModelLoc    int32
+}
+
+func (s *GbufferShader) TextureUniform(t TextureType, num int) int32 {
+	if t == Diffuse {
+		return s.uniformDiffuseLoc
+	}
+	if t == Specular {
+		return s.uniformSpecularLoc
+	}
+	if t == Normal {
+		return s.uniformNormalLoc
+	}
+	return -1
+}
+
+func (s *GbufferShader) ModelUniform() int32 {
+	return s.uniformModelLoc
+}
+
+func NewGbufferShader() *GbufferShader {
+	s := &GbufferShader{
+		Shader: NewDefaultShader("gbuffer", "gbuffer"),
+	}
+	s.uniformDiffuseLoc = uniformLocation(s.Shader, "mat.diffuse0")
+	s.uniformSpecularLoc = uniformLocation(s.Shader, "mat.specular0")
+	s.uniformNormalLoc = uniformLocation(s.Shader, "mat.normal0")
+	s.uniformModelLoc = uniformLocation(s.Shader, "model")
+	return s
+}
+
+type PassthroughShader struct {
+	Shader
+	uniformScreenTextureLoc int32
+}
+
+func NewPassthroughShader() *PassthroughShader {
+
+	s := &PassthroughShader{
+		Shader: NewDefaultShader("fx", "fx_text_pass"),
+	}
+	s.uniformScreenTextureLoc = uniformLocation(s.Shader, "screenTexture")
+	return s
+
 }
 
 type PointLightShader struct {
@@ -126,7 +183,9 @@ func NewDirLightShader(vertex, frag string) *DirLightShader {
 }
 
 type DefaultShader struct {
-	program uint32
+	program    uint32
+	projection int32
+	view       int32
 }
 
 func (s *DefaultShader) Program() uint32 {
@@ -139,8 +198,8 @@ func (s *DefaultShader) Use() {
 
 func (s *DefaultShader) UsePV(projection, view mgl32.Mat4) {
 	gl.UseProgram(s.program)
-	setUniformMatrix4fv(s, "projection", projection)
-	setUniformMatrix4fv(s, "view", view)
+	gl.UniformMatrix4fv(s.projection, 1, false, &projection[0])
+	gl.UniformMatrix4fv(s.view, 1, false, &view[0])
 }
 
 func NewDefaultShader(vertex, frag string) *DefaultShader {
@@ -170,6 +229,8 @@ func NewDefaultShader(vertex, frag string) *DefaultShader {
 	gl.AttachShader(program, fragmentShader)
 	gl.LinkProgram(program)
 
+	fmt.Println(program, vertex, frag)
+
 	var status int32
 	gl.GetProgramiv(program, gl.LINK_STATUS, &status)
 	if status == gl.FALSE {
@@ -186,6 +247,9 @@ func NewDefaultShader(vertex, frag string) *DefaultShader {
 	gl.DeleteShader(fragmentShader)
 
 	shader.program = program
+
+	shader.view = uniformLocation(shader, "view")
+	shader.projection = uniformLocation(shader, "projection")
 
 	glLogShader(shader)
 

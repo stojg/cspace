@@ -1,6 +1,9 @@
 package main
 
-import "github.com/go-gl/mathgl/mgl32"
+import (
+	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
+)
 
 type Node struct {
 	children  []*Node
@@ -8,12 +11,12 @@ type Node struct {
 	mesh      *Mesh
 }
 
-func (n *Node) Render(shader *DefaultShader) {
+func (n *Node) Render(shader ModelShader) {
 
 	for _, child := range n.children {
 		if child.transform != nil {
 			transform := child.transform.Mul4(*n.transform)
-			setUniformMatrix4fv(shader, "model", transform)
+			gl.UniformMatrix4fv(shader.ModelUniform(), 1, false, &transform[0])
 			child.mesh.Render(shader)
 		}
 		child.Render(shader)

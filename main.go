@@ -51,12 +51,15 @@ func realMain() error {
 
 	scene := NewScene(windowWidth, windowHeight)
 
-	crate := NewCrateModel()
-	for i := 0; i < 50; i++ {
-		t := mgl32.Translate3D(rand.Float32()*30-15, 0.5, rand.Float32()*30-15)
+	rock := LoadModel("models/rock1")
+	for i := 0; i < 30; i++ {
+		t := mgl32.Translate3D(rand.Float32()*30-15, 0.1, rand.Float32()*30-15)
+		s := rand.Float32()/4 + 1
+		t = t.Mul4(mgl32.Scale3D(s, s, s))
 		t = t.Mul4(mgl32.HomogRotate3D(rand.Float32()*360, mgl32.Vec3{0, 1, 0}.Normalize()))
-		scene.graph.Add(crate, t)
+		scene.graph.Add(rock, t)
 	}
+
 	grass := NewGrassMesh()
 	for x := 0; x < 20; x++ {
 		for z := 0; z < 20; z++ {
@@ -66,12 +69,21 @@ func realMain() error {
 		}
 	}
 
+	//var frame = 0
+
 	for !window.ShouldClose() {
+		//frame++
 		glfw.PollEvents()
 		scene.Render()
 		fpsCounter(window)
 		window.SwapBuffers()
+		//if frame > 60*10 {
+		//	window.SetShouldClose(true)
+		//}
 	}
+
+	window.Destroy()
+
 	return nil
 }
 
@@ -100,28 +112,4 @@ func renderQuad() {
 	gl.BindVertexArray(quadVAO)
 	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
 	gl.BindVertexArray(0)
-}
-
-func drawScene(shader *DefaultShader, cubeMesh, floorMesh *Mesh) {
-
-	trans := mgl32.Translate3D(0, -0.5, 0)
-	trans = trans.Mul4(mgl32.Scale3D(25, 0.1, 25))
-	setUniformMatrix4fv(shader, "model", trans)
-	floorMesh.Render(shader)
-
-	model := mgl32.Translate3D(0, 1.5, 0)
-	setUniformMatrix4fv(shader, "model", model)
-	cubeMesh.Render(shader)
-
-	model = mgl32.Translate3D(2.0, 0.0, 1)
-	setUniformMatrix4fv(shader, "model", model)
-	cubeMesh.Render(shader)
-
-	model = mgl32.Translate3D(-1.0, 0.0, 2)
-	model = model.Mul4(mgl32.HomogRotate3D(45, mgl32.Vec3{1, 0, 1}.Normalize()))
-	model = model.Mul4(mgl32.Scale3D(0.5, 0.5, 0.5))
-
-	setUniformMatrix4fv(shader, "model", model)
-	cubeMesh.Render(shader)
-
 }

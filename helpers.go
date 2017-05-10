@@ -8,12 +8,12 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-func setUniformMatrix4fv(shader ShaderI, name string, matrix mgl32.Mat4) {
+func setUniformMatrix4fv(shader Shader, name string, matrix mgl32.Mat4) {
 	location := uniformLocation(shader, name)
 	gl.UniformMatrix4fv(location, 1, false, &matrix[0])
 }
 
-func uniformLocation(shader ShaderI, name string) int32 {
+func uniformLocation(shader Shader, name string) int32 {
 	location := gl.GetUniformLocation(shader.Program(), gl.Str(name+"\x00"))
 	if location < 0 {
 		glError(fmt.Errorf("uniform location for shader.Program '%d' and name '%s' not found", shader.Program(), name))
@@ -41,7 +41,7 @@ func initWindow(width, height int) (*glfw.Window, error) {
 		return window, err
 	}
 	window.MakeContextCurrent()
-	glfw.SwapInterval(0) // disable vertical refresh (vsync)
+	glfw.SwapInterval(1) // disable vertical refresh (vsync)
 	window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
 			keys[key] = true
