@@ -36,12 +36,12 @@ func initWindow(width, height int) (*glfw.Window, error) {
 	glfw.WindowHint(glfw.Samples, 0)
 
 	var err error
-	window, err = glfw.CreateWindow(windowWidth, windowHeight, "Cube", nil, nil)
+	window, err = glfw.CreateWindow(windowWidth, windowHeight, "Cspace", nil, nil)
 	if err != nil {
 		return window, err
 	}
 	window.MakeContextCurrent()
-	glfw.SwapInterval(0) // disable vertical refresh (vsync)
+	glfw.SwapInterval(1) // disable vertical refresh (vsync)
 	window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
 			keys[key] = true

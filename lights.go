@@ -15,6 +15,7 @@ type PointLight struct {
 	Exp      float32
 	radius   float32
 	rand     float32
+	enabled  bool
 }
 
 func (l *PointLight) Radius() float32 {
@@ -29,7 +30,6 @@ func (l *PointLight) Radius() float32 {
 	}
 	l.radius = ret + 1
 	return ret
-
 }
 
 type LightAttenuation struct {

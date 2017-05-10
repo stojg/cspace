@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
+// Buffer is a generic FBO with one texture
 type Buffer struct {
 	fbo     uint32
 	texture uint32
@@ -23,17 +24,13 @@ func NewBuffer() *Buffer {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 	gl.TexParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 	gl.TexParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-
-	// Attach first fx texture to framebuffer
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, frameBuffer.texture, 0)
 
-	// - Finally check if framebuffer is complete
 	status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER)
 	if status != gl.FRAMEBUFFER_COMPLETE {
 		panic(fmt.Sprintf("FRAMEBUFFER_COMPLETE error, status: 0x%x\n", status))
 	}
 
-	// restore default FBO
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 
 	return frameBuffer

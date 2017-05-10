@@ -11,8 +11,8 @@ import (
 )
 
 const logFile = "gl.log"
-const windowWidth = 1200
-const windowHeight = 750
+const windowWidth = 1440 * 0.9
+const windowHeight = 900 * 0.9
 
 var keys map[glfw.Key]bool
 var cursor [2]float64
@@ -60,8 +60,8 @@ func realMain() error {
 	grass := NewGrassMesh()
 	for x := 0; x < 20; x++ {
 		for z := 0; z < 20; z++ {
-			grassT := mgl32.Translate3D(float32(x)*3-30, 0, float32(z)*3-30)
-			grassT = grassT.Mul4(mgl32.Scale3D(3, 0.1, 3))
+			grassT := mgl32.Translate3D(float32(x)*3-30, -0.01, float32(z)*3-30)
+			grassT = grassT.Mul4(mgl32.Scale3D(3, 0.01, 3))
 			scene.graph.Add(grass, grassT)
 		}
 	}
