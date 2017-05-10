@@ -14,16 +14,28 @@ const numLights = 255
 
 var currentNumLights = 64
 
+//var currentNumLights = 32
+
+var bloom bool
+
 var screenShader *DefaultShader
+var bloomColShader *DefaultShader
+var shaderBlur *DefaultShader
+var bloomBlender *DefaultShader
 
 func NewScene(WindowWidth, WindowHeight int32) *Scene {
 
 	screenShader = NewDefaultShader("fx", "fx_pass")
+	bloomColShader = NewDefaultShader("fx", "fx_brigthness_sep")
+	shaderBlur = NewDefaultShader("fx", "fx_guassian_blur")
+	bloomBlender = NewDefaultShader("fx", "fx_bloom_blender")
 
 	graphTransform := mgl32.Ident4()
 	s := &Scene{
 		gbuffer:          NewGbuffer(WindowWidth, WindowHeight),
-		fxFBO:            NewFXFbo(),
+		fxBuffer:         NewFXbuffer(),
+		bloomBuffer:      NewBloom(),
+		pingBuffers:      [2]*Buffer{NewBuffer(), NewBuffer()},
 		width:            WindowWidth,
 		height:           WindowHeight,
 		previousTime:     glfw.GetTime(),
@@ -42,7 +54,8 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 		att := ligthAtt[7]
 		s.pointLights = append(s.pointLights, &PointLight{
 			Position: [3]float32{rand.Float32()*30 - 15, 1, rand.Float32()*30 - 15},
-			Color:    [3]float32{rand.Float32()/2 + 0.5, rand.Float32()/2 + 0.5, rand.Float32()/2 + 0.5},
+			//Color:    [3]float32{rand.Float32()/2 + 0.5, rand.Float32()/2 + 0.5, rand.Float32()/2 + 0.5},
+			Color:    [3]float32{rand.Float32()*2 + 0.5, rand.Float32()*2 + 0.5, rand.Float32()*2 + 0.5},
 			Constant: att.Constant,
 			Linear:   att.Linear,
 			Exp:      att.Exp,
@@ -73,8 +86,10 @@ type Scene struct {
 	camera        *Camera
 	graph         *Node
 
-	fxFBO   *FXFbo
-	gbuffer *Gbuffer
+	fxBuffer    *FXFbo
+	gbuffer     *Gbuffer
+	bloomBuffer *Bloom
+	pingBuffers [2]*Buffer
 
 	gBufferShader    *DefaultShader
 	pointLightShader *PointLightShader
@@ -118,6 +133,12 @@ func (s *Scene) Render() {
 		currentNumLights = 128
 	} else if keys[glfw.Key8] {
 		currentNumLights = 255
+	}
+
+	if keys[glfw.KeyEnter] {
+		bloom = true
+	} else if keys[glfw.KeySpace] {
+		bloom = false
 	}
 
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.gbuffer.fbo)
@@ -316,24 +337,77 @@ func (s *Scene) Render() {
 
 	// 4. final pass
 	{
-		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.fxFBO.id)
+		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.fxBuffer.fbo)
 		gl.BindFramebuffer(gl.READ_FRAMEBUFFER, s.gbuffer.fbo)
 		gl.ReadBuffer(gl.COLOR_ATTACHMENT4)
 		gl.BlitFramebuffer(0, 0, s.width, s.height, 0, 0, s.width, s.height, gl.COLOR_BUFFER_BIT, gl.LINEAR)
 	}
 
-	{ // post effect pass
+	{ // divide the bright colours into a new buffer
+		gl.BindFramebuffer(gl.FRAMEBUFFER, s.bloomBuffer.fbo)
+		var attachments = [2]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1}
+		gl.DrawBuffers(2, &attachments[0])
+		//gl.Disable(gl.DEPTH_TEST)
+		bloomColShader.Use()
+		gl.ActiveTexture(gl.TEXTURE0)
+		gl.Uniform1i(uniformLocation(screenShader, "screenTexture"), 0)
+		gl.BindTexture(gl.TEXTURE_2D, s.fxBuffer.textures[0])
+		renderQuad()
+	}
+
+	{ // blur the bright part
+		amount := 2
+		horizontal := 1
+		firstIteration := true
+		for i := 0; i < amount; i++ {
+			shaderBlur.Use()
+			gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.pingBuffers[horizontal].fbo)
+			gl.ActiveTexture(gl.TEXTURE0)
+			gl.Uniform1i(uniformLocation(shaderBlur, "screenTexture"), 0)
+			gl.Uniform1i(uniformLocation(shaderBlur, "horizontal"), int32(horizontal))
+			if horizontal == 0 {
+				horizontal = 1
+			} else {
+				horizontal = 0
+			}
+			if firstIteration {
+				gl.BindTexture(gl.TEXTURE_2D, s.bloomBuffer.textures[1])
+			} else {
+				gl.BindTexture(gl.TEXTURE_2D, s.pingBuffers[horizontal].texture)
+			}
+			renderQuad()
+		}
+	}
+
+	//gl.Enable(gl.FRAMEBUFFER_SRGB)
+
+	if bloom {
+		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
+		bloomBlender.Use()
+		gl.ActiveTexture(gl.TEXTURE0)
+		gl.Uniform1i(uniformLocation(bloomBlender, "screenTexture"), 0)
+		gl.BindTexture(gl.TEXTURE_2D, s.bloomBuffer.textures[0])
+		gl.ActiveTexture(gl.TEXTURE1)
+		gl.Uniform1i(uniformLocation(bloomBlender, "bloomTexture"), 1)
+		gl.BindTexture(gl.TEXTURE_2D, s.pingBuffers[1].texture)
+		renderQuad()
+		//screenShader.Use()
+		//gl.Disable(gl.DEPTH_TEST)
+		//gl.ActiveTexture(gl.TEXTURE0)
+		//gl.Uniform1i(uniformLocation(screenShader, "screenTexture"), 0)
+		//gl.BindTexture(gl.TEXTURE_2D, s.pingBuffers[1].texture)
+		//renderQuad()
+	} else { // post effect pass
 		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 		screenShader.Use()
 		gl.Disable(gl.DEPTH_TEST)
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.Uniform1i(uniformLocation(screenShader, "screenTexture"), 0)
-		gl.BindTexture(gl.TEXTURE_2D, s.fxFBO.textures[0])
+		gl.BindTexture(gl.TEXTURE_2D, s.fxBuffer.textures[0])
+		renderQuad()
 	}
-	renderQuad()
 
-	//DisplayFramebufferTexture(s.gbuffer.gNormal)
-
+	//DisplayFramebufferTexture(s.pingBuffers[1].texture)
 	chkError()
 }
 
