@@ -54,7 +54,9 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	// Final output texture for this FBO
 	gl.GenTextures(1, &gbuffer.finalTexture)
 	gl.BindTexture(gl.TEXTURE_2D, gbuffer.finalTexture)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGB, gl.FLOAT, nil)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGBA, gl.FLOAT, nil)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT4, gl.TEXTURE_2D, gbuffer.finalTexture, 0)
 
 	status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER)

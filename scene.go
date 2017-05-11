@@ -12,8 +12,11 @@ import (
 
 const numLights = 255
 
-var currentNumLights = 16
+var bloom = false
 
+var currentNumLights = 32
+
+var passthroughShader *DefaultShader
 var screenShader *DefaultShader
 var bloomColShader *DefaultShader
 var shaderBlur *DefaultShader
@@ -21,6 +24,7 @@ var bloomBlender *DefaultShader
 
 func NewScene(WindowWidth, WindowHeight int32) *Scene {
 
+	passthroughShader = NewDefaultShader("fx", "fx_text_pass")
 	screenShader = NewDefaultShader("fx", "fx_pass")
 	bloomColShader = NewDefaultShader("fx", "fx_brigthness_sep")
 	shaderBlur = NewDefaultShader("fx", "fx_guassian_blur")
@@ -51,7 +55,7 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 		s.pointLights = append(s.pointLights, &PointLight{
 			Position: [3]float32{rand.Float32()*30 - 15, 0, rand.Float32()*30 - 15},
 			//Color:    [3]float32{rand.Float32()/2 + 0.5, rand.Float32()/2 + 0.5, rand.Float32()/2 + 0.5},
-			Color:    [3]float32{rand.Float32()*2 + 0.5, rand.Float32()*2 + 0.5, rand.Float32()*2 + 0.5},
+			Color:    [3]float32{1 + rand.Float32()*2, 1 + rand.Float32()*2, 1 + rand.Float32()*2 + 0.5},
 			Constant: att.Constant,
 			Linear:   att.Linear,
 			Exp:      att.Exp,
@@ -130,6 +134,12 @@ func (s *Scene) Render() {
 		currentNumLights = 128
 	} else if keys[glfw.Key8] {
 		currentNumLights = 255
+	} else if keys[glfw.Key8] {
+		currentNumLights = 255
+	} else if keys[glfw.KeyEnter] {
+		bloom = true
+	} else if keys[glfw.KeyEscape] {
+		bloom = false
 	}
 
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.gbuffer.fbo)
@@ -301,11 +311,11 @@ func (s *Scene) Render() {
 		gl.Disable(gl.BLEND)
 	}
 
-	{
-		// render emissive light cubes
+	{ // render emissive objects
+
+		// light cubes
 		s.lightBoxShader.UsePV(s.projection, view)
 		gl.Enable(gl.DEPTH_TEST)
-
 		for i := range s.pointLights[:currentNumLights] {
 			if !s.pointLights[i].enabled {
 				continue
@@ -335,64 +345,65 @@ func (s *Scene) Render() {
 	// from here on, there are only texture manipulations
 	gl.Disable(gl.DEPTH_TEST)
 
-	// here we blit the thing into the fx FBO for post-process effects
-	{
-		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.fxBuffer.fbo)
-		gl.BindFramebuffer(gl.READ_FRAMEBUFFER, s.gbuffer.fbo)
-		gl.ReadBuffer(gl.COLOR_ATTACHMENT4)
-		gl.BlitFramebuffer(0, 0, s.width, s.height, 0, 0, s.width, s.height, gl.COLOR_BUFFER_BIT, gl.LINEAR)
-		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-	}
-
-	{ // divide the brightest colours into a new buffer
-		gl.BindFramebuffer(gl.FRAMEBUFFER, s.bloomBuffer.fbo)
-		var attachments = [2]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1}
-		gl.DrawBuffers(2, &attachments[0])
-		bloomColShader.Use()
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.Uniform1i(uniformLocation(screenShader, "screenTexture"), 0)
-		gl.BindTexture(gl.TEXTURE_2D, s.fxBuffer.textures[0])
-		renderQuad()
-	}
-
-	{ // blur the bright part
-		const blurAmount = 2
-		horizontal := 1
-		firstIteration := true
-
-		// @todo cache these outside the render loop
-		textLoc := uniformLocation(shaderBlur, "screenTexture")
-		horisontalLoc := uniformLocation(shaderBlur, "horizontal")
-
-		for i := 0; i < blurAmount; i++ {
-			shaderBlur.Use()
-			gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.pingBuffers[horizontal].fbo)
+	if bloom {
+		{ // divide the brightest colours into a new buffer
+			gl.BindFramebuffer(gl.FRAMEBUFFER, s.bloomBuffer.fbo)
+			var attachments = [2]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1}
+			gl.DrawBuffers(2, &attachments[0])
+			bloomColShader.Use()
 			gl.ActiveTexture(gl.TEXTURE0)
-			gl.Uniform1i(textLoc, 0)
-			gl.Uniform1i(horisontalLoc, int32(horizontal))
-			if horizontal == 0 {
-				horizontal = 1
-			} else {
-				horizontal = 0
-			}
-			if firstIteration {
-				gl.BindTexture(gl.TEXTURE_2D, s.bloomBuffer.textures[1])
-			} else {
-				gl.BindTexture(gl.TEXTURE_2D, s.pingBuffers[horizontal].texture)
-			}
+			gl.Uniform1i(uniformLocation(bloomColShader, "screenTexture"), 0)
+			gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.finalTexture)
 			renderQuad()
 		}
-	}
 
-	{ // combine the normal and blurry bright texture for a bloom effect
+		{ // blur the bright part
+			const blurAmount = 2
+			horizontal := 0
+			firstIteration := true
+
+			// @todo cache these outside the render loop
+			textLoc := uniformLocation(shaderBlur, "screenTexture")
+			horisontalLoc := uniformLocation(shaderBlur, "horizontal")
+
+			for i := 0; i < blurAmount; i++ {
+				shaderBlur.Use()
+				gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.pingBuffers[horizontal].fbo)
+				gl.ActiveTexture(gl.TEXTURE0)
+				gl.Uniform1i(textLoc, 0)
+				gl.Uniform1i(horisontalLoc, int32(horizontal))
+				if horizontal == 0 {
+					horizontal = 1
+				} else {
+					horizontal = 0
+				}
+				if firstIteration {
+					gl.BindTexture(gl.TEXTURE_2D, s.bloomBuffer.textures[1])
+					firstIteration = false
+				} else {
+					gl.BindTexture(gl.TEXTURE_2D, s.pingBuffers[horizontal].texture)
+				}
+				renderQuad()
+			}
+		}
+
+		{ // combine the normal and blurry bright texture for a bloom effect
+			gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
+			bloomBlender.Use()
+			gl.ActiveTexture(gl.TEXTURE0)
+			gl.Uniform1i(uniformLocation(bloomBlender, "screenTexture"), 0)
+			gl.BindTexture(gl.TEXTURE_2D, s.bloomBuffer.textures[0])
+			gl.ActiveTexture(gl.TEXTURE1)
+			gl.Uniform1i(uniformLocation(bloomBlender, "bloomTexture"), 1)
+			gl.BindTexture(gl.TEXTURE_2D, s.pingBuffers[1].texture)
+			renderQuad()
+		}
+	} else {
 		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
-		bloomBlender.Use()
+		passthroughShader.Use()
 		gl.ActiveTexture(gl.TEXTURE0)
-		gl.Uniform1i(uniformLocation(bloomBlender, "screenTexture"), 0)
-		gl.BindTexture(gl.TEXTURE_2D, s.bloomBuffer.textures[0])
-		gl.ActiveTexture(gl.TEXTURE1)
-		gl.Uniform1i(uniformLocation(bloomBlender, "bloomTexture"), 1)
-		gl.BindTexture(gl.TEXTURE_2D, s.pingBuffers[1].texture)
+		gl.Uniform1i(uniformLocation(passthroughShader, "screenTexture"), 0)
+		gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.finalTexture)
 		renderQuad()
 	}
 
