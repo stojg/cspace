@@ -17,7 +17,6 @@ var bloom = false
 var currentNumLights = 32
 
 var passthroughShader *DefaultShader
-var screenShader *DefaultShader
 var bloomColShader *DefaultShader
 var shaderBlur *DefaultShader
 var bloomBlender *DefaultShader
@@ -25,17 +24,17 @@ var bloomBlender *DefaultShader
 func NewScene(WindowWidth, WindowHeight int32) *Scene {
 
 	passthroughShader = NewDefaultShader("fx", "fx_text_pass")
-	screenShader = NewDefaultShader("fx", "fx_pass")
 	bloomColShader = NewDefaultShader("fx", "fx_brigthness_sep")
 	shaderBlur = NewDefaultShader("fx", "fx_guassian_blur")
 	bloomBlender = NewDefaultShader("fx", "fx_bloom_blender")
 
 	graphTransform := mgl32.Ident4()
 	s := &Scene{
-		gbuffer:          NewGbuffer(WindowWidth, WindowHeight),
+		gBufferPipeline: NewGBufferPipeline(),
+		gbuffer:         NewGbuffer(WindowWidth, WindowHeight),
+
 		fxBuffer:         NewFXbuffer(),
-		bloomBuffer:      NewBloom(),
-		pingBuffers:      [2]*Buffer{NewBuffer(), NewBuffer()},
+		bloomEffect:      NewBloomEffect(),
 		width:            WindowWidth,
 		height:           WindowHeight,
 		previousTime:     glfw.GetTime(),
@@ -87,10 +86,10 @@ type Scene struct {
 	camera        *Camera
 	graph         *Node
 
-	fxBuffer    *FXFbo
-	gbuffer     *Gbuffer
-	bloomBuffer *Bloom
-	pingBuffers [2]*Buffer
+	fxBuffer        *FXFbo
+	gBufferPipeline *GBufferPipeline
+	gbuffer         *Gbuffer
+	bloomEffect     *BloomEffect
 
 	gBufferShader    *DefaultShader
 	pointLightShader *PointLightShader
@@ -134,45 +133,21 @@ func (s *Scene) Render() {
 		currentNumLights = 128
 	} else if keys[glfw.Key8] {
 		currentNumLights = 255
-	} else if keys[glfw.Key8] {
-		currentNumLights = 255
 	} else if keys[glfw.KeyEnter] {
 		bloom = true
 	} else if keys[glfw.KeyEscape] {
 		bloom = false
 	}
 
-	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.gbuffer.fbo)
-	gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
-	gl.Clear(gl.COLOR_BUFFER_BIT)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
 
-	// 1. render into the gBuffer
-	{
-		s.gBufferShader.UsePV(s.projection, view)
-
-		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.gbuffer.fbo)
-		var attachments = [3]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.COLOR_ATTACHMENT2}
-		gl.DrawBuffers(3, &attachments[0])
-
-		// Only the geometry pass updates the gDepth buffer
-		gl.DepthMask(true)
-		gl.ClearColor(0.0, 0.0, 0.0, 0)
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-		gl.Enable(gl.DEPTH_TEST)
-
-		s.graph.Render(s.gBufferShader)
-		// When we get here the gDepth buffer is already populated and the stencil pass depends on it, but it does not write to it.
-		gl.DepthMask(false)
-	}
-
-	// We need stencil to be enabled in the stencil pass to get the stencil buffer updated and we also need it in the
-	// light pass because we render the light only if the stencil passes.
-	gl.Enable(gl.STENCIL_TEST)
+	s.gBufferPipeline.Render(s.gbuffer, s.projection, view, s.graph)
 
 	for i := range s.pointLights[:currentNumLights] {
 		if !s.pointLights[i].enabled {
 			continue
 		}
+
 		// 2. stencil pass
 		{
 			s.nullShader.UsePV(s.projection, view)
@@ -345,67 +320,17 @@ func (s *Scene) Render() {
 	// from here on, there are only texture manipulations
 	gl.Disable(gl.DEPTH_TEST)
 
+	out := s.gbuffer.finalTexture
 	if bloom {
-		{ // divide the brightest colours into a new buffer
-			gl.BindFramebuffer(gl.FRAMEBUFFER, s.bloomBuffer.fbo)
-			var attachments = [2]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1}
-			gl.DrawBuffers(2, &attachments[0])
-			bloomColShader.Use()
-			gl.ActiveTexture(gl.TEXTURE0)
-			gl.Uniform1i(uniformLocation(bloomColShader, "screenTexture"), 0)
-			gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.finalTexture)
-			renderQuad()
-		}
-
-		{ // blur the bright part
-			const blurAmount = 2
-			horizontal := 0
-			firstIteration := true
-
-			// @todo cache these outside the render loop
-			textLoc := uniformLocation(shaderBlur, "screenTexture")
-			horisontalLoc := uniformLocation(shaderBlur, "horizontal")
-
-			for i := 0; i < blurAmount; i++ {
-				shaderBlur.Use()
-				gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.pingBuffers[horizontal].fbo)
-				gl.ActiveTexture(gl.TEXTURE0)
-				gl.Uniform1i(textLoc, 0)
-				gl.Uniform1i(horisontalLoc, int32(horizontal))
-				if horizontal == 0 {
-					horizontal = 1
-				} else {
-					horizontal = 0
-				}
-				if firstIteration {
-					gl.BindTexture(gl.TEXTURE_2D, s.bloomBuffer.textures[1])
-					firstIteration = false
-				} else {
-					gl.BindTexture(gl.TEXTURE_2D, s.pingBuffers[horizontal].texture)
-				}
-				renderQuad()
-			}
-		}
-
-		{ // combine the normal and blurry bright texture for a bloom effect
-			gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
-			bloomBlender.Use()
-			gl.ActiveTexture(gl.TEXTURE0)
-			gl.Uniform1i(uniformLocation(bloomBlender, "screenTexture"), 0)
-			gl.BindTexture(gl.TEXTURE_2D, s.bloomBuffer.textures[0])
-			gl.ActiveTexture(gl.TEXTURE1)
-			gl.Uniform1i(uniformLocation(bloomBlender, "bloomTexture"), 1)
-			gl.BindTexture(gl.TEXTURE_2D, s.pingBuffers[1].texture)
-			renderQuad()
-		}
-	} else {
-		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
-		passthroughShader.Use()
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.Uniform1i(uniformLocation(passthroughShader, "screenTexture"), 0)
-		gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.finalTexture)
-		renderQuad()
+		out = s.bloomEffect.Render(s.gbuffer.finalTexture)
 	}
+
+	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
+	passthroughShader.Use()
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.Uniform1i(uniformLocation(passthroughShader, "screenTexture"), 0)
+	gl.BindTexture(gl.TEXTURE_2D, out)
+	renderQuad()
 
 	//DisplayFramebufferTexture(s.gbuffer.finalTexture)
 	chkError()

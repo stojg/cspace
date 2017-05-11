@@ -6,13 +6,13 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
-type Bloom struct {
+type BloomFBO struct {
 	fbo      uint32
 	textures [2]uint32
 }
 
-func NewBloom() *Bloom {
-	frameBuffer := &Bloom{}
+func NewBloom() *BloomFBO {
+	frameBuffer := &BloomFBO{}
 	gl.GenFramebuffers(1, &frameBuffer.fbo)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, frameBuffer.fbo)
 
@@ -24,6 +24,8 @@ func NewBloom() *Bloom {
 		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 		gl.TexParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 		gl.TexParameterf(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_BASE_LEVEL, 0)
+		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_LEVEL, 0)
 		gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0+uint32(i), gl.TEXTURE_2D, frameBuffer.textures[i], 0)
 	}
 
