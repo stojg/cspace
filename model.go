@@ -28,22 +28,19 @@ func LoadModel(directory string) *Mesh {
 	var indices []uint32
 
 	diffuseTexture, err := newTexture(Diffuse, filepath.Join(directory, "d.png"), false)
-	if err != nil {
-		panic(err)
+	if err == nil {
+		textures = append(textures, diffuseTexture)
 	}
-	textures = append(textures, diffuseTexture)
 
 	specularTexture, err := newTexture(Specular, filepath.Join(directory, "s.png"), false)
-	if err != nil {
-		panic(err)
+	if err == nil {
+		textures = append(textures, specularTexture)
 	}
-	textures = append(textures, specularTexture)
 
 	normalTexture, err := newTexture(Normal, filepath.Join(directory, "n.png"), false)
-	if err != nil {
-		panic(err)
+	if err == nil {
+		textures = append(textures, normalTexture)
 	}
-	textures = append(textures, normalTexture)
 
 	return NewMesh(vertices, indices, textures)
 }
