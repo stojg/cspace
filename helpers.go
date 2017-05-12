@@ -41,7 +41,7 @@ func initWindow(width, height int) (*glfw.Window, error) {
 		return window, err
 	}
 	window.MakeContextCurrent()
-	glfw.SwapInterval(1) // disable vertical refresh (vsync)
+	glfw.SwapInterval(0) // disable vertical refresh (vsync)
 	window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
 			keys[key] = true
