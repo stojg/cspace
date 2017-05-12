@@ -43,7 +43,6 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 		camera:           NewCamera(),
 		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(WindowWidth)/float32(WindowHeight), 0.1, 200.0),
 		graph:            &Node{transform: &graphTransform},
-		gBufferShader:    NewDefaultShader("gbuffer", "gbuffer"),
 		pointLightShader: NewPointLightShader("lighting", "lighting"),
 		dirLightShader:   NewDirLightShader("lighting", "dirlighting"),
 		nullShader:       NewDefaultShader("null", "null"),
@@ -92,7 +91,6 @@ type Scene struct {
 	gBufferPipeline *GBufferPipeline
 	bloomEffect     *BloomEffect
 
-	gBufferShader    *DefaultShader
 	pointLightShader *PointLightShader
 	dirLightShader   *DirLightShader
 	nullShader       *DefaultShader
