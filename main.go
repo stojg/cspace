@@ -87,8 +87,8 @@ func realMain() error {
 	return nil
 }
 
-var quadVAO uint32 = 0
-var quadVBO uint32 = 0
+var quadVAO uint32
+var quadVBO uint32
 
 func renderQuad() {
 	if quadVAO == 0 {

@@ -11,7 +11,7 @@ import (
 )
 
 var shaderDisplayFBOOutput *DefaultShader
-var vaoDebugTexturedRect uint32 = 0
+var vaoDebugTexturedRect uint32
 
 func DisplayFramebufferTexture(textureID uint32) {
 	if vaoDebugTexturedRect == 0 {
@@ -114,10 +114,10 @@ func fpsCounter(window *glfw.Window) {
 	fpsFrameCount++
 }
 
-func glLogShader(shader Shader) {
+func glLogShader(shader Shader, vertex, frag string) {
 
 	program := shader.Program()
-	glLogf("------- info shader programme %d -------\n", program)
+	glLogf("------- info shader programme %d | %s / %s -------\n", program, vertex, frag)
 
 	var params int32
 	gl.GetProgramiv(program, gl.LINK_STATUS, &params)

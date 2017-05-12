@@ -258,9 +258,6 @@ func getVertices(meshdata []float32) []Vertex {
 		copy(vertices[i+1].Tangent[:], tangent[:])
 		copy(vertices[i+2].Tangent[:], tangent[:])
 	}
-
-	//fmt.Println(vertices)
-	//os.Exit(1)
 	return vertices
 }
 
