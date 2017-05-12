@@ -360,3 +360,19 @@ func chkError() {
 	}
 	panic("nope")
 }
+
+func chkNamedError(name string) {
+	err := gl.GetError()
+	if err == 0 {
+		return
+	}
+	switch err {
+	case gl.INVALID_OPERATION:
+		fmt.Printf("GL Error: INVALID_OPERATION 0x0%x\n", err)
+	case gl.INVALID_ENUM:
+		fmt.Printf("GL Error: INVALID_ENUM 0x0%x\n", err)
+	default:
+		fmt.Printf("GL Error: 0x0%x\n", err)
+	}
+	panic(name)
+}
