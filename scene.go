@@ -148,6 +148,10 @@ func (s *Scene) Render() {
 
 	s.gBufferPipeline.Render(s.gbuffer, s.projection, view, s.graph)
 
+	// We need stencil to be enabled in the stencil pass to get the stencil buffer updated and we also need it in the
+	// light pass because we render the light only if the stencil passes.
+	gl.Enable(gl.STENCIL_TEST)
+
 	for i := range s.pointLights[:currentNumLights] {
 		if !s.pointLights[i].enabled {
 			continue

@@ -43,8 +43,4 @@ func (p *GBufferPipeline) Render(gbuffer *Gbuffer, projection, view mgl32.Mat4, 
 		gl.DepthMask(false)
 	}
 
-	// We need stencil to be enabled in the stencil pass to get the stencil buffer updated and we also need it in the
-	// light pass because we render the light only if the stencil passes.
-	gl.Enable(gl.STENCIL_TEST)
-
 }
