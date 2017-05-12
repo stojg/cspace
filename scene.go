@@ -52,6 +52,7 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 		nullShader:       NewDefaultShader("null", "null"),
 		lightBoxShader:   NewDefaultShader("simple", "emissive"),
 		lightMesh:        newLightMesh(),
+		icoMesh:          LoadModel("models/ico"),
 	}
 
 	for i := 0; i < numLights; i++ {
@@ -104,6 +105,7 @@ type Scene struct {
 
 	pointLights []*PointLight
 	lightMesh   *Mesh
+	icoMesh     *Mesh
 
 	// caches - should move to the individual shaders
 	nullShaderModelLoc            int32
@@ -305,8 +307,8 @@ func (s *Scene) Render() {
 			gl.UniformMatrix4fv(s.lightBoxModelLoc, 1, false, &model[0])
 			gl.Uniform3fv(s.lightBoxEmissiveLoc, 1, &s.pointLights[i].Color[0])
 
-			gl.BindVertexArray(s.lightMesh.vao)
-			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
+			gl.BindVertexArray(s.icoMesh.vao)
+			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.icoMesh.Vertices)))
 			gl.BindVertexArray(0)
 		}
 
@@ -315,9 +317,8 @@ func (s *Scene) Render() {
 		model = model.Mul4(mgl32.Scale3D(8, 8, 8))
 		setUniformMatrix4fv(s.lightBoxShader, "model", model)
 		gl.Uniform3f(uniformLocation(s.lightBoxShader, "emissive"), 1.4, 1.4, 1.8)
-
-		gl.BindVertexArray(s.lightMesh.vao)
-		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
+		gl.BindVertexArray(s.icoMesh.vao)
+		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.icoMesh.Vertices)))
 		gl.BindVertexArray(0)
 	}
 
