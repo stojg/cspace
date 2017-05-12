@@ -24,13 +24,9 @@ func LoadObject(filename string) []float32 {
 		fmt.Println("error at object line: ", num)
 		panic(err)
 	}
-	//fmt.Println("verts", len(obj.Geometry.Vertices))
-	//fmt.Println("normals", len(obj.Geometry.Normals))
-	//fmt.Println("uvs", len(obj.Geometry.UVs))
 
 	var data []float32
 	for _, object := range obj.Objects {
-		fmt.Println("vertData len:", len(object.VertexData))
 		for _, vert := range object.VertexData {
 			data = add(data, vert.Declarations[0])
 			data = add(data, vert.Declarations[1])

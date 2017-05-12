@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"path/filepath"
 
 	"github.com/stojg/cspace/lib/obj"
@@ -21,7 +19,9 @@ func LoadModel(directory string) *Mesh {
 	filePath := filepath.Join(directory, "model.obj")
 
 	data := obj.LoadObject(filePath)
-	fmt.Println("data size", len(data))
+
+	glLogf("--- Loaded %s ----\n", directory)
+	glLogf("size %d bytes\n", len(data))
 
 	vertices := getVertices(data)
 	var textures []*Texture
@@ -41,6 +41,9 @@ func LoadModel(directory string) *Mesh {
 	if err == nil {
 		textures = append(textures, normalTexture)
 	}
+
+	glLogf("textures %d \n", len(textures))
+	glLogln("------------------------")
 
 	return NewMesh(vertices, indices, textures)
 }

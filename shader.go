@@ -55,17 +55,6 @@ func (s *GbufferShader) ModelUniform() int32 {
 	return s.uniformModelLoc
 }
 
-func NewGbufferShader() *GbufferShader {
-	s := &GbufferShader{
-		Shader: NewDefaultShader("gbuffer", "gbuffer"),
-	}
-	s.uniformDiffuseLoc = uniformLocation(s.Shader, "mat.diffuse0")
-	s.uniformSpecularLoc = uniformLocation(s.Shader, "mat.specular0")
-	s.uniformNormalLoc = uniformLocation(s.Shader, "mat.normal0")
-	s.uniformModelLoc = uniformLocation(s.Shader, "model")
-	return s
-}
-
 type PassthroughShader struct {
 	Shader
 	uniformScreenTextureLoc int32
@@ -86,7 +75,7 @@ type PointLightShader struct {
 	uniformPosLoc        int32
 	uniformNormalLoc     int32
 	uniformAlbedoSpecLoc int32
-	uniformDepthLoc      int32
+	//uniformDepthLoc      int32
 
 	uniformLightPosLoc              int32
 	uniformLightColorLoc            int32
@@ -107,9 +96,9 @@ func (s *PointLightShader) UniformAlbedoSpecLoc() int32 {
 	return s.uniformAlbedoSpecLoc
 }
 
-func (s *PointLightShader) UniformDepthLoc() int32 {
-	return s.uniformDepthLoc
-}
+//func (s *PointLightShader) UniformDepthLoc() int32 {
+//	return s.uniformDepthLoc
+//}
 
 func (s *PointLightShader) SetLight(light *PointLight) {
 	gl.Uniform3f(s.uniformLightPosLoc, light.Position[0], light.Position[1], light.Position[2])
@@ -125,7 +114,7 @@ func NewPointLightShader(vertex, frag string) *PointLightShader {
 		uniformPosLoc:        uniformLocation(c, "gPosition"),
 		uniformNormalLoc:     uniformLocation(c, "gNormal"),
 		uniformAlbedoSpecLoc: uniformLocation(c, "gAlbedoSpec"),
-		uniformDepthLoc:      uniformLocation(c, "gDepth"),
+		//uniformDepthLoc:      uniformLocation(c, "gDepth"),
 
 		uniformLightPosLoc:       uniformLocation(c, "pointLight.Position"),
 		uniformLightColorLoc:     uniformLocation(c, "pointLight.Color"),
@@ -140,7 +129,6 @@ type DirLightShader struct {
 	uniformPosLoc        int32
 	uniformNormalLoc     int32
 	uniformAlbedoSpecLoc int32
-	uniformDepthLoc      int32
 
 	uniformLightDirectionLoc        int32
 	uniformLightColorLoc            int32
@@ -159,10 +147,6 @@ func (s *DirLightShader) UniformAlbedoSpecLoc() int32 {
 	return s.uniformAlbedoSpecLoc
 }
 
-func (s *DirLightShader) UniformDepthLoc() int32 {
-	return s.uniformDepthLoc
-}
-
 func (s *DirLightShader) SetLight(light *DirectionalLight) {
 	gl.Uniform3f(s.uniformLightDirectionLoc, light.Direction[0], light.Direction[1], light.Direction[2])
 	gl.Uniform3f(s.uniformLightColorLoc, light.Color[0], light.Color[1], light.Color[2])
@@ -177,7 +161,6 @@ func NewDirLightShader(vertex, frag string) *DirLightShader {
 		uniformAlbedoSpecLoc:     uniformLocation(c, "gAlbedoSpec"),
 		uniformLightDirectionLoc: uniformLocation(c, "dirLight.Direction"),
 		uniformLightColorLoc:     uniformLocation(c, "dirLight.Color"),
-		uniformDepthLoc:          uniformLocation(c, "gDepth"),
 	}
 	return s
 }
@@ -229,8 +212,6 @@ func NewDefaultShader(vertex, frag string) *DefaultShader {
 	gl.AttachShader(program, fragmentShader)
 	gl.LinkProgram(program)
 
-	fmt.Println(program, vertex, frag)
-
 	var status int32
 	gl.GetProgramiv(program, gl.LINK_STATUS, &status)
 	if status == gl.FALSE {
@@ -248,10 +229,11 @@ func NewDefaultShader(vertex, frag string) *DefaultShader {
 
 	shader.program = program
 
-	shader.view = uniformLocation(shader, "view")
-	shader.projection = uniformLocation(shader, "projection")
+	// try to find these pretty standard uniforms
+	shader.view = gl.GetUniformLocation(shader.Program(), gl.Str("view\x00"))
+	shader.projection = gl.GetUniformLocation(shader.Program(), gl.Str("projection\x00"))
 
-	glLogShader(shader)
+	glLogShader(shader, vertex, frag)
 
 	return shader
 }

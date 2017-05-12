@@ -28,7 +28,7 @@ func (l *PointLight) Radius() float32 {
 	if math.IsNaN(float64(ret)) {
 		panic("CalcPointLightBSphere calculated a NaN")
 	}
-	l.radius = ret + 3
+	l.radius = ret
 	return ret
 }
 

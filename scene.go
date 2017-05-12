@@ -14,7 +14,7 @@ const numLights = 255
 
 var bloom = false
 
-var currentNumLights = 8
+var currentNumLights = 32
 
 var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{1, 1, 1}),
@@ -36,12 +36,9 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 	graphTransform := mgl32.Ident4()
 	s := &Scene{
 		gBufferPipeline: NewGBufferPipeline(),
-		gbuffer:         NewGbuffer(WindowWidth, WindowHeight),
 
 		fxBuffer:         NewFXbuffer(),
 		bloomEffect:      NewBloomEffect(),
-		width:            WindowWidth,
-		height:           WindowHeight,
 		previousTime:     glfw.GetTime(),
 		camera:           NewCamera(),
 		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(WindowWidth)/float32(WindowHeight), 0.1, 200.0),
@@ -59,7 +56,6 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 		att := ligthAtt[7]
 		s.pointLights = append(s.pointLights, &PointLight{
 			Position: [3]float32{rand.Float32()*30 - 15, 0, rand.Float32()*30 - 15},
-			//Color:    [3]float32{rand.Float32()/2 + 0.5, rand.Float32()/2 + 0.5, rand.Float32()/2 + 0.5},
 			Color:    [3]float32{1 + rand.Float32()*2, 1 + rand.Float32()*2, 1 + rand.Float32()*2 + 0.5},
 			Constant: att.Constant,
 			Linear:   att.Linear,
@@ -81,20 +77,19 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 
 	s.lightBoxModelLoc = uniformLocation(s.lightBoxShader, "model")
 	s.lightBoxEmissiveLoc = uniformLocation(s.lightBoxShader, "emissive")
+	chkError("end_of_new_scene")
 	return s
 }
 
 type Scene struct {
-	width, height int32
-	previousTime  float64
-	elapsed       float32
-	projection    mgl32.Mat4
-	camera        *Camera
-	graph         *Node
+	previousTime float64
+	elapsed      float32
+	projection   mgl32.Mat4
+	camera       *Camera
+	graph        *Node
 
 	fxBuffer        *FXFbo
 	gBufferPipeline *GBufferPipeline
-	gbuffer         *Gbuffer
 	bloomEffect     *BloomEffect
 
 	gBufferShader    *DefaultShader
@@ -124,31 +119,9 @@ func (s *Scene) Render() {
 	view := s.camera.View(s.elapsed)
 	sin := float32(math.Sin(glfw.GetTime()))
 
-	if keys[glfw.Key1] {
-		currentNumLights = 0
-	} else if keys[glfw.Key2] {
-		currentNumLights = 4
-	} else if keys[glfw.Key3] {
-		currentNumLights = 8
-	} else if keys[glfw.Key4] {
-		currentNumLights = 16
-	} else if keys[glfw.Key5] {
-		currentNumLights = 32
-	} else if keys[glfw.Key6] {
-		currentNumLights = 64
-	} else if keys[glfw.Key7] {
-		currentNumLights = 128
-	} else if keys[glfw.Key8] {
-		currentNumLights = 255
-	} else if keys[glfw.KeyEnter] {
-		bloom = true
-	} else if keys[glfw.KeyEscape] {
-		bloom = false
-	}
+	handleInputs()
 
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
-
-	s.gBufferPipeline.Render(s.gbuffer, s.projection, view, s.graph)
+	s.gBufferPipeline.Render(s.projection, view, s.graph)
 
 	// We need stencil to be enabled in the stencil pass to get the stencil buffer updated and we also need it in the
 	// light pass because we render the light only if the stencil passes.
@@ -200,19 +173,15 @@ func (s *Scene) Render() {
 
 			gl.ActiveTexture(gl.TEXTURE0)
 			gl.Uniform1i(s.pointLightShader.UniformPosLoc(), 0)
-			gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gPosition)
+			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gPosition)
 
 			gl.ActiveTexture(gl.TEXTURE1)
 			gl.Uniform1i(s.pointLightShader.UniformNormalLoc(), 1)
-			gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gNormal)
+			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gNormal)
 
 			gl.ActiveTexture(gl.TEXTURE2)
 			gl.Uniform1i(s.pointLightShader.UniformAlbedoSpecLoc(), 2)
-			gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gAlbedoSpec)
-
-			gl.ActiveTexture(gl.TEXTURE3)
-			gl.Uniform1i(s.pointLightShader.UniformDepthLoc(), 3)
-			gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gDepth)
+			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gAlbedoSpec)
 
 			gl.StencilFunc(gl.NOTEQUAL, 0, 0xFF)
 
@@ -225,7 +194,7 @@ func (s *Scene) Render() {
 			gl.Enable(gl.CULL_FACE)
 			gl.CullFace(gl.FRONT)
 
-			gl.Uniform2f(s.pointLightShaderScreenSizeLoc, float32(s.width), float32(s.height))
+			gl.Uniform2f(s.pointLightShaderScreenSizeLoc, float32(windowWidth), float32(windowHeight))
 
 			cp := PointLight{
 				Position: s.pointLights[i].Position,
@@ -249,6 +218,10 @@ func (s *Scene) Render() {
 			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
 			gl.BindVertexArray(0)
 
+			//gl.BindVertexArray(s.icoMesh.vao)
+			//gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.icoMesh.Vertices)))
+			//gl.BindVertexArray(0)
+
 			gl.CullFace(gl.BACK)
 			gl.Disable(gl.BLEND)
 		}
@@ -264,19 +237,15 @@ func (s *Scene) Render() {
 
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.Uniform1i(s.dirLightShader.UniformPosLoc(), 0)
-		gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gPosition)
+		gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gPosition)
 
 		gl.ActiveTexture(gl.TEXTURE1)
 		gl.Uniform1i(s.dirLightShader.UniformNormalLoc(), 1)
-		gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gNormal)
+		gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gNormal)
 
 		gl.ActiveTexture(gl.TEXTURE2)
 		gl.Uniform1i(s.dirLightShader.UniformAlbedoSpecLoc(), 2)
-		gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gAlbedoSpec)
-
-		//gl.ActiveTexture(gl.TEXTURE3)
-		//gl.Uniform1i(s.dirLightShader.UniformDepthLoc(), 3)
-		//gl.BindTexture(gl.TEXTURE_2D, s.gbuffer.gDepth)
+		gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gAlbedoSpec)
 
 		gl.Disable(gl.DEPTH_TEST)
 		gl.Enable(gl.BLEND)
@@ -284,7 +253,7 @@ func (s *Scene) Render() {
 		gl.BlendFunc(gl.ONE, gl.ONE)
 
 		s.dirLightShader.SetLight(directionLight)
-		gl.Uniform2f(s.dirLightShaderScreenSizeLoc, float32(s.width), float32(s.height))
+		gl.Uniform2f(s.dirLightShaderScreenSizeLoc, float32(windowWidth), float32(windowHeight))
 		gl.Uniform3fv(s.dirLightViewPosLoc, 1, &s.camera.position[0])
 		gl.UniformMatrix4fv(s.dirLightModelLoc, 1, false, &ident[0])
 		renderQuad()
@@ -325,9 +294,9 @@ func (s *Scene) Render() {
 	// from here on, there are only texture manipulations
 	gl.Disable(gl.DEPTH_TEST)
 
-	out := s.gbuffer.finalTexture
+	out := s.gBufferPipeline.buffer.finalTexture
 	if bloom {
-		out = s.bloomEffect.Render(s.gbuffer.finalTexture)
+		out = s.bloomEffect.Render(s.gBufferPipeline.buffer.finalTexture)
 	}
 
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
@@ -336,7 +305,30 @@ func (s *Scene) Render() {
 	gl.Uniform1i(passthroughShader.uniformScreenTextureLoc, 0)
 	gl.BindTexture(gl.TEXTURE_2D, out)
 	renderQuad()
-	chkError()
+	chkError("end_of_frame")
+}
+func handleInputs() {
+	if keys[glfw.Key1] {
+		currentNumLights = 0
+	} else if keys[glfw.Key2] {
+		currentNumLights = 4
+	} else if keys[glfw.Key3] {
+		currentNumLights = 8
+	} else if keys[glfw.Key4] {
+		currentNumLights = 16
+	} else if keys[glfw.Key5] {
+		currentNumLights = 32
+	} else if keys[glfw.Key6] {
+		currentNumLights = 64
+	} else if keys[glfw.Key7] {
+		currentNumLights = 128
+	} else if keys[glfw.Key8] {
+		currentNumLights = 255
+	} else if keys[glfw.KeyEnter] {
+		bloom = true
+	} else if keys[glfw.KeyEscape] {
+		bloom = false
+	}
 }
 
 func (s *Scene) updateTimers() {
@@ -345,7 +337,7 @@ func (s *Scene) updateTimers() {
 	s.previousTime = now
 }
 
-func chkError() {
+func chkError(name string) {
 	err := gl.GetError()
 	if err == 0 {
 		return
@@ -355,22 +347,8 @@ func chkError() {
 		fmt.Printf("GL Error: INVALID_OPERATION 0x0%x\n", err)
 	case gl.INVALID_ENUM:
 		fmt.Printf("GL Error: INVALID_ENUM 0x0%x\n", err)
-	default:
-		fmt.Printf("GL Error: 0x0%x\n", err)
-	}
-	panic("nope")
-}
-
-func chkNamedError(name string) {
-	err := gl.GetError()
-	if err == 0 {
-		return
-	}
-	switch err {
-	case gl.INVALID_OPERATION:
-		fmt.Printf("GL Error: INVALID_OPERATION 0x0%x\n", err)
-	case gl.INVALID_ENUM:
-		fmt.Printf("GL Error: INVALID_ENUM 0x0%x\n", err)
+	case gl.INVALID_FRAMEBUFFER_OPERATION:
+		fmt.Printf("GL Error: INVALID_FRAMEBUFFER_OPERATION 0x0%x\n", err)
 	default:
 		fmt.Printf("GL Error: 0x0%x\n", err)
 	}
