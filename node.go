@@ -5,21 +5,36 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+type ShaderType int
+
+const (
+	TextureMesh ShaderType = iota
+	MaterialMesh
+)
+
 type Node struct {
 	children  []*Node
+	shader    ShaderType
 	transform *mgl32.Mat4
 	mesh      *Mesh
 }
 
-func (n *Node) Render(shader ModelShader) {
+func (n *Node) Render(projection, view mgl32.Mat4, tShader TextureShader, mShader MaterialShader) {
 
 	for _, child := range n.children {
 		if child.transform != nil {
 			transform := child.transform.Mul4(*n.transform)
-			gl.UniformMatrix4fv(shader.ModelUniform(), 1, false, &transform[0])
-			child.mesh.Render(shader)
+			if child.mesh.MeshType == TextureMesh {
+				tShader.UsePV(projection, view)
+				gl.UniformMatrix4fv(tShader.ModelUniform(), 1, false, &transform[0])
+				child.mesh.Render(tShader, mShader)
+			} else {
+				mShader.UsePV(projection, view)
+				gl.UniformMatrix4fv(mShader.ModelUniform(), 1, false, &transform[0])
+				child.mesh.Render(tShader, mShader)
+			}
 		}
-		child.Render(shader)
+		child.Render(projection, view, tShader, mShader)
 	}
 }
 
@@ -27,11 +42,14 @@ func (n *Node) Destroy() {
 	n.children = make([]*Node, 0)
 }
 
-func (n *Node) Add(mesh *Mesh, transform mgl32.Mat4) *Node {
-	child := &Node{
-		mesh:      mesh,
-		transform: &transform,
+func (n *Node) Add(mesh []*Mesh, s ShaderType, transform mgl32.Mat4) {
+
+	for i := range mesh {
+		child := &Node{
+			shader:    s,
+			mesh:      mesh[i],
+			transform: &transform,
+		}
+		n.children = append(n.children, child)
 	}
-	n.children = append(n.children, child)
-	return child
 }

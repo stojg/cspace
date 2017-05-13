@@ -8,40 +8,8 @@ import (
 	"unsafe"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/stojg/cspace/lib/obj"
 )
-
-func NewCrateModel() *Mesh {
-	vertices := getVertices(cubeData)
-	var textures []*Texture
-	var indices []uint32
-
-	diffuseTexture, err := newTexture(Diffuse, "textures/rock/diffuse.jpg", false)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	textures = append(textures, diffuseTexture)
-
-	specularTexture, err := newTexture(Specular, "textures/rock/specular.jpg", false)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	textures = append(textures, specularTexture)
-
-	normalTexture, err := newTexture(Normal, "textures/rock/normal.jpg", false)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	textures = append(textures, normalTexture)
-
-	return NewMesh(vertices, indices, textures)
-}
-
-func newLightMesh() *Mesh {
-	vertices := getVertices(cubeData)
-	var textures []*Texture
-	var indices []uint32
-	return NewMesh(vertices, indices, textures)
-}
 
 func NewGrassMesh() *Mesh {
 	var data = []float32{
@@ -71,23 +39,7 @@ func NewGrassMesh() *Mesh {
 		log.Fatalln(err)
 	}
 	textures = append(textures, normalTexture)
-	var indices []uint32
-	return NewMesh(vertices, indices, textures)
-}
-
-func newPlaneMesh() *Mesh {
-	var data = []float32{
-		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
-		0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
-		0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 1.0, 1.0, // top-right
-		0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
-		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
-		-0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0, // bottom-left
-	}
-	vertices := getVertices(data)
-	var textures []*Texture
-	var indices []uint32
-	return NewMesh(vertices, indices, textures)
+	return NewMesh("grass", vertices, textures, obj.NewMaterial())
 }
 
 type Vertex struct {
@@ -97,30 +49,58 @@ type Vertex struct {
 	Tangent   [3]float32
 }
 
-func NewMesh(vertices []Vertex, Indices []uint32, textures []*Texture) *Mesh {
+func NewMesh(name string, vertices []Vertex, textures []*Texture, mat *obj.Material) *Mesh {
 	q := &Mesh{
+		Name:     name,
 		Vertices: vertices,
-		Indices:  Indices,
 		Textures: textures,
+		Material: mat,
+	}
+	if len(textures) > 0 {
+		q.MeshType = TextureMesh
+	} else {
+		q.MeshType = MaterialMesh
 	}
 	q.init()
 	return q
 }
 
 type Mesh struct {
+	Name     string
 	Vertices []Vertex
 	Indices  []uint32
 	Textures []*Texture
+	Material *obj.Material
+	MeshType ShaderType
 
 	vbo, vao, ebo uint32
 }
 
-func (s *Mesh) Render(shader ModelShader) {
+func (s *Mesh) Render(tShader TextureShader, mShader MaterialShader) {
+
+	if s.MeshType == TextureMesh {
+		s.setTextures(tShader)
+	} else {
+		s.setMaterial(mShader)
+	}
+
+	gl.BindVertexArray(s.vao)
+	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.Vertices)))
+	// reset
+	gl.BindVertexArray(0)
+
+	// reset textures
+	for i := range s.Textures {
+		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+		gl.BindTexture(gl.TEXTURE_2D, 0)
+	}
+}
+
+func (s *Mesh) setTextures(tShader TextureShader) {
 	diffuseNr := 0
 	specularNr := 0
 	normalNr := 0
 	for i, texture := range s.Textures {
-
 		var number int
 		switch texture.textureType {
 		case Specular:
@@ -135,31 +115,15 @@ func (s *Mesh) Render(shader ModelShader) {
 		default:
 			panic("unknown texture type ")
 		}
-
-		//uniformName := fmt.Sprintf("mat.%s%d", texture.textureType, number)
 		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-		gl.Uniform1i(shader.TextureUniform(texture.textureType, number), int32(i))
+		gl.Uniform1i(tShader.TextureUniform(texture.textureType, number), int32(i))
 		gl.BindTexture(gl.TEXTURE_2D, texture.ID)
 	}
+}
 
-	//shader.Shiniess
-	//location := gl.GetUniformLocation(shader.Program(), gl.Str("mat.shininess\x00"))
-	//if location > 0 {
-	//	gl.Uniform1f(location, 128.0)
-	//} else {
-	//	panic("oh noes, no mat.shininess")
-	//}
-
-	gl.BindVertexArray(s.vao)
-	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.Vertices)))
-	// reset
-	gl.BindVertexArray(0)
-
-	// reset textures
-	for i := range s.Textures {
-		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-		gl.BindTexture(gl.TEXTURE_2D, 0)
-	}
+func (s *Mesh) setMaterial(mShader MaterialShader) {
+	gl.Uniform3f(mShader.DiffuseUniform(), s.Material.Diffuse[0], s.Material.Diffuse[1], s.Material.Diffuse[2])
+	gl.Uniform1f(mShader.SpecularExpUniform(), s.Material.SpecularExp)
 }
 
 func (s *Mesh) init() {
@@ -176,11 +140,6 @@ func (s *Mesh) init() {
 
 	size := int32(unsafe.Sizeof(Vertex{}))
 	gl.BufferData(gl.ARRAY_BUFFER, len(s.Vertices)*int(size), gl.Ptr(s.Vertices), gl.STATIC_DRAW)
-
-	if len(s.Indices) > 0 {
-		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, s.ebo)
-		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(s.Indices)*3, gl.Ptr(s.Indices), gl.STATIC_DRAW)
-	}
 
 	// vertex position
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, size, gl.PtrOffset(0))
@@ -259,50 +218,4 @@ func getVertices(meshdata []float32) []Vertex {
 		copy(vertices[i+2].Tangent[:], tangent[:])
 	}
 	return vertices
-}
-
-var cubeData = []float32{
-	// Positions      Normals         Texture Coords
-	// Back face
-	-0.5, -0.5, -0.5, 0.0, 0.0, -1.0, 0.0, 0.0, // Bottom-left
-	0.5, 0.5, -0.5, 0.0, 0.0, -1.0, 1.0, 1.0, // top-right
-	0.5, -0.5, -0.5, 0.0, 0.0, -1.0, 1.0, 0.0, // bottom-right
-	0.5, 0.5, -0.5, 0.0, 0.0, -1.0, 1.0, 1.0, // top-right
-	-0.5, -0.5, -0.5, 0.0, 0.0, -1.0, 0.0, 0.0, // bottom-left
-	-0.5, 0.5, -0.5, 0.0, 0.0, -1.0, 0.0, 1.0, // top-left
-	// Front face
-	-0.5, -0.5, 0.5, 0.0, 0.0, 1.0, 0.0, 0.0, // bottom-left
-	0.5, -0.5, 0.5, 0.0, 0.0, 1.0, 1.0, 0.0, // bottom-right
-	0.5, 0.5, 0.5, 0.0, 0.0, 1.0, 1.0, 1.0, // top-right
-	0.5, 0.5, 0.5, 0.0, 0.0, 1.0, 1.0, 1.0, // top-right
-	-0.5, 0.5, 0.5, 0.0, 0.0, 1.0, 0.0, 1.0, // top-left
-	-0.5, -0.5, 0.5, 0.0, 0.0, 1.0, 0.0, 0.0, // bottom-left
-	// Left face
-	-0.5, 0.5, 0.5, -1.0, 0.0, 0.0, 1.0, 0.0, // top-right
-	-0.5, 0.5, -0.5, -1.0, 0.0, 0.0, 1.0, 1.0, // top-left
-	-0.5, -0.5, -0.5, -1.0, 0.0, 0.0, 0.0, 1.0, // bottom-left
-	-0.5, -0.5, -0.5, -1.0, 0.0, 0.0, 0.0, 1.0, // bottom-left
-	-0.5, -0.5, 0.5, -1.0, 0.0, 0.0, 0.0, 0.0, // bottom-right
-	-0.5, 0.5, 0.5, -1.0, 0.0, 0.0, 1.0, 0.0, // top-right
-	// Right face
-	0.5, 0.5, 0.5, 1.0, 0.0, 0.0, 1.0, 0.0, // top-left
-	0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 0.0, 1.0, // bottom-right
-	0.5, 0.5, -0.5, 1.0, 0.0, 0.0, 1.0, 1.0, // top-right
-	0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 0.0, 1.0, // bottom-right
-	0.5, 0.5, 0.5, 1.0, 0.0, 0.0, 1.0, 0.0, // top-left
-	0.5, -0.5, 0.5, 1.0, 0.0, 0.0, 0.0, 0.0, // bottom-left
-	// Bottom face
-	-0.5, -0.5, -0.5, 0.0, -1.0, 0.0, 0.0, 1.0, // top-right
-	0.5, -0.5, -0.5, 0.0, -1.0, 0.0, 1.0, 1.0, // top-left
-	0.5, -0.5, 0.5, 0.0, -1.0, 0.0, 1.0, 0.0, // bottom-left
-	0.5, -0.5, 0.5, 0.0, -1.0, 0.0, 1.0, 0.0, // bottom-left
-	-0.5, -0.5, 0.5, 0.0, -1.0, 0.0, 0.0, 0.0, // bottom-right
-	-0.5, -0.5, -0.5, 0.0, -1.0, 0.0, 0.0, 1.0, // top-right
-	// Top face
-	-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
-	0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
-	0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 1.0, 1.0, // top-right
-	0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
-	-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
-	-0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0, // bottom-left
 }

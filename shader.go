@@ -16,10 +16,35 @@ type Shader interface {
 	Program() uint32
 }
 
-type ModelShader interface {
+type TextureShader interface {
 	Shader
-	TextureUniform(TextureType, int) int32
 	ModelUniform() int32
+	TextureUniform(TextureType, int) int32
+}
+
+type MaterialShader interface {
+	Shader
+	ModelUniform() int32
+	DiffuseUniform() int32
+	SpecularExpUniform() int32
+}
+
+type GbufferMShader struct {
+	Shader
+	uniformModelLoc int32
+	locDiffuse      int32
+	locSpecularExp  int32
+}
+
+func (s *GbufferMShader) ModelUniform() int32 {
+	return s.uniformModelLoc
+}
+
+func (s *GbufferMShader) DiffuseUniform() int32 {
+	return s.locDiffuse
+}
+func (s *GbufferMShader) SpecularExpUniform() int32 {
+	return s.locSpecularExp
 }
 
 type GbufferLightShader interface {
@@ -30,15 +55,15 @@ type GbufferLightShader interface {
 	UniformDepthLoc() int32
 }
 
-type GbufferShader struct {
+type GbufferTShader struct {
 	Shader
+	uniformModelLoc    int32
 	uniformDiffuseLoc  int32
 	uniformNormalLoc   int32
 	uniformSpecularLoc int32
-	uniformModelLoc    int32
 }
 
-func (s *GbufferShader) TextureUniform(t TextureType, num int) int32 {
+func (s *GbufferTShader) TextureUniform(t TextureType, num int) int32 {
 	if t == Diffuse {
 		return s.uniformDiffuseLoc
 	}
@@ -51,7 +76,7 @@ func (s *GbufferShader) TextureUniform(t TextureType, num int) int32 {
 	return -1
 }
 
-func (s *GbufferShader) ModelUniform() int32 {
+func (s *GbufferTShader) ModelUniform() int32 {
 	return s.uniformModelLoc
 }
 

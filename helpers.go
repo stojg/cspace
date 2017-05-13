@@ -16,7 +16,7 @@ func setUniformMatrix4fv(shader Shader, name string, matrix mgl32.Mat4) {
 func uniformLocation(shader Shader, name string) int32 {
 	location := gl.GetUniformLocation(shader.Program(), gl.Str(name+"\x00"))
 	if location < 0 {
-		glError(fmt.Errorf("uniform location for shader.Program '%d' and name '%s' not found", shader.Program(), name))
+		glError(fmt.Errorf("uniform location for tShader.Program '%d' and name '%s' not found", shader.Program(), name))
 	}
 	return location
 }

@@ -14,36 +14,40 @@ type Model struct {
 	Transforms []Transform
 }
 
-func LoadModel(directory string) *Mesh {
+func LoadModel(directory string) []*Mesh {
+
+	var result []*Mesh
 
 	filePath := filepath.Join(directory, "model.obj")
+	objects := obj.LoadObject(filePath)
 
-	data := obj.LoadObject(filePath)
+	for _, object := range objects {
+		glLogf("--- Loaded %s ----\n", object.Name)
+		glLogf("size %d bytes\n", len(object.Data))
 
-	glLogf("--- Loaded %s ----\n", directory)
-	glLogf("size %d bytes\n", len(data))
+		vertices := getVertices(object.Data)
+		var textures []*Texture
 
-	vertices := getVertices(data)
-	var textures []*Texture
-	var indices []uint32
+		diffuseTexture, err := newTexture(Diffuse, filepath.Join(directory, "d.png"), false)
+		if err == nil {
+			textures = append(textures, diffuseTexture)
+		}
 
-	diffuseTexture, err := newTexture(Diffuse, filepath.Join(directory, "d.png"), false)
-	if err == nil {
-		textures = append(textures, diffuseTexture)
+		specularTexture, err := newTexture(Specular, filepath.Join(directory, "s.png"), false)
+		if err == nil {
+			textures = append(textures, specularTexture)
+		}
+
+		normalTexture, err := newTexture(Normal, filepath.Join(directory, "n.png"), false)
+		if err == nil {
+			textures = append(textures, normalTexture)
+		}
+
+		glLogf("textures %d \n", len(textures))
+		glLogln("------------------------")
+
+		result = append(result, NewMesh(object.Name, vertices, textures, object.Mtr))
 	}
+	return result
 
-	specularTexture, err := newTexture(Specular, filepath.Join(directory, "s.png"), false)
-	if err == nil {
-		textures = append(textures, specularTexture)
-	}
-
-	normalTexture, err := newTexture(Normal, filepath.Join(directory, "n.png"), false)
-	if err == nil {
-		textures = append(textures, normalTexture)
-	}
-
-	glLogf("textures %d \n", len(textures))
-	glLogln("------------------------")
-
-	return NewMesh(vertices, indices, textures)
 }

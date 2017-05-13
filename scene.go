@@ -18,7 +18,7 @@ var currentNumLights = 8
 
 var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{1, 1, 1}),
-	Color:     [3]float32{0.3, 0.3, 0.7},
+	Color:     [3]float32{0.2, 0.2, 0.4},
 }
 
 var passthroughShader *PassthroughShader
@@ -41,14 +41,13 @@ func NewScene() *Scene {
 		dirLightShader:   NewDirLightShader("lighting", "lighting_dir"),
 		nullShader:       NewDefaultShader("null", "null"),
 		lightBoxShader:   NewDefaultShader("simple", "emissive"),
-		lightMesh:        newLightMesh(),
-		icoMesh:          LoadModel("models/ico"),
+		icoMesh:          LoadModel("models/ico")[0],
 	}
 
 	for i := 0; i < numLights; i++ {
-		att := ligthAtt[7]
+		att := ligthAtt[13]
 		s.pointLights = append(s.pointLights, &PointLight{
-			Position: [3]float32{rand.Float32()*30 - 15, 0, rand.Float32()*30 - 15},
+			Position: [3]float32{rand.Float32()*60 - 30, 0, rand.Float32()*60 - 30},
 			Color:    [3]float32{1 + rand.Float32()*2, 1 + rand.Float32()*2, 1 + rand.Float32()*2 + 0.5},
 			Constant: att.Constant,
 			Linear:   att.Linear,
@@ -58,7 +57,7 @@ func NewScene() *Scene {
 		})
 	}
 
-	// shader location caches
+	// tShader location caches
 	s.nullShaderModelLoc = uniformLocation(s.nullShader, "model")
 	s.pointLightShaderScreenSizeLoc = uniformLocation(s.pointLightShader, "gScreenSize")
 	s.pointLightViewPosLoc = uniformLocation(s.pointLightShader, "viewPos")
@@ -91,7 +90,6 @@ type Scene struct {
 	lightBoxShader   *DefaultShader
 
 	pointLights []*PointLight
-	lightMesh   *Mesh
 	icoMesh     *Mesh
 
 	// caches - should move to the individual shaders
@@ -154,8 +152,8 @@ func (s *Scene) Render() {
 
 			gl.UniformMatrix4fv(s.nullShaderModelLoc, 1, false, &model[0])
 
-			gl.BindVertexArray(s.lightMesh.vao)
-			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
+			gl.BindVertexArray(s.icoMesh.vao)
+			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.icoMesh.Vertices)))
 			gl.BindVertexArray(0)
 
 		}
@@ -297,7 +295,7 @@ func (s *Scene) Render() {
 	gl.BindTexture(gl.TEXTURE_2D, out)
 	renderQuad()
 
-	//DisplayFramebufferTexture(s.bloomEffect.bloomFbo.textures[0])
+	//DisplayFramebufferTexture(s.gBufferPipeline.buffer.gNormal)
 	chkError("end_of_frame")
 }
 func handleInputs() {

@@ -117,7 +117,7 @@ func fpsCounter(window *glfw.Window) {
 func glLogShader(shader Shader, vertex, frag string) {
 
 	program := shader.Program()
-	glLogf("------- info shader programme %d | %s / %s -------\n", program, vertex, frag)
+	glLogf("------- info tShader programme %d | %s / %s -------\n", program, vertex, frag)
 
 	var params int32
 	gl.GetProgramiv(program, gl.LINK_STATUS, &params)

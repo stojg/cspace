@@ -10,19 +10,27 @@ func NewGBufferPipeline() *GBufferPipeline {
 		buffer:     NewGbuffer(windowWidth, windowHeight),
 		nullShader: NewDefaultShader("null", "null"),
 	}
-	p.shader = &GbufferShader{
+	p.mShader = &GbufferMShader{
+		Shader: NewDefaultShader("g_buffer", "g_buffer_m"),
+	}
+	p.mShader.uniformModelLoc = uniformLocation(p.mShader.Shader, "model")
+	p.mShader.locDiffuse = uniformLocation(p.mShader.Shader, "mat.diffuse")
+	p.mShader.locSpecularExp = uniformLocation(p.mShader.Shader, "mat.specularExp")
+
+	p.tShader = &GbufferTShader{
 		Shader: NewDefaultShader("g_buffer", "g_buffer"),
 	}
-	p.shader.uniformDiffuseLoc = uniformLocation(p.shader.Shader, "mat.diffuse0")
-	p.shader.uniformSpecularLoc = uniformLocation(p.shader.Shader, "mat.specular0")
-	p.shader.uniformNormalLoc = uniformLocation(p.shader.Shader, "mat.normal0")
-	p.shader.uniformModelLoc = uniformLocation(p.shader.Shader, "model")
+	p.tShader.uniformDiffuseLoc = uniformLocation(p.tShader.Shader, "mat.diffuse0")
+	p.tShader.uniformSpecularLoc = uniformLocation(p.tShader.Shader, "mat.specular0")
+	p.tShader.uniformNormalLoc = uniformLocation(p.tShader.Shader, "mat.normal0")
+	p.tShader.uniformModelLoc = uniformLocation(p.tShader.Shader, "model")
 	return p
 }
 
 type GBufferPipeline struct {
 	buffer     *Gbuffer
-	shader     *GbufferShader
+	tShader    *GbufferTShader
+	mShader    *GbufferMShader
 	nullShader *DefaultShader
 }
 
@@ -32,7 +40,7 @@ func (p *GBufferPipeline) Render(projection, view mgl32.Mat4, graph *Node) {
 	gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
-	p.shader.UsePV(projection, view)
+	//p.tShader.UsePV(projection, view)
 
 	// 1. render into the gBuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, p.buffer.fbo)
@@ -41,10 +49,9 @@ func (p *GBufferPipeline) Render(projection, view mgl32.Mat4, graph *Node) {
 
 	// Only the geometry pass updates the gDepth buffer
 	gl.DepthMask(true)
-	gl.ClearColor(0.0, 0.0, 0.0, 0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	gl.Enable(gl.DEPTH_TEST)
 
-	graph.Render(p.shader)
+	graph.Render(projection, view, p.tShader, p.mShader)
 
 }

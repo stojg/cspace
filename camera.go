@@ -9,8 +9,8 @@ import (
 
 func NewCamera() *Camera {
 	c := &Camera{
-		position:   mgl32.Vec3{0, 15, -24},
-		front:      mgl32.Vec3{0, 0, 1},
+		position:   mgl32.Vec3{0, 15, 24},
+		front:      mgl32.Vec3{0, 0, -1},
 		up:         mgl32.Vec3{0, 1, 0},
 		lastX:      windowWidth / 2,
 		lastY:      windowHeight / 2,

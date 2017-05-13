@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,16 +19,56 @@ var (
 	GroupsParsed  int
 )
 
-func LoadObject(filename string) []float32 {
-	obj, num, err := ParseFile(filename)
+func NewMaterial() *Material {
+	return &Material{
+		Name:         "DefaultMaterial",
+		Ambient:      [3]float32{0.5, 0.5, 0.5},
+		Diffuse:      [3]float32{0.5, 0.5, 0.5},
+		Specular:     [3]float32{0.5, 0.5, 0.5},
+		SpecularExp:  32,
+		Transparency: 1,
+	}
+}
 
+type Material struct {
+	Name         string
+	Ambient      [3]float32
+	Diffuse      [3]float32
+	Specular     [3]float32
+	Transparency float32
+	SpecularExp  float32
+}
+
+type Object struct {
+	Name string
+	Data []float32
+	Mtr  *Material
+}
+
+func LoadObject(filename string) []*Object {
+	obj, num, err := ParseFile(filename)
 	if err != nil {
 		fmt.Println("error at object line: ", num)
 		panic(err)
 	}
 
-	var data []float32
+	materials := make(map[string]*Material)
+
+	for _, mtrlib := range obj.MaterialLibraries {
+		ms, err := ParseMtr(filepath.Join(filepath.Dir(filename), mtrlib))
+		if err != nil {
+			fmt.Printf("warning: material parse: %s\n", err)
+		}
+		for k, m := range ms {
+			materials[k] = m
+		}
+	}
+
+	var objects []*Object
+
 	for _, object := range obj.Objects {
+		var data []float32
+		// convert the face data into actual data ready for openGL loading
 		for _, vert := range object.VertexData {
 			data = add(data, vert.Declarations[0])
 			data = add(data, vert.Declarations[1])
@@ -37,8 +79,19 @@ func LoadObject(filename string) []float32 {
 				data = add(data, vert.Declarations[i])
 			}
 		}
+
+		mat := materials[object.Material]
+		if mat == nil {
+			mat = NewMaterial()
+		}
+
+		objects = append(objects, &Object{
+			Name: object.Name,
+			Data: data,
+			Mtr:  mat,
+		})
 	}
-	return data
+	return objects
 }
 
 func add(data []float32, in *objectfile.Declaration) []float32 {
@@ -153,7 +206,6 @@ func parse(src io.Reader) (*objectfile.OBJ, int, error) {
 
 			// object: material
 		case objectfile.MtlUse:
-
 			// obj files can define multiple materials inside a single object/group.
 			// usually these are small face groups that kill performance on 3D engines
 			// as they have to render hundreds or thousands of meshes with the same material,
@@ -259,4 +311,55 @@ func strContainsAny(str string, parts []string, cs caseSensitivity) bool {
 		}
 	}
 	return false
+}
+
+func ParseMtr(path string) (map[string]*Material, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return parseMtr(f)
+}
+
+func parseMtr(r io.Reader) (map[string]*Material, error) {
+	result := make(map[string]*Material)
+	current := ""
+	var f1, f2, f3 float32
+	reader := bufio.NewReader(r)
+	line, e1 := reader.ReadString('\n')
+	for ; e1 == nil; line, e1 = reader.ReadString('\n') {
+		tokens := strings.Split(line, " ")
+		switch tokens[0] {
+		case "Ka": // ambient
+			if _, e := fmt.Sscanf(line, "Ka %f %f %f", &f1, &f2, &f3); e != nil {
+				return result, fmt.Errorf("could not parse ambient values %s", e)
+			}
+			result[current].Ambient = [3]float32{f1, f2, f3}
+		case "Kd": // diffuse
+			if _, e := fmt.Sscanf(line, "Kd %f %f %f", &f1, &f2, &f3); e != nil {
+				return result, fmt.Errorf("could not parse diffuse values %s", e)
+			}
+			result[current].Diffuse = [3]float32{f1, f2, f3}
+		case "Ks": // specular
+			if _, e := fmt.Sscanf(line, "Ks %f %f %f", &f1, &f2, &f3); e != nil {
+				return result, fmt.Errorf("could not parse specular values %s", e)
+			}
+			result[current].Specular = [3]float32{f1, f2, f3}
+		case "d": // transparency
+			a, _ := strconv.ParseFloat(strings.TrimSpace(tokens[1]), 32)
+			result[current].Transparency = float32(a)
+		case "Ns": // specular exponent
+			ns, _ := strconv.ParseFloat(strings.TrimSpace(tokens[1]), 32)
+			result[current].SpecularExp = float32(ns)
+		case "newmtl": // material name
+			current = strings.TrimSpace(tokens[1])
+			result[current] = &Material{
+				Name: tokens[1],
+			}
+		case "Ni": // optical density - scaler. Ignored for now.
+		case "illum": // illumination model - int. Ignored for now.
+		}
+	}
+	return result, nil
 }

@@ -51,13 +51,46 @@ func realMain() error {
 
 	scene := NewScene()
 
-	rock := LoadModel("models/rock1")
-	for i := 0; i < 30; i++ {
-		t := mgl32.Translate3D(rand.Float32()*30-15, 0.1, rand.Float32()*30-15)
+	tree := LoadModel("models/tree1")
+	for i := 0; i < 5; i++ {
+		t := mgl32.Translate3D(rand.Float32()*60-30, 0.1, rand.Float32()*60-30)
 		s := rand.Float32()/4 + 1
 		t = t.Mul4(mgl32.Scale3D(s, s, s))
 		t = t.Mul4(mgl32.HomogRotate3D(rand.Float32()*360, mgl32.Vec3{0, 1, 0}.Normalize()))
-		scene.graph.Add(rock, t)
+		scene.graph.Add(tree, MaterialMesh, t)
+	}
+
+	rock := LoadModel("models/stone1")
+	for i := 0; i < 30; i++ {
+		t := mgl32.Translate3D(rand.Float32()*60-30, 0.1, rand.Float32()*60-30)
+		t = t.Mul4(mgl32.HomogRotate3D(rand.Float32()*360, mgl32.Vec3{0, 1, 0}.Normalize()))
+		scene.graph.Add(rock, TextureMesh, t)
+	}
+	{
+		tree := LoadModel("models/bush1")
+		for i := 0; i < 15; i++ {
+			t := mgl32.Translate3D(rand.Float32()*60-30, 0.1, rand.Float32()*60-30)
+			t = t.Mul4(mgl32.HomogRotate3D(rand.Float32()*360, mgl32.Vec3{0, 1, 0}.Normalize()))
+			scene.graph.Add(tree, MaterialMesh, t)
+		}
+	}
+
+	{
+		tree := LoadModel("models/tree2")
+		for i := 0; i < 5; i++ {
+			t := mgl32.Translate3D(rand.Float32()*60-30, 0.1, rand.Float32()*60-30)
+			t = t.Mul4(mgl32.HomogRotate3D(rand.Float32()*360, mgl32.Vec3{0, 1, 0}.Normalize()))
+			scene.graph.Add(tree, MaterialMesh, t)
+		}
+	}
+
+	{
+		tree := LoadModel("models/tree3")
+		for i := 0; i < 8; i++ {
+			t := mgl32.Translate3D(rand.Float32()*60-30, 0.1, rand.Float32()*60-30)
+			t = t.Mul4(mgl32.HomogRotate3D(rand.Float32()*360, mgl32.Vec3{0, 1, 0}.Normalize()))
+			scene.graph.Add(tree, MaterialMesh, t)
+		}
 	}
 
 	grass := NewGrassMesh()
@@ -65,7 +98,7 @@ func realMain() error {
 		for z := 0; z < 20; z++ {
 			grassT := mgl32.Translate3D(float32(x)*3-30, -0.01, float32(z)*3-30)
 			grassT = grassT.Mul4(mgl32.Scale3D(3, 0.01, 3))
-			scene.graph.Add(grass, grassT)
+			scene.graph.Add([]*Mesh{grass}, TextureMesh, grassT)
 		}
 	}
 
