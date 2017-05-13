@@ -29,7 +29,6 @@ func NewScene() *Scene {
 	passthroughShader = NewPassthroughShader()
 	hdrShader = NewDefaultShader("fx", "fx_tone")
 
-	graphTransform := mgl32.Ident4()
 	s := &Scene{
 		gBufferPipeline: NewGBufferPipeline(),
 
@@ -38,7 +37,7 @@ func NewScene() *Scene {
 		previousTime:     glfw.GetTime(),
 		camera:           NewCamera(),
 		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/float32(windowHeight), 1, 200.0),
-		graph:            &Node{transform: &graphTransform},
+		graph:            NewBaseNode(),
 		pointLightShader: NewPointLightShader("lighting", "lighting_point"),
 		dirLightShader:   NewDirLightShader("lighting", "lighting_dir"),
 		nullShader:       NewDefaultShader("null", "null"),
@@ -48,10 +47,9 @@ func NewScene() *Scene {
 	}
 
 	for i := 0; i < numLights; i++ {
-		att := ligthAtt[13]
+		att := ligthAtt[7]
 		s.pointLights = append(s.pointLights, &PointLight{
 			Position: [3]float32{rand.Float32()*60 - 30, 0, rand.Float32()*60 - 30},
-			//Color:    [3]float32{1 + rand.Float32()*2, 1 + rand.Float32()*2, 1 + rand.Float32()*2 + 1},
 			Color:    [3]float32{rand.Float32()*3 + 0.1, rand.Float32()*3 + 0.1, rand.Float32()*3 + 0.1},
 			Constant: att.Constant,
 			Linear:   att.Linear,
@@ -82,7 +80,7 @@ type Scene struct {
 	elapsed      float32
 	projection   mgl32.Mat4
 	camera       *Camera
-	graph        *Node
+	graph        SceneNode
 
 	fxBuffer        *FXFbo
 	gBufferPipeline *GBufferPipeline

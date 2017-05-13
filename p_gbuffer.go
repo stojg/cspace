@@ -34,7 +34,7 @@ type GBufferPipeline struct {
 	nullShader *DefaultShader
 }
 
-func (p *GBufferPipeline) Render(projection, view mgl32.Mat4, graph *Node) {
+func (p *GBufferPipeline) Render(projection, view mgl32.Mat4, graph SceneNode) {
 
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, p.buffer.fbo)
 	gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
