@@ -23,7 +23,7 @@ var directionLight = &DirectionalLight{
 
 var passthroughShader *PassthroughShader
 
-func NewScene(WindowWidth, WindowHeight int32) *Scene {
+func NewScene() *Scene {
 
 	passthroughShader = NewPassthroughShader()
 
@@ -35,7 +35,7 @@ func NewScene(WindowWidth, WindowHeight int32) *Scene {
 		bloomEffect:      NewBloomEffect(),
 		previousTime:     glfw.GetTime(),
 		camera:           NewCamera(),
-		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(WindowWidth)/float32(WindowHeight), 0.1, 200.0),
+		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/float32(windowHeight), 0.1, 200.0),
 		graph:            &Node{transform: &graphTransform},
 		pointLightShader: NewPointLightShader("lighting", "lighting_point"),
 		dirLightShader:   NewDirLightShader("lighting", "lighting_dir"),

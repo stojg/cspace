@@ -49,7 +49,7 @@ func realMain() error {
 		return err
 	}
 
-	scene := NewScene(windowWidth, windowHeight)
+	scene := NewScene()
 
 	rock := LoadModel("models/rock1")
 	for i := 0; i < 30; i++ {
