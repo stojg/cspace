@@ -22,16 +22,10 @@ var directionLight = &DirectionalLight{
 }
 
 var passthroughShader *PassthroughShader
-var bloomColShader *DefaultShader
-var shaderBlur *DefaultShader
-var bloomBlender *DefaultShader
 
 func NewScene(WindowWidth, WindowHeight int32) *Scene {
 
 	passthroughShader = NewPassthroughShader()
-	bloomColShader = NewDefaultShader("fx", "fx_brigthness_sep")
-	shaderBlur = NewDefaultShader("fx", "fx_guassian_blur")
-	bloomBlender = NewDefaultShader("fx", "fx_bloom_blender")
 
 	graphTransform := mgl32.Ident4()
 	s := &Scene{
@@ -302,6 +296,8 @@ func (s *Scene) Render() {
 	gl.Uniform1i(passthroughShader.uniformScreenTextureLoc, 0)
 	gl.BindTexture(gl.TEXTURE_2D, out)
 	renderQuad()
+
+	//DisplayFramebufferTexture(s.bloomEffect.bloomFbo.textures[0])
 	chkError("end_of_frame")
 }
 func handleInputs() {
