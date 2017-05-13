@@ -18,14 +18,16 @@ var currentNumLights = 8
 
 var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{1, 1, 1}),
-	Color:     [3]float32{0.2, 0.2, 0.4},
+	Color:     [3]float32{0.4, 0.4, 0.4},
 }
 
 var passthroughShader *PassthroughShader
+var hdrShader *DefaultShader
 
 func NewScene() *Scene {
 
 	passthroughShader = NewPassthroughShader()
+	hdrShader = NewDefaultShader("fx", "fx_tone")
 
 	graphTransform := mgl32.Ident4()
 	s := &Scene{
@@ -260,7 +262,7 @@ func (s *Scene) Render() {
 				continue
 			}
 			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin+s.pointLights[i].rand, s.pointLights[i].Position[2])
-			model = model.Mul4(mgl32.Scale3D(0.05, 0.05, 0.05))
+			model = model.Mul4(mgl32.Scale3D(0.1, 0.1, 0.1))
 
 			gl.UniformMatrix4fv(s.lightBoxModelLoc, 1, false, &model[0])
 			gl.Uniform3fv(s.lightBoxEmissiveLoc, 1, &s.pointLights[i].Color[0])
@@ -295,7 +297,6 @@ func (s *Scene) Render() {
 	gl.BindTexture(gl.TEXTURE_2D, out)
 	renderQuad()
 
-	//DisplayFramebufferTexture(s.gBufferPipeline.buffer.gNormal)
 	chkError("end_of_frame")
 }
 func handleInputs() {

@@ -40,8 +40,6 @@ func (p *GBufferPipeline) Render(projection, view mgl32.Mat4, graph *Node) {
 	gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
-	//p.tShader.UsePV(projection, view)
-
 	// 1. render into the gBuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, p.buffer.fbo)
 	var attachments = [3]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.COLOR_ATTACHMENT2}

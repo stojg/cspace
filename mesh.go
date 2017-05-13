@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"math"
 
 	"unsafe"
@@ -22,24 +20,30 @@ func NewGrassMesh() *Mesh {
 	}
 	vertices := getVertices(data)
 	var textures []*Texture
-	diffuseTexture, err := newTexture(Diffuse, "textures/grass/grass01.jpg", true)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	textures = append(textures, diffuseTexture)
-
-	specularTexture, err := newTexture(Specular, "textures/grass/grass01_s.jpg", true)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	textures = append(textures, specularTexture)
-
-	normalTexture, err := newTexture(Normal, "textures/grass/grass01_n.jpg", true)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	textures = append(textures, normalTexture)
-	return NewMesh("grass", vertices, textures, obj.NewMaterial())
+	//diffuseTexture, err := newTexture(Diffuse, "textures/grass/grass01.jpg", true)
+	//if err != nil {
+	//	log.Fatalln(err)
+	//}
+	//textures = append(textures, diffuseTexture)
+	//
+	//specularTexture, err := newTexture(Specular, "textures/grass/grass01_s.jpg", true)
+	//if err != nil {
+	//	log.Fatalln(err)
+	//}
+	//textures = append(textures, specularTexture)
+	//
+	//normalTexture, err := newTexture(Normal, "textures/grass/grass01_n.jpg", true)
+	//if err != nil {
+	//	log.Fatalln(err)
+	//}
+	//textures = append(textures, normalTexture)
+	mat := obj.NewMaterial()
+	mat.Ambient = [3]float32{1, 1, 1}
+	mat.Diffuse = [3]float32{0.242558, 0.079845, 0.040770}
+	mat.Name = "grass"
+	mat.SpecularExp = 0
+	mat.Specular = [3]float32{0, 0.3, 0}
+	return NewMesh("grass", vertices, textures, mat)
 }
 
 type Vertex struct {
@@ -123,7 +127,7 @@ func (s *Mesh) setTextures(tShader TextureShader) {
 
 func (s *Mesh) setMaterial(mShader MaterialShader) {
 	gl.Uniform3f(mShader.DiffuseUniform(), s.Material.Diffuse[0], s.Material.Diffuse[1], s.Material.Diffuse[2])
-	gl.Uniform1f(mShader.SpecularExpUniform(), s.Material.SpecularExp)
+	gl.Uniform1f(mShader.SpecularExpUniform(), 0.01)
 }
 
 func (s *Mesh) init() {

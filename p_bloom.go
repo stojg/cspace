@@ -18,8 +18,9 @@ func NewBloomEffect() *BloomEffect {
 }
 
 type BloomEffect struct {
-	bloomFbo         *BloomFBO
-	pingBuffers      [2]*FBO
+	bloomFbo    *BloomFBO
+	pingBuffers [2]*FBO
+
 	separationShader *DefaultShader
 	gaussianBlender  *DefaultShader
 	blendShader      *DefaultShader
@@ -45,9 +46,6 @@ func (b *BloomEffect) Render(inTexture uint32) uint32 {
 	const blurAmount = 2
 	horizontal := 0
 	firstIteration := true
-
-	// @todo cache these outside the render loop
-	//textLoc := uniformLocation(b.gaussianBlender, "screenTexture")
 
 	// ping-pong
 	for i := 0; i < blurAmount; i++ {

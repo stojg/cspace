@@ -1,0 +1,11 @@
+# Blender MTL File: 'Low_Poly_Nature_Pack_lite.blend'
+# Material Count: 1
+
+newmtl None
+Ns 0
+Ka 1.000000 1.000000 1.000000
+Kd 0.099059 0.200599 0.049642
+#Kd 0.6 0.9 0.6
+Ks 0 0 0
+d 1
+illum 2

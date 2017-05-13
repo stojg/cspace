@@ -24,7 +24,7 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	// Position texture buffer
 	gl.GenTextures(1, &gbuffer.gPosition)
 	gl.BindTexture(gl.TEXTURE_2D, gbuffer.gPosition)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGB, gl.FLOAT, nil)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB16F, windowWidth, windowHeight, 0, gl.RGB, gl.FLOAT, nil)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, gbuffer.gPosition, 0)
@@ -32,7 +32,7 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	// Normal texture buffer
 	gl.GenTextures(1, &gbuffer.gNormal)
 	gl.BindTexture(gl.TEXTURE_2D, gbuffer.gNormal)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGBA, gl.FLOAT, nil)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB16F, windowWidth, windowHeight, 0, gl.RGB, gl.FLOAT, nil)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, gbuffer.gNormal, 0)
@@ -40,7 +40,7 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	// Color + Specular texture buffer
 	gl.GenTextures(1, &gbuffer.gAlbedoSpec)
 	gl.BindTexture(gl.TEXTURE_2D, gbuffer.gAlbedoSpec)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, windowWidth, windowHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT2, gl.TEXTURE_2D, gbuffer.gAlbedoSpec, 0)
@@ -48,13 +48,13 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	//  Depth + stencil buffer object
 	gl.GenTextures(1, &gbuffer.gDepth)
 	gl.BindTexture(gl.TEXTURE_2D, gbuffer.gDepth)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.DEPTH32F_STENCIL8, SCR_WIDTH, SCR_HEIGHT, 0, gl.DEPTH_STENCIL, gl.FLOAT_32_UNSIGNED_INT_24_8_REV, nil)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.DEPTH32F_STENCIL8, windowWidth, windowHeight, 0, gl.DEPTH_STENCIL, gl.FLOAT_32_UNSIGNED_INT_24_8_REV, nil)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, gbuffer.gDepth, 0)
 
 	// Final output texture for this FBO
 	gl.GenTextures(1, &gbuffer.finalTexture)
 	gl.BindTexture(gl.TEXTURE_2D, gbuffer.finalTexture)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, gl.RGBA, gl.FLOAT, nil)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB16F, windowWidth, windowHeight, 0, gl.RGB, gl.FLOAT, nil)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_BASE_LEVEL, 0)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_LEVEL, 0)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT4, gl.TEXTURE_2D, gbuffer.finalTexture, 0)

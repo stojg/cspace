@@ -8,15 +8,16 @@ import (
 type ShaderType int
 
 const (
-	TextureMesh ShaderType = iota
+	NoRenderMesh ShaderType = iota
+	TextureMesh
 	MaterialMesh
 )
 
 type Node struct {
-	children  []*Node
-	shader    ShaderType
-	transform *mgl32.Mat4
-	mesh      *Mesh
+	children   []*Node
+	shaderType ShaderType
+	transform  *mgl32.Mat4
+	mesh       *Mesh
 }
 
 func (n *Node) Render(projection, view mgl32.Mat4, tShader TextureShader, mShader MaterialShader) {
@@ -27,12 +28,11 @@ func (n *Node) Render(projection, view mgl32.Mat4, tShader TextureShader, mShade
 			if child.mesh.MeshType == TextureMesh {
 				tShader.UsePV(projection, view)
 				gl.UniformMatrix4fv(tShader.ModelUniform(), 1, false, &transform[0])
-				child.mesh.Render(tShader, mShader)
 			} else {
 				mShader.UsePV(projection, view)
 				gl.UniformMatrix4fv(mShader.ModelUniform(), 1, false, &transform[0])
-				child.mesh.Render(tShader, mShader)
 			}
+			child.mesh.Render(tShader, mShader)
 		}
 		child.Render(projection, view, tShader, mShader)
 	}
@@ -46,9 +46,9 @@ func (n *Node) Add(mesh []*Mesh, s ShaderType, transform mgl32.Mat4) {
 
 	for i := range mesh {
 		child := &Node{
-			shader:    s,
-			mesh:      mesh[i],
-			transform: &transform,
+			shaderType: s,
+			mesh:       mesh[i],
+			transform:  &transform,
 		}
 		n.children = append(n.children, child)
 	}
