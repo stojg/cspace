@@ -14,11 +14,11 @@ const numLights = 255
 
 var bloom = false
 
-var currentNumLights = 32
+var currentNumLights = 8
 
 var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{1, 1, 1}),
-	Color:     [3]float32{0.1, 0.1, 0.1},
+	Color:     [3]float32{0.3, 0.3, 0.7},
 }
 
 var passthroughShader *PassthroughShader
@@ -121,9 +121,12 @@ func (s *Scene) Render() {
 
 	s.gBufferPipeline.Render(s.projection, view, s.graph)
 
+	// When we get here the gDepth buffer is already populated and the stencil pass depends on it, but it does not write to it.
+	gl.DepthMask(false)
+
 	// We need stencil to be enabled in the stencil pass to get the stencil buffer updated and we also need it in the
 	// light pass because we render the light only if the stencil passes.
-	gl.Enable(gl.STENCIL_TEST)
+	//gl.Enable(gl.STENCIL_TEST)
 
 	for i := range s.pointLights[:currentNumLights] {
 		if !s.pointLights[i].enabled {
@@ -212,13 +215,9 @@ func (s *Scene) Render() {
 			model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
 			gl.UniformMatrix4fv(s.pointLightModelLoc, 1, false, &model[0])
 
-			gl.BindVertexArray(s.lightMesh.vao)
-			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.lightMesh.Vertices)))
+			gl.BindVertexArray(s.icoMesh.vao)
+			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.icoMesh.Vertices)))
 			gl.BindVertexArray(0)
-
-			//gl.BindVertexArray(s.icoMesh.vao)
-			//gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.icoMesh.Vertices)))
-			//gl.BindVertexArray(0)
 
 			gl.CullFace(gl.BACK)
 			gl.Disable(gl.BLEND)

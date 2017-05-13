@@ -46,7 +46,5 @@ func (p *GBufferPipeline) Render(projection, view mgl32.Mat4, graph *Node) {
 	gl.Enable(gl.DEPTH_TEST)
 
 	graph.Render(p.shader)
-	// When we get here the gDepth buffer is already populated and the stencil pass depends on it, but it does not write to it.
-	gl.DepthMask(false)
 
 }

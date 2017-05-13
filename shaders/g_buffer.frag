@@ -43,6 +43,5 @@ vec3 CalcBumpedNormal(vec3 normal, vec3 tangent)
     vec3 NewNormal;
     mat3 TBN = mat3(Tangent, Bitangent, Normal);
     NewNormal = TBN * BumpMapNormal;
-    NewNormal = normalize(NewNormal);
-    return NewNormal;
+    return normalize(NewNormal);
 }

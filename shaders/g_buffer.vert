@@ -16,13 +16,16 @@ uniform mat4 projection;
 
 void main()
 {
-    vec4 worldPos = model * vec4(position, 1.0f);
-    FragPos = worldPos.xyz;
-    gl_Position = projection * view * worldPos;
+    /**
+        gl_Position    = gWVP * vec4(Position, 1.0);
+        TexCoord0      = TexCoord;
+        Normal0        = (gWorld * vec4(Normal, 0.0)).xyz;
+        WorldPos0      = (gWorld * vec4(Position, 1.0)).xyz;
+        */
+    gl_Position = projection * view * model  *vec4(position, 1.0);
     TexCoords = texCoords;
 
-    mat3 normalMatrix = transpose(inverse(mat3(model)));
-    Normal = normalMatrix * normal;
-
+    FragPos = (model * vec4(position, 1.0f)).xyz;
+    Normal = transpose(inverse(mat3(model))) * normal;
     Tangent = normalize(vec3(model * vec4(tangent,   0.0)));
 }
