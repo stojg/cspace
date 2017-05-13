@@ -18,7 +18,7 @@ var currentNumLights = 8
 
 var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{1, 1, 1}),
-	Color:     [3]float32{0.4, 0.4, 0.4},
+	Color:     [3]float32{0.03, 0.03, 0.05},
 }
 
 var passthroughShader *PassthroughShader
@@ -37,20 +37,22 @@ func NewScene() *Scene {
 		bloomEffect:      NewBloomEffect(),
 		previousTime:     glfw.GetTime(),
 		camera:           NewCamera(),
-		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/float32(windowHeight), 0.1, 200.0),
+		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/float32(windowHeight), 1, 200.0),
 		graph:            &Node{transform: &graphTransform},
 		pointLightShader: NewPointLightShader("lighting", "lighting_point"),
 		dirLightShader:   NewDirLightShader("lighting", "lighting_dir"),
 		nullShader:       NewDefaultShader("null", "null"),
 		lightBoxShader:   NewDefaultShader("simple", "emissive"),
 		icoMesh:          LoadModel("models/ico")[0],
+		cubeMesh:         LoadModel("models/cube")[0],
 	}
 
 	for i := 0; i < numLights; i++ {
 		att := ligthAtt[13]
 		s.pointLights = append(s.pointLights, &PointLight{
 			Position: [3]float32{rand.Float32()*60 - 30, 0, rand.Float32()*60 - 30},
-			Color:    [3]float32{1 + rand.Float32()*2, 1 + rand.Float32()*2, 1 + rand.Float32()*2 + 0.5},
+			//Color:    [3]float32{1 + rand.Float32()*2, 1 + rand.Float32()*2, 1 + rand.Float32()*2 + 1},
+			Color:    [3]float32{rand.Float32()*3 + 0.1, rand.Float32()*3 + 0.1, rand.Float32()*3 + 0.1},
 			Constant: att.Constant,
 			Linear:   att.Linear,
 			Exp:      att.Exp,
@@ -93,6 +95,7 @@ type Scene struct {
 
 	pointLights []*PointLight
 	icoMesh     *Mesh
+	cubeMesh    *Mesh
 
 	// caches - should move to the individual shaders
 	nullShaderModelLoc            int32
@@ -113,6 +116,8 @@ func (s *Scene) Render() {
 
 	handleInputs()
 
+	//gl.Disable(gl.FRAMEBUFFER_SRGB)
+
 	s.gBufferPipeline.Render(s.projection, view, s.graph)
 
 	// When we get here the gDepth buffer is already populated and the stencil pass depends on it, but it does not write to it.
@@ -120,7 +125,7 @@ func (s *Scene) Render() {
 
 	// We need stencil to be enabled in the stencil pass to get the stencil buffer updated and we also need it in the
 	// light pass because we render the light only if the stencil passes.
-	//gl.Enable(gl.STENCIL_TEST)
+	gl.Enable(gl.STENCIL_TEST)
 
 	for i := range s.pointLights[:currentNumLights] {
 		if !s.pointLights[i].enabled {
@@ -262,12 +267,13 @@ func (s *Scene) Render() {
 				continue
 			}
 			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin+s.pointLights[i].rand, s.pointLights[i].Position[2])
-			model = model.Mul4(mgl32.Scale3D(0.1, 0.1, 0.1))
+			model = model.Mul4(mgl32.Scale3D(0.05, 0.05, 0.05))
+			model = model.Mul4(mgl32.HomogRotate3D(float32(math.Cos(glfw.GetTime())), mgl32.Vec3{1, 1, 1}.Normalize()))
 
 			gl.UniformMatrix4fv(s.lightBoxModelLoc, 1, false, &model[0])
 			gl.Uniform3fv(s.lightBoxEmissiveLoc, 1, &s.pointLights[i].Color[0])
 
-			gl.BindVertexArray(s.icoMesh.vao)
+			gl.BindVertexArray(s.cubeMesh.vao)
 			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.icoMesh.Vertices)))
 			gl.BindVertexArray(0)
 		}
@@ -290,8 +296,9 @@ func (s *Scene) Render() {
 		out = s.bloomEffect.Render(s.gBufferPipeline.buffer.finalTexture)
 	}
 
+	//gl.Enable(gl.FRAMEBUFFER_SRGB)
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
-	passthroughShader.Use()
+	hdrShader.Use()
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.Uniform1i(passthroughShader.uniformScreenTextureLoc, 0)
 	gl.BindTexture(gl.TEXTURE_2D, out)

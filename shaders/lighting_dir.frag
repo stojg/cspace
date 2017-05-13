@@ -5,7 +5,6 @@ out vec4 FragColor;
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
-//uniform sampler2D gDepth;
 
 struct Light {
     vec3 Direction;
@@ -32,7 +31,7 @@ void main()
     vec3 viewDir  = normalize(viewPos - FragPos);
 
     // ambient
-    vec3 ambient = Diffuse * 0.02;
+    vec3 ambient = Diffuse * 0.01;
 
     // Diffuse
     vec3 diffuse = max(dot(Normal, lightDir), 0.0) * Diffuse * dirLight.Color;
