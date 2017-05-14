@@ -47,7 +47,7 @@ void main()
     vec3 viewDir  = normalize(viewPos - FragPos);
 
     // ambient
-    vec3 ambient = Diffuse * 0.01;
+    vec3 ambient = Diffuse * 0.001;
 
     // Diffuse
     vec3 diffuse = max(dot(Normal, lightDir), 0.0) * Diffuse * dirLight.Color;
