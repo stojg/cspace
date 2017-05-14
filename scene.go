@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
+
+	"math"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -22,6 +23,7 @@ var directionLight = &DirectionalLight{
 }
 
 var passthroughShader *PassthroughShader
+var depthShader *DefaultShader
 var hdrShader *DefaultShader
 
 func NewScene() *Scene {
@@ -36,7 +38,7 @@ func NewScene() *Scene {
 		bloomEffect:      NewBloomEffect(),
 		previousTime:     glfw.GetTime(),
 		camera:           NewCamera(),
-		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/float32(windowHeight), 1, 200.0),
+		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/float32(windowHeight), 1, 100.0),
 		graph:            NewBaseNode(),
 		pointLightShader: NewPointLightShader("lighting", "lighting_point"),
 		dirLightShader:   NewDirLightShader("lighting", "lighting_dir"),
@@ -114,15 +116,18 @@ func (s *Scene) Render() {
 
 	handleInputs()
 
-	//gl.Disable(gl.FRAMEBUFFER_SRGB)
+	//fmt.Println(s.projection)
+	//fmt.Println(s.projection.At(2, 2))
+	//fmt.Println(s.projection.At(2, 3))
+	//os.Exit(1)
 
 	s.gBufferPipeline.Render(s.projection, view, s.graph)
 
 	// When we get here the gDepth buffer is already populated and the stencil pass depends on it, but it does not write to it.
 	gl.DepthMask(false)
 
-	// We need stencil to be enabled in the stencil pass to get the stencil buffer updated and we also need it in the
-	// light pass because we render the light only if the stencil passes.
+	//// We need stencil to be enabled in the stencil pass to get the stencil buffer updated and we also need it in the
+	//// light pass because we render the light only if the stencil passes.
 	gl.Enable(gl.STENCIL_TEST)
 
 	for i := range s.pointLights[:currentNumLights] {
@@ -294,13 +299,15 @@ func (s *Scene) Render() {
 		out = s.bloomEffect.Render(s.gBufferPipeline.buffer.finalTexture)
 	}
 
-	//gl.Enable(gl.FRAMEBUFFER_SRGB)
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 	hdrShader.Use()
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.Uniform1i(passthroughShader.uniformScreenTextureLoc, 0)
 	gl.BindTexture(gl.TEXTURE_2D, out)
 	renderQuad()
+
+	//DisplayDepthbufferTexture(s.gBufferPipeline.buffer.gDepth)
+	//DisplayFramebufferTexture(s.gBufferPipeline.buffer.gPosition)
 
 	chkError("end_of_frame")
 }

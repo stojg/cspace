@@ -12,6 +12,7 @@ import (
 
 var shaderDisplayFBOOutput *DefaultShader
 var vaoDebugTexturedRect uint32
+var vaoDebugDepthTexturedRect uint32
 
 func DisplayFramebufferTexture(textureID uint32) {
 	if vaoDebugTexturedRect == 0 {
@@ -42,8 +43,47 @@ func DisplayFramebufferTexture(textureID uint32) {
 	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
 	gl.BindVertexArray(0)
 
-	//gl.DrawArrays(gl.TRIANGLES, 0, 12)
-	//gl.BindVertexArray(0)
+	gl.UseProgram(0)
+}
+
+var depthShaderTextureLoc int32
+
+func DisplayDepthbufferTexture(textureID uint32) {
+	if vaoDebugDepthTexturedRect == 0 {
+		//quadVertices := []float32{
+		//	0.0, 1, 0.0, 0.0, 1.0,
+		//	0.0, 0.5, 0.0, 0.0, 0.0,
+		//	0.5, 1, 0.0, 1.0, 1.0,
+		//	0.5, 0.5, 0.0, 1.0, 0.0,
+		//}
+		quadVertices := []float32{
+			-1, 1, 0.0, 0.0, 1.0,
+			-1, -1, 0.0, 0.0, 0.0,
+			1, 1, 0.0, 1.0, 1.0,
+			1, -1, 0.0, 1.0, 0.0,
+		}
+		// Setup plane VAO
+		gl.GenVertexArrays(1, &vaoDebugDepthTexturedRect)
+		gl.GenBuffers(1, &vaoDebugDepthTexturedRect)
+		gl.BindVertexArray(vaoDebugDepthTexturedRect)
+		gl.BindBuffer(gl.ARRAY_BUFFER, vaoDebugDepthTexturedRect)
+		gl.BufferData(gl.ARRAY_BUFFER, 4*len(quadVertices), gl.Ptr(quadVertices), gl.STATIC_DRAW)
+		gl.EnableVertexAttribArray(0)
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
+		gl.EnableVertexAttribArray(1)
+		gl.VertexAttribPointer(1, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+		depthShader = NewDefaultShader("depth_debug", "depth_debug")
+		depthShaderTextureLoc = uniformLocation(depthShader, "screenTexture")
+	}
+
+	depthShader.Use()
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.Uniform1i(depthShaderTextureLoc, 0)
+	gl.BindTexture(gl.TEXTURE_2D, textureID)
+	gl.BindVertexArray(vaoDebugDepthTexturedRect)
+	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
+	gl.BindVertexArray(0)
+
 	gl.UseProgram(0)
 }
 

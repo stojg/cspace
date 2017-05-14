@@ -11,8 +11,8 @@ import (
 )
 
 const logFile = "gl.log"
-const windowWidth = 1440 * 0.9
-const windowHeight = 900 * 0.9
+const windowWidth = 1440 * 0.9 // (1296)
+const windowHeight = 900 * 0.9 // (810)
 
 var keys map[glfw.Key]bool
 var cursor [2]float64

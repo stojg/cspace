@@ -21,7 +21,7 @@ uniform Material mat;
 void main()
 {
     // Store the fragment position vector in the first gbuffer texture
-    gPosition = FragPos;
+     gPosition = FragPos;
     // Also store the per-fragment normals into the gbuffer
     gNormal = Normal;
     // And the diffuse per-fragment color

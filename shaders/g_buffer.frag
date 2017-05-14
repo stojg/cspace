@@ -21,7 +21,6 @@ vec3 CalcBumpedNormal(vec3 normal, vec3 tangent);
 
 void main()
 {
-
     // Store the fragment position vector in the first gbuffer texture
     gPosition = FragPos;
     // Also store the per-fragment normals into the gbuffer
