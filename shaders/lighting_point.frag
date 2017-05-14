@@ -1,5 +1,4 @@
-#version 330 core
-// lightning_point.frag
+#version 410 core
 
 out vec4 FragColor;
 
