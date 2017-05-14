@@ -14,11 +14,11 @@ const numLights = 255
 
 var bloom = false
 
-var currentNumLights = 8
+var currentNumLights = 64
 
 var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{1, 1, 1}),
-	Color:     [3]float32{0.03, 0.03, 0.05},
+	Color:     [3]float32{0.005, 0.005, 0.01},
 }
 
 var passthroughShader *PassthroughShader
@@ -37,7 +37,7 @@ func NewScene() *Scene {
 		bloomEffect:      NewBloomEffect(),
 		previousTime:     glfw.GetTime(),
 		camera:           NewCamera(),
-		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/float32(windowHeight), 1, 100.0),
+		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/float32(windowHeight), 0.5, 200.0),
 		graph:            NewBaseNode(),
 		pointLightShader: NewPointLightShader("lighting", "lighting_point"),
 		dirLightShader:   NewDirLightShader("lighting", "lighting_dir"),
@@ -51,7 +51,7 @@ func NewScene() *Scene {
 		att := ligthAtt[1]
 		s.pointLights = append(s.pointLights, &PointLight{
 			Position: [3]float32{rand.Float32()*60 - 30, 0, rand.Float32()*60 - 30},
-			Color:    [3]float32{rand.Float32()*3 + 0.1, rand.Float32()*3 + 0.1, rand.Float32()*3 + 0.1},
+			Color:    [3]float32{rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5},
 			Constant: att.Constant,
 			Linear:   att.Linear,
 			Exp:      att.Exp,

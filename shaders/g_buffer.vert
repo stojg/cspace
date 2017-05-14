@@ -15,7 +15,9 @@ uniform mat4 projection;
 
 void main()
 {
-    gl_Position = projection * view * model * vec4(position, 1.0);
+    mat4 mvp = projection * view * model;
+    gl_Position = mvp * vec4(position, 1.0);
+
     TexCoords = texCoords;
     Normal = transpose(inverse(mat3(model))) * normal;
     Tangent = normalize(vec3(model * vec4(tangent,   0.0)));

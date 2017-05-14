@@ -41,7 +41,7 @@ func initWindow(width, height int) (*glfw.Window, error) {
 		return window, err
 	}
 	window.MakeContextCurrent()
-	glfw.SwapInterval(0) // disable vertical refresh (vsync)
+	glfw.SwapInterval(1) // disable vertical refresh (vsync)
 	window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
 			keys[key] = true
@@ -65,9 +65,9 @@ func initGL() error {
 
 	glLogGLParams()
 
-	gl.Enable(gl.DEPTH_TEST)
+	//gl.Enable(gl.DEPTH_TEST)
 
-	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
+	//gl.ClearColor(0.0, 0.0, 0.0, 0.0)
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	glLogln(fmt.Sprintf("OpenGL Version %s", version))
