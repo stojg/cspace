@@ -160,7 +160,6 @@ func (s *Scene) Render() {
 
 			gl.BindVertexArray(s.icoMesh.vao)
 			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.icoMesh.Vertices)))
-			gl.BindVertexArray(0)
 
 		}
 
@@ -218,7 +217,6 @@ func (s *Scene) Render() {
 
 			gl.BindVertexArray(s.icoMesh.vao)
 			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.icoMesh.Vertices)))
-			gl.BindVertexArray(0)
 
 			gl.CullFace(gl.BACK)
 			gl.Disable(gl.BLEND)
@@ -290,7 +288,6 @@ func (s *Scene) Render() {
 		gl.Uniform3f(uniformLocation(s.lightBoxShader, "emissive"), 1.4, 1.4, 1.8)
 		gl.BindVertexArray(s.icoMesh.vao)
 		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.icoMesh.Vertices)))
-		gl.BindVertexArray(0)
 	}
 
 	// from here on, there are only texture manipulations
