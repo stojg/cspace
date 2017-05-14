@@ -110,22 +110,34 @@ type Scene struct {
 
 func (s *Scene) Render() {
 	s.updateTimers()
+	handleInputs()
 	view := s.camera.View(s.elapsed)
 	sin := float32(math.Sin(glfw.GetTime()))
 	invProj := s.projection.Inv()
 	invView := view.Inv()
 
-	handleInputs()
+	// bind and clear out the gbuffers final texture
+	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.gBufferPipeline.buffer.fbo)
 
-	s.gBufferPipeline.Render(s.projection, view, s.graph)
+	// 1. render into the gBuffer
+	var attachments = [2]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1}
+	gl.DrawBuffers(int32(len(attachments)), &attachments[0])
 
-	// When we get here the gDepth buffer is already populated and the stencil pass depends on it, but it does not write to it.
+	// Only the geometry pass updates the depth buffer
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthMask(true)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+	// enable depth mask writing, draw, and disable writing to the depth buffer
+	s.graph.Render(s.projection, view, s.gBufferPipeline.tShader, s.gBufferPipeline.mShader)
 	gl.DepthMask(false)
+
+	// All rendering should now go into the gbuffers final texture
+	gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
+	gl.Clear(gl.COLOR_BUFFER_BIT)
 
 	// We need stencil to be enabled in the stencil pass to get the stencil buffer updated and we also need it in the
 	// light pass because we render the light only if the stencil passes.
 	gl.Enable(gl.STENCIL_TEST)
-
 	for i := range s.pointLights[:currentNumLights] {
 		if !s.pointLights[i].enabled {
 			continue
@@ -136,7 +148,6 @@ func (s *Scene) Render() {
 			s.nullShader.UsePV(s.projection, view)
 
 			// Disable color/depth write and enable depth testing
-			//gl.DrawBuffer(gl.NONE) // use performance hit?
 			gl.Enable(gl.DEPTH_TEST)
 
 			// otherwise the light will be inside by the light bounding volume
@@ -176,8 +187,6 @@ func (s *Scene) Render() {
 
 			gl.Enable(gl.CULL_FACE)
 			gl.CullFace(gl.FRONT)
-
-			gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
 
 			gl.ActiveTexture(gl.TEXTURE0)
 			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gDepth)
@@ -221,14 +230,12 @@ func (s *Scene) Render() {
 			gl.Disable(gl.BLEND)
 		}
 	}
-
+	// we are done with the stencil testing
 	gl.Disable(gl.STENCIL_TEST)
 
 	{ // Render the directional term / ambient
 		ident := mgl32.Ident4()
 		s.dirLightShader.UsePV(ident, ident)
-
-		gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
 
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.Uniform1i(s.dirLightShader.UniformDepthLoc(), 0)
