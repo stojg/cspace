@@ -46,7 +46,7 @@ void main()
     vec3 Normal = texture(gNormal, TexCoords).rgb;
     vec4 albedo = texture(gAlbedoSpec, TexCoords);
     vec3 Diffuse = albedo.rgb;
-    float Specular = albedo.a;
+    float specularExp = albedo.a;
 
     vec3 lighting  = vec3(0.0);
     vec3 viewDir  = normalize(viewPos - FragPos);
@@ -59,15 +59,15 @@ void main()
 
     // Specular
     vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(Normal, halfwayDir), 0.0), 64.0);
-    vec3 specular = pointLight.Color * spec * Specular;
+    float spec = pow(max(dot(Normal, halfwayDir), 0.0), 0);
+    vec3 specular = pointLight.Color * spec * 0;
 
     // Attenuation
     float attenuation = 1.0 / (1.0 + pointLight.Linear * distance + pointLight.Quadratic * distance * distance);
     diffuse *= attenuation;
-    specular *= attenuation;
+//    specular *= attenuation;
     // ambient
-    lighting += diffuse + specular;
+    lighting += diffuse;
     FragColor = vec4(lighting, 1.0);
 }
 
