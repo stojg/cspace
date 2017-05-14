@@ -311,6 +311,7 @@ func (s *Scene) Render() {
 	gl.BindTexture(gl.TEXTURE_2D, out)
 	renderQuad()
 
+	//DisplayAlbedoBufferTexture(s.bloomEffect.bloomFbo.textures[1])
 	//DisplayAlbedoBufferTexture(s.gBufferPipeline.buffer.gAlbedoSpec)
 	//DisplayNormalBufferTexture(s.gBufferPipeline.buffer.gNormal)
 	//DisplayDepthbufferTexture(s.gBufferPipeline.buffer.gDepth)
