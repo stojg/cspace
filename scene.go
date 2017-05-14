@@ -259,11 +259,12 @@ func (s *Scene) Render() {
 		gl.Disable(gl.BLEND)
 	}
 
-	{ // render emissive objects
+	gl.Enable(gl.DEPTH_TEST)
 
+	{ // render emissive objects
 		// light cubes
 		s.lightBoxShader.UsePV(s.projection, view)
-		gl.Enable(gl.DEPTH_TEST)
+
 		for i := range s.pointLights[:currentNumLights] {
 			if !s.pointLights[i].enabled {
 				continue
