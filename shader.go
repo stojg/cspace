@@ -254,7 +254,9 @@ func NewDefaultShader(vertex, frag string) *DefaultShader {
 		panic(fmt.Errorf("failed to link program[%d]: %v", program, l))
 	}
 
+	gl.DetachShader(program, vertexShader)
 	gl.DeleteShader(vertexShader)
+	gl.DetachShader(program, fragmentShader)
 	gl.DeleteShader(fragmentShader)
 
 	shader.program = program
