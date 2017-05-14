@@ -16,7 +16,7 @@ func NewCamera() *Camera {
 		lastY:      windowHeight / 2,
 		yaw:        225.0,
 		pitch:      -1,
-		speed:      5.0,
+		speed:      20.0,
 		firstMouse: true,
 	}
 	c.updateVectors()

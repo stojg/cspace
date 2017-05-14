@@ -39,6 +39,7 @@ void main()
     float depth = texture(gDepth, TexCoords).x;
 
     vec3 FragPos = WorldPosFromDepth(depth, TexCoords);
+
     vec3 Normal = texture(gNormal, TexCoords).rgb;
     vec3 Diffuse = texture(gAlbedoSpec, TexCoords).rgb;
     float Specular = texture(gAlbedoSpec, TexCoords).a;
@@ -54,7 +55,7 @@ void main()
 
     // Specular
     vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(Normal, halfwayDir), 0.0), 32.0);
+    float spec = pow(max(dot(Normal, halfwayDir), 0.0), 256);
     vec3 specular = dirLight.Color * spec * Specular;
 
     vec3 color = ambient + diffuse + specular;

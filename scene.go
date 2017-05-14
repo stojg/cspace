@@ -14,11 +14,11 @@ const numLights = 255
 
 var bloom = false
 
-var currentNumLights = 64
+var currentNumLights = 0
 
 var directionLight = &DirectionalLight{
-	Direction: normalise([3]float32{1, 1, 1}),
-	Color:     [3]float32{0.005, 0.005, 0.01},
+	Direction: normalise([3]float32{10, 10, 10}),
+	Color:     [3]float32{0.01, 0.01, 0.01},
 }
 
 var passthroughShader *PassthroughShader
@@ -48,9 +48,9 @@ func NewScene() *Scene {
 	}
 
 	for i := 0; i < numLights; i++ {
-		att := ligthAtt[1]
+		att := ligthAtt[7]
 		s.pointLights = append(s.pointLights, &PointLight{
-			Position: [3]float32{rand.Float32()*60 - 30, 1.1, rand.Float32()*60 - 30},
+			Position: [3]float32{rand.Float32()*50 - 25, rand.Float32()*10 - 5, rand.Float32()*20 - 10},
 			Color:    [3]float32{rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5},
 			Constant: att.Constant,
 			Linear:   att.Linear,
