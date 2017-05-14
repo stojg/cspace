@@ -167,26 +167,8 @@ func (s *Scene) Render() {
 		{
 			s.pointLightShader.UsePV(s.projection, view)
 
-			gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
-
-			gl.ActiveTexture(gl.TEXTURE0)
-			gl.Uniform1i(s.pointLightShader.UniformDepthLoc(), 0)
-			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gDepth)
-
-			gl.ActiveTexture(gl.TEXTURE1)
-			gl.Uniform1i(s.pointLightShader.UniformNormalLoc(), 1)
-			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gNormal)
-
-			gl.ActiveTexture(gl.TEXTURE2)
-			gl.Uniform1i(s.pointLightShader.UniformAlbedoSpecLoc(), 2)
-			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gAlbedoSpec)
-
-			gl.UniformMatrix4fv(s.pointLightShader.locProjMatrixInv, 1, false, &invProj[0])
-			gl.UniformMatrix4fv(s.pointLightShader.locViewMatrixInv, 1, false, &invView[0])
-
-			gl.StencilFunc(gl.NOTEQUAL, 0, 0xFF)
-
 			gl.Disable(gl.DEPTH_TEST)
+			gl.StencilFunc(gl.NOTEQUAL, 0, 0xFF)
 
 			gl.Enable(gl.BLEND)
 			gl.BlendEquation(gl.FUNC_ADD)
@@ -194,6 +176,23 @@ func (s *Scene) Render() {
 
 			gl.Enable(gl.CULL_FACE)
 			gl.CullFace(gl.FRONT)
+
+			gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
+
+			gl.ActiveTexture(gl.TEXTURE0)
+			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gDepth)
+			gl.Uniform1i(s.pointLightShader.UniformDepthLoc(), 0)
+
+			gl.ActiveTexture(gl.TEXTURE1)
+			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gNormal)
+			gl.Uniform1i(s.pointLightShader.UniformNormalLoc(), 1)
+
+			gl.ActiveTexture(gl.TEXTURE2)
+			gl.Uniform1i(s.pointLightShader.UniformAlbedoSpecLoc(), 2)
+			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gAlbedoSpec)
+
+			gl.UniformMatrix4fv(s.pointLightShader.locProjMatrixInv, 1, false, &invProj[0])
+			gl.UniformMatrix4fv(s.pointLightShader.locViewMatrixInv, 1, false, &invView[0])
 
 			gl.Uniform2f(s.pointLightShaderScreenSizeLoc, float32(windowWidth), float32(windowHeight))
 
