@@ -136,7 +136,7 @@ func (s *Scene) Render() {
 			s.nullShader.UsePV(s.projection, view)
 
 			// Disable color/depth write and enable depth testing
-			gl.DrawBuffer(gl.NONE)
+			//gl.DrawBuffer(gl.NONE) // use performance hit?
 			gl.Enable(gl.DEPTH_TEST)
 
 			// otherwise the light will be inside by the light bounding volume
