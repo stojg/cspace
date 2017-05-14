@@ -11,7 +11,7 @@ void main()
     vec4 color = texture(screenTexture, TexCoords);
     float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
     FragColor = color;
-    if(brightness > 1) {
+    if(brightness > 0.9) {
         BrightColor = color;
     } else {
         BrightColor = vec4(0,0,0,1);

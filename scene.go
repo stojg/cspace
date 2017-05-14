@@ -50,7 +50,7 @@ func NewScene() *Scene {
 	for i := 0; i < numLights; i++ {
 		att := ligthAtt[1]
 		s.pointLights = append(s.pointLights, &PointLight{
-			Position: [3]float32{rand.Float32()*60 - 30, 0, rand.Float32()*60 - 30},
+			Position: [3]float32{rand.Float32()*60 - 30, 1.1, rand.Float32()*60 - 30},
 			Color:    [3]float32{rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5},
 			Constant: att.Constant,
 			Linear:   att.Linear,
@@ -277,7 +277,7 @@ func (s *Scene) Render() {
 				continue
 			}
 			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin+s.pointLights[i].rand, s.pointLights[i].Position[2])
-			model = model.Mul4(mgl32.Scale3D(0.05, 0.05, 0.05))
+			model = model.Mul4(mgl32.Scale3D(0.03, 0.03, 0.03))
 			model = model.Mul4(mgl32.HomogRotate3D(float32(math.Cos(glfw.GetTime())), mgl32.Vec3{1, 1, 1}.Normalize()))
 
 			gl.UniformMatrix4fv(s.lightBoxModelLoc, 1, false, &model[0])

@@ -14,19 +14,31 @@ void main()
      vec3 result = texture(screenTexture, TexCoords).rgb * weight[0];
      if(horizontal)
      {
-         for(int i = 1; i < 5; ++i)
-         {
-            result += texture(screenTexture, TexCoords + vec2(tex_offset.x * i, 0.0)).rgb * weight[i];
-            result += texture(screenTexture, TexCoords - vec2(tex_offset.x * i, 0.0)).rgb * weight[i];
-         }
+        result += texture(screenTexture, TexCoords + vec2(tex_offset.x * 1, 0.0)).rgb * weight[1];
+        result += texture(screenTexture, TexCoords - vec2(tex_offset.x * 1, 0.0)).rgb * weight[1];
+
+        result += texture(screenTexture, TexCoords + vec2(tex_offset.x * 2, 0.0)).rgb * weight[2];
+        result += texture(screenTexture, TexCoords - vec2(tex_offset.x * 2, 0.0)).rgb * weight[2];
+
+        result += texture(screenTexture, TexCoords + vec2(tex_offset.x * 3, 0.0)).rgb * weight[3];
+        result += texture(screenTexture, TexCoords - vec2(tex_offset.x * 3, 0.0)).rgb * weight[3];
+
+        result += texture(screenTexture, TexCoords + vec2(tex_offset.x * 4, 0.0)).rgb * weight[4];
+        result += texture(screenTexture, TexCoords - vec2(tex_offset.x * 4, 0.0)).rgb * weight[4];
      }
      else
      {
-         for(int i = 1; i < 5; ++i)
-         {
-             result += texture(screenTexture, TexCoords + vec2(0.0, tex_offset.y * i)).rgb * weight[i];
-             result += texture(screenTexture, TexCoords - vec2(0.0, tex_offset.y * i)).rgb * weight[i];
-         }
+        result += texture(screenTexture, TexCoords + vec2(0.0, tex_offset.y * 1)).rgb * weight[1];
+        result += texture(screenTexture, TexCoords - vec2(0.0, tex_offset.y * 1)).rgb * weight[1];
+
+        result += texture(screenTexture, TexCoords + vec2(0.0, tex_offset.y * 2)).rgb * weight[2];
+        result += texture(screenTexture, TexCoords - vec2(0.0, tex_offset.y * 2)).rgb * weight[2];
+
+        result += texture(screenTexture, TexCoords + vec2(0.0, tex_offset.y * 3)).rgb * weight[3];
+        result += texture(screenTexture, TexCoords - vec2(0.0, tex_offset.y * 3)).rgb * weight[3];
+
+        result += texture(screenTexture, TexCoords + vec2(0.0, tex_offset.y * 4)).rgb * weight[4];
+        result += texture(screenTexture, TexCoords - vec2(0.0, tex_offset.y * 4)).rgb * weight[4];
      }
      FragColor = vec4(result, 1.0);
 }

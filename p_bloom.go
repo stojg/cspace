@@ -28,9 +28,30 @@ type BloomEffect struct {
 	locSeparationScreenTexture int32
 	locGaussianScreenTexture   int32
 	locGaussianHorizontal      int32
+
+	quadVAO uint32
 }
 
 func (b *BloomEffect) Render(inTexture uint32) uint32 {
+
+	if b.quadVAO == 0 {
+		quadVertices := []float32{
+			-1, 1, 0.0, 0.0, 1.0,
+			-1, -1, 0.0, 0.0, 0.0,
+			1, 1, 0.0, 1.0, 1.0,
+			1, -1, 0.0, 1.0, 0.0,
+		}
+		gl.GenVertexArrays(1, &b.quadVAO)
+		gl.GenBuffers(1, &b.quadVAO)
+		gl.BindVertexArray(b.quadVAO)
+		gl.BindBuffer(gl.ARRAY_BUFFER, b.quadVAO)
+		gl.BufferData(gl.ARRAY_BUFFER, 4*len(quadVertices), gl.Ptr(quadVertices), gl.STATIC_DRAW)
+		gl.EnableVertexAttribArray(0)
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
+		gl.EnableVertexAttribArray(1)
+		gl.VertexAttribPointer(1, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+	}
+
 	// separate the brightest colours into a separate texture
 	gl.BindFramebuffer(gl.FRAMEBUFFER, b.bloomFbo.fbo)
 
@@ -39,11 +60,14 @@ func (b *BloomEffect) Render(inTexture uint32) uint32 {
 	b.separationShader.Use()
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.Uniform1i(b.locSeparationScreenTexture, 0)
+
 	gl.BindTexture(gl.TEXTURE_2D, inTexture)
-	renderQuad()
+	gl.BindVertexArray(quadVAO)
+	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
+	gl.BindVertexArray(0)
 
 	// blur the bright part
-	const blurAmount = 10
+	const blurAmount = 6
 	horizontal := 0
 	firstIteration := true
 
@@ -65,7 +89,9 @@ func (b *BloomEffect) Render(inTexture uint32) uint32 {
 		} else {
 			gl.BindTexture(gl.TEXTURE_2D, b.pingBuffers[horizontal].textures[0])
 		}
-		renderQuad()
+		gl.BindVertexArray(quadVAO)
+		gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
+		gl.BindVertexArray(0)
 	}
 
 	// combine the normal and blurry bright texture for a bloom effect
@@ -78,6 +104,8 @@ func (b *BloomEffect) Render(inTexture uint32) uint32 {
 	gl.ActiveTexture(gl.TEXTURE1)
 	gl.Uniform1i(uniformLocation(b.blendShader, "bloomTexture"), 1)
 	gl.BindTexture(gl.TEXTURE_2D, b.pingBuffers[1].textures[0])
-	renderQuad()
+	gl.BindVertexArray(quadVAO)
+	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
+	gl.BindVertexArray(0)
 	return b.bloomFbo.textures[1]
 }
