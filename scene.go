@@ -209,7 +209,7 @@ func (s *Scene) Render() {
 
 			gl.Uniform3fv(s.pointLightViewPosLoc, 1, &s.camera.position[0])
 
-			model := mgl32.Translate3D(s.pointLights[i].Position[0], cp.Position[1], s.pointLights[i].Position[2])
+			model := mgl32.Translate3D(cp.Position[0], cp.Position[1], cp.Position[2])
 			rad := s.pointLights[i].Radius()
 			model = model.Mul4(mgl32.Scale3D(rad, rad, rad))
 			gl.UniformMatrix4fv(s.pointLightModelLoc, 1, false, &model[0])
