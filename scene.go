@@ -277,7 +277,6 @@ func (s *Scene) Render() {
 
 			gl.BindVertexArray(s.cubeMesh.vao)
 			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.icoMesh.Vertices)))
-			gl.BindVertexArray(0)
 		}
 
 		// moon
