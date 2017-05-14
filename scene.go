@@ -48,7 +48,7 @@ func NewScene() *Scene {
 	}
 
 	for i := 0; i < numLights; i++ {
-		att := ligthAtt[7]
+		att := ligthAtt[1]
 		s.pointLights = append(s.pointLights, &PointLight{
 			Position: [3]float32{rand.Float32()*60 - 30, 0, rand.Float32()*60 - 30},
 			Color:    [3]float32{rand.Float32()*3 + 0.1, rand.Float32()*3 + 0.1, rand.Float32()*3 + 0.1},
@@ -117,18 +117,13 @@ func (s *Scene) Render() {
 
 	handleInputs()
 
-	//fmt.Println(s.projection)
-	//fmt.Println(s.projection.At(2, 2))
-	//fmt.Println(s.projection.At(2, 3))
-	//os.Exit(1)
-
 	s.gBufferPipeline.Render(s.projection, view, s.graph)
 
 	// When we get here the gDepth buffer is already populated and the stencil pass depends on it, but it does not write to it.
 	gl.DepthMask(false)
 
-	//// We need stencil to be enabled in the stencil pass to get the stencil buffer updated and we also need it in the
-	//// light pass because we render the light only if the stencil passes.
+	// We need stencil to be enabled in the stencil pass to get the stencil buffer updated and we also need it in the
+	// light pass because we render the light only if the stencil passes.
 	gl.Enable(gl.STENCIL_TEST)
 
 	for i := range s.pointLights[:currentNumLights] {

@@ -31,7 +31,7 @@ func NewGbuffer() *Gbuffer {
 	// Color + Specular texture buffer
 	gl.GenTextures(1, &gbuffer.gAlbedoSpec)
 	gl.BindTexture(gl.TEXTURE_2D, gbuffer.gAlbedoSpec)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, windowWidth, windowHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, windowWidth, windowHeight, 0, gl.RGBA, gl.FLOAT, nil)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, gbuffer.gAlbedoSpec, 0)

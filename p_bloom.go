@@ -43,7 +43,7 @@ func (b *BloomEffect) Render(inTexture uint32) uint32 {
 	renderQuad()
 
 	// blur the bright part
-	const blurAmount = 10
+	const blurAmount = 2
 	horizontal := 0
 	firstIteration := true
 

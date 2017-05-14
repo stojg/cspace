@@ -45,8 +45,9 @@ void main()
     vec3 FragPos = WorldPosFromDepth(depth, TexCoords);
 
     vec3 Normal = texture(gNormal, TexCoords).rgb;
-    vec3 Diffuse = texture(gAlbedoSpec, TexCoords).rgb;
-    float Specular = texture(gAlbedoSpec, TexCoords).a;
+    vec4 albedo = texture(gAlbedoSpec, TexCoords);
+    vec3 Diffuse = albedo.rgb;
+    float Specular = albedo.a;
 
     vec3 lighting  = vec3(0.0);
     vec3 viewDir  = normalize(viewPos - FragPos);
@@ -67,10 +68,7 @@ void main()
     diffuse *= attenuation;
     specular *= attenuation;
     // ambient
-//    vec3 ambient = Diffuse * 0.1;
-//    lighting += ambient + diffuse + specular;
     lighting += diffuse + specular;
-
     FragColor = vec4(lighting, 1.0);
 }
 

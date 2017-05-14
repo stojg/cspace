@@ -23,7 +23,7 @@ func (l *PointLight) Radius() float32 {
 		return l.radius
 	}
 	maxChannel := float32(math.Max(math.Max(float64(l.Color[0]), float64(l.Color[1])), float64(l.Color[2])))
-	inner := l.Linear*l.Linear - 2*l.Exp*(l.Exp-(256/5)*maxChannel)
+	inner := l.Linear*l.Linear - 2*l.Exp*(l.Exp-(256/2)*maxChannel)
 	l.radius = -l.Linear + float32(math.Sqrt(float64(inner)))/(2*l.Exp)
 	if math.IsNaN(float64(l.radius)) {
 		panic("CalcPointLightBSphere calculated a NaN")

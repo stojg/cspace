@@ -91,13 +91,13 @@ func (s *Mesh) Render(tShader TextureShader, mShader MaterialShader) {
 	gl.BindVertexArray(s.vao)
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.Vertices)))
 	// reset
-	gl.BindVertexArray(0)
+	//gl.BindVertexArray(0)
 
 	// reset textures
-	for i := range s.Textures {
-		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-		gl.BindTexture(gl.TEXTURE_2D, 0)
-	}
+	//for i := range s.Textures {
+	//	gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+	//	gl.BindTexture(gl.TEXTURE_2D, 0)
+	//}
 }
 
 func (s *Mesh) setTextures(tShader TextureShader) {
@@ -127,7 +127,7 @@ func (s *Mesh) setTextures(tShader TextureShader) {
 
 func (s *Mesh) setMaterial(mShader MaterialShader) {
 	gl.Uniform3f(mShader.DiffuseUniform(), s.Material.Diffuse[0], s.Material.Diffuse[1], s.Material.Diffuse[2])
-	gl.Uniform1f(mShader.SpecularExpUniform(), 0.01)
+	gl.Uniform1f(mShader.SpecularExpUniform(), 0.001)
 }
 
 func (s *Mesh) init() {
