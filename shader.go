@@ -49,7 +49,6 @@ func (s *GbufferMShader) SpecularExpUniform() int32 {
 
 type GbufferLightShader interface {
 	Shader
-	UniformPosLoc() int32
 	UniformNormalLoc() int32
 	UniformAlbedoSpecLoc() int32
 	UniformDepthLoc() int32
@@ -97,20 +96,18 @@ func NewPassthroughShader() *PassthroughShader {
 
 type PointLightShader struct {
 	*DefaultShader
-	uniformPosLoc        int32
 	uniformNormalLoc     int32
 	uniformAlbedoSpecLoc int32
-	//uniformDepthLoc      int32
+	uniformDepthLoc      int32
 
 	uniformLightPosLoc              int32
 	uniformLightColorLoc            int32
 	uniformLightDiffuseIntensityLoc int32
 	uniformLightLinearLoc           int32
 	uniformLightQuadraticLoc        int32
-}
 
-func (s *PointLightShader) UniformPosLoc() int32 {
-	return s.uniformPosLoc
+	locProjMatrixInv int32
+	locViewMatrixInv int32
 }
 
 func (s *PointLightShader) UniformNormalLoc() int32 {
@@ -121,9 +118,9 @@ func (s *PointLightShader) UniformAlbedoSpecLoc() int32 {
 	return s.uniformAlbedoSpecLoc
 }
 
-//func (s *PointLightShader) UniformDepthLoc() int32 {
-//	return s.uniformDepthLoc
-//}
+func (s *PointLightShader) UniformDepthLoc() int32 {
+	return s.uniformDepthLoc
+}
 
 func (s *PointLightShader) SetLight(light *PointLight) {
 	gl.Uniform3f(s.uniformLightPosLoc, light.Position[0], light.Position[1], light.Position[2])
@@ -136,32 +133,33 @@ func NewPointLightShader(vertex, frag string) *PointLightShader {
 	c := NewDefaultShader(vertex, frag)
 	s := &PointLightShader{
 		DefaultShader:        c,
-		uniformPosLoc:        uniformLocation(c, "gPosition"),
 		uniformNormalLoc:     uniformLocation(c, "gNormal"),
 		uniformAlbedoSpecLoc: uniformLocation(c, "gAlbedoSpec"),
-		//uniformDepthLoc:      uniformLocation(c, "gDepth"),
+		uniformDepthLoc:      uniformLocation(c, "gDepth"),
 
 		uniformLightPosLoc:       uniformLocation(c, "pointLight.Position"),
 		uniformLightColorLoc:     uniformLocation(c, "pointLight.Color"),
 		uniformLightLinearLoc:    uniformLocation(c, "pointLight.Linear"),
 		uniformLightQuadraticLoc: uniformLocation(c, "pointLight.Quadratic"),
+
+		locProjMatrixInv: uniformLocation(c, "projMatrixInv"),
+		locViewMatrixInv: uniformLocation(c, "viewMatrixInv"),
 	}
 	return s
 }
 
 type DirLightShader struct {
 	*DefaultShader
-	uniformPosLoc        int32
+	uniformDepthLoc      int32
 	uniformNormalLoc     int32
 	uniformAlbedoSpecLoc int32
 
 	uniformLightDirectionLoc        int32
 	uniformLightColorLoc            int32
 	uniformLightDiffuseIntensityLoc int32
-}
 
-func (s *DirLightShader) UniformPosLoc() int32 {
-	return s.uniformPosLoc
+	locProjMatrixInv int32
+	locViewMatrixInv int32
 }
 
 func (s *DirLightShader) UniformNormalLoc() int32 {
@@ -170,6 +168,10 @@ func (s *DirLightShader) UniformNormalLoc() int32 {
 
 func (s *DirLightShader) UniformAlbedoSpecLoc() int32 {
 	return s.uniformAlbedoSpecLoc
+}
+
+func (s *DirLightShader) UniformDepthLoc() int32 {
+	return s.uniformDepthLoc
 }
 
 func (s *DirLightShader) SetLight(light *DirectionalLight) {
@@ -181,11 +183,14 @@ func NewDirLightShader(vertex, frag string) *DirLightShader {
 	c := NewDefaultShader(vertex, frag)
 	s := &DirLightShader{
 		DefaultShader:            c,
-		uniformPosLoc:            uniformLocation(c, "gPosition"),
+		uniformDepthLoc:          uniformLocation(c, "gDepth"),
 		uniformNormalLoc:         uniformLocation(c, "gNormal"),
 		uniformAlbedoSpecLoc:     uniformLocation(c, "gAlbedoSpec"),
 		uniformLightDirectionLoc: uniformLocation(c, "dirLight.Direction"),
 		uniformLightColorLoc:     uniformLocation(c, "dirLight.Color"),
+
+		locProjMatrixInv: uniformLocation(c, "projMatrixInv"),
+		locViewMatrixInv: uniformLocation(c, "viewMatrixInv"),
 	}
 	return s
 }

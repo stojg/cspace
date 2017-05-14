@@ -7,7 +7,7 @@ import (
 
 func NewGBufferPipeline() *GBufferPipeline {
 	p := &GBufferPipeline{
-		buffer:     NewGbuffer(windowWidth, windowHeight),
+		buffer:     NewGbuffer(),
 		nullShader: NewDefaultShader("null", "null"),
 	}
 	p.mShader = &GbufferMShader{
@@ -42,8 +42,8 @@ func (p *GBufferPipeline) Render(projection, view mgl32.Mat4, graph SceneNode) {
 
 	// 1. render into the gBuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, p.buffer.fbo)
-	var attachments = [3]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.COLOR_ATTACHMENT2}
-	gl.DrawBuffers(3, &attachments[0])
+	var attachments = [2]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1}
+	gl.DrawBuffers(int32(len(attachments)), &attachments[0])
 
 	// Only the geometry pass updates the gDepth buffer
 	gl.DepthMask(true)

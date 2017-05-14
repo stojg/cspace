@@ -2,7 +2,7 @@
 
 out vec4 FragColor;
 
-uniform sampler2D gPosition;
+uniform sampler2D gDepth;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 
@@ -14,15 +14,32 @@ struct Light {
 uniform Light dirLight;
 uniform vec3 viewPos;
 uniform vec2 gScreenSize;
+uniform mat4 projMatrixInv;
+uniform mat4 viewMatrixInv;
 
 vec2 CalcTexCoord() {
    return gl_FragCoord.xy / gScreenSize;
 }
 
+vec3 WorldPosFromDepth(float depth, vec2 TexCoords) {
+    float z = depth * 2.0 - 1.0;
+    vec4 clipSpacePosition = vec4(TexCoords * 2.0 - 1.0, z, 1.0);
+    vec4 viewSpacePosition = projMatrixInv * clipSpacePosition;
+    // Perspective division
+    viewSpacePosition /= viewSpacePosition.w;
+    vec4 worldSpacePosition = viewMatrixInv * viewSpacePosition;
+    return worldSpacePosition.xyz;
+}
+
+
 void main()
 {
     vec2 TexCoords = CalcTexCoord();
-    vec3 FragPos = texture(gPosition, TexCoords).rgb;
+
+    float depth = texture(gDepth, TexCoords).x;
+
+    vec3 FragPos = WorldPosFromDepth(depth, TexCoords);
+    // vec3 FragPos = texture(gPosition, TexCoords).rgb;
     vec3 Normal = texture(gNormal, TexCoords).rgb;
     vec3 Diffuse = texture(gAlbedoSpec, TexCoords).rgb;
     float Specular = texture(gAlbedoSpec, TexCoords).a;

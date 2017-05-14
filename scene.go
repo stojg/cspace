@@ -2,9 +2,8 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
-
 	"math"
+	"math/rand"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -113,6 +112,8 @@ func (s *Scene) Render() {
 	s.updateTimers()
 	view := s.camera.View(s.elapsed)
 	sin := float32(math.Sin(glfw.GetTime()))
+	invProj := s.projection.Inv()
+	invView := view.Inv()
 
 	handleInputs()
 
@@ -175,8 +176,8 @@ func (s *Scene) Render() {
 			gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
 
 			gl.ActiveTexture(gl.TEXTURE0)
-			gl.Uniform1i(s.pointLightShader.UniformPosLoc(), 0)
-			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gPosition)
+			gl.Uniform1i(s.pointLightShader.UniformDepthLoc(), 0)
+			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gDepth)
 
 			gl.ActiveTexture(gl.TEXTURE1)
 			gl.Uniform1i(s.pointLightShader.UniformNormalLoc(), 1)
@@ -185,6 +186,9 @@ func (s *Scene) Render() {
 			gl.ActiveTexture(gl.TEXTURE2)
 			gl.Uniform1i(s.pointLightShader.UniformAlbedoSpecLoc(), 2)
 			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gAlbedoSpec)
+
+			gl.UniformMatrix4fv(s.pointLightShader.locProjMatrixInv, 1, false, &invProj[0])
+			gl.UniformMatrix4fv(s.pointLightShader.locViewMatrixInv, 1, false, &invView[0])
 
 			gl.StencilFunc(gl.NOTEQUAL, 0, 0xFF)
 
@@ -235,8 +239,8 @@ func (s *Scene) Render() {
 		gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
 
 		gl.ActiveTexture(gl.TEXTURE0)
-		gl.Uniform1i(s.dirLightShader.UniformPosLoc(), 0)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gPosition)
+		gl.Uniform1i(s.dirLightShader.UniformDepthLoc(), 0)
+		gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gDepth)
 
 		gl.ActiveTexture(gl.TEXTURE1)
 		gl.Uniform1i(s.dirLightShader.UniformNormalLoc(), 1)
@@ -245,6 +249,9 @@ func (s *Scene) Render() {
 		gl.ActiveTexture(gl.TEXTURE2)
 		gl.Uniform1i(s.dirLightShader.UniformAlbedoSpecLoc(), 2)
 		gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gAlbedoSpec)
+
+		gl.UniformMatrix4fv(s.dirLightShader.locProjMatrixInv, 1, false, &invProj[0])
+		gl.UniformMatrix4fv(s.dirLightShader.locViewMatrixInv, 1, false, &invView[0])
 
 		gl.Disable(gl.DEPTH_TEST)
 		gl.Enable(gl.BLEND)
@@ -306,8 +313,9 @@ func (s *Scene) Render() {
 	gl.BindTexture(gl.TEXTURE_2D, out)
 	renderQuad()
 
+	//DisplayAlbedoBufferTexture(s.gBufferPipeline.buffer.gAlbedoSpec)
+	//DisplayNormalBufferTexture(s.gBufferPipeline.buffer.gNormal)
 	//DisplayDepthbufferTexture(s.gBufferPipeline.buffer.gDepth)
-	//DisplayFramebufferTexture(s.gBufferPipeline.buffer.gPosition)
 
 	chkError("end_of_frame")
 }

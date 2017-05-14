@@ -9,25 +9,16 @@ import (
 type Gbuffer struct {
 	fbo uint32
 
-	gPosition    uint32
 	gNormal      uint32
 	gAlbedoSpec  uint32
 	gDepth       uint32
 	finalTexture uint32
 }
 
-func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
+func NewGbuffer() *Gbuffer {
 	gbuffer := &Gbuffer{}
 	gl.GenFramebuffers(1, &gbuffer.fbo)
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, gbuffer.fbo)
-
-	// Position texture buffer
-	gl.GenTextures(1, &gbuffer.gPosition)
-	gl.BindTexture(gl.TEXTURE_2D, gbuffer.gPosition)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB16F, windowWidth, windowHeight, 0, gl.RGB, gl.FLOAT, nil)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, gbuffer.gPosition, 0)
 
 	// Normal texture buffer
 	gl.GenTextures(1, &gbuffer.gNormal)
@@ -35,7 +26,7 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB16F, windowWidth, windowHeight, 0, gl.RGB, gl.FLOAT, nil)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, gbuffer.gNormal, 0)
+	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, gbuffer.gNormal, 0)
 
 	// Color + Specular texture buffer
 	gl.GenTextures(1, &gbuffer.gAlbedoSpec)
@@ -43,7 +34,7 @@ func NewGbuffer(SCR_WIDTH, SCR_HEIGHT int32) *Gbuffer {
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, windowWidth, windowHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT2, gl.TEXTURE_2D, gbuffer.gAlbedoSpec, 0)
+	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, gbuffer.gAlbedoSpec, 0)
 
 	//  Depth + stencil buffer object
 	gl.GenTextures(1, &gbuffer.gDepth)

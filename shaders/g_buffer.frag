@@ -1,11 +1,9 @@
 #version 330 core
 
-layout (location = 0) out vec3 gPosition;
-layout (location = 1) out vec3 gNormal;
-layout (location = 2) out vec4 gAlbedoSpec;
+layout (location = 0) out vec3 gNormal;
+layout (location = 1) out vec4 gAlbedoSpec;
 
 in vec2 TexCoords;
-in vec3 FragPos;
 in vec3 Normal;
 in vec3 Tangent;
 
@@ -21,8 +19,6 @@ vec3 CalcBumpedNormal(vec3 normal, vec3 tangent);
 
 void main()
 {
-    // Store the fragment position vector in the first gbuffer texture
-    gPosition = FragPos;
     // Also store the per-fragment normals into the gbuffer
     gNormal = CalcBumpedNormal(Normal, Tangent);
     // And the diffuse per-fragment color
