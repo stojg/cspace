@@ -23,7 +23,7 @@ func (l *PointLight) Radius() float32 {
 		return l.radius
 	}
 	maxChannel := float32(math.Max(math.Max(float64(l.Color[0]), float64(l.Color[1])), float64(l.Color[2])))
-	inner := l.Linear*l.Linear - 2*l.Exp*(l.Exp-(256/2)*maxChannel)
+	inner := l.Linear*l.Linear - 2*l.Exp*(l.Exp-(256/1)*maxChannel)
 	l.radius = -l.Linear + float32(math.Sqrt(float64(inner)))/(2*l.Exp)
 	if math.IsNaN(float64(l.radius)) {
 		panic("CalcPointLightBSphere calculated a NaN")
@@ -38,7 +38,7 @@ type LightAttenuation struct {
 }
 
 var ligthAtt = map[int]LightAttenuation{
-	1:    {1, 0.9, 1.8},
+	1:    {1, 0.1, 10},
 	7:    {1, 0.7, 1.8},
 	13:   {1.0, 0.35, 0.44},
 	20:   {1.0, 0.22, 0.20},
