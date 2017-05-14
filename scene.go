@@ -283,8 +283,8 @@ func (s *Scene) Render() {
 		// moon
 		model := mgl32.Translate3D(100, 100, 100)
 		model = model.Mul4(mgl32.Scale3D(8, 8, 8))
-		setUniformMatrix4fv(s.lightBoxShader, "model", model)
-		gl.Uniform3f(uniformLocation(s.lightBoxShader, "emissive"), 1.4, 1.4, 1.8)
+		gl.UniformMatrix4fv(s.lightBoxModelLoc, 1, false, &model[0])
+		gl.Uniform3f(s.lightBoxEmissiveLoc, 1.4, 1.4, 1.8)
 		gl.BindVertexArray(s.icoMesh.vao)
 		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.icoMesh.Vertices)))
 	}
