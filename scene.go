@@ -13,9 +13,9 @@ import (
 const numLights = 255
 
 var bloom = false
-var dirLightOn = true
+var dirLightOn = false
 var showDebug = false
-var currentNumLights = 0
+var currentNumLights = 1
 
 var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{10, 10, 10}),
@@ -40,16 +40,27 @@ func NewScene() *Scene {
 		camera:           NewCamera(),
 		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/float32(windowHeight), 0.5, 200.0),
 		graph:            NewBaseNode(),
-		pointLightShader: NewPointLightShader("lighting", "lighting_point"),
-		dirLightShader:   NewDirLightShader("lighting", "lighting_dir"),
+		pointLightShader: NewPointLightShader("lighting", "lighting_point_pbr"),
+		dirLightShader:   NewDirLightShader("lighting", "lighting_dir_pbr"),
 		nullShader:       NewDefaultShader("null", "null"),
 		lightBoxShader:   NewDefaultShader("simple", "emissive"),
-		icoMesh:          LoadModel("models/ico")[0],
-		cubeMesh:         LoadModel("models/cube")[0],
+		icoMesh:          LoadModel("models/ico", MaterialMesh)[0],
+		cubeMesh:         LoadModel("models/cube", MaterialMesh)[0],
 	}
 
-	for i := 0; i < numLights; i++ {
-		att := ligthAtt[1]
+	att := ligthAtt[13]
+	s.pointLights = append(s.pointLights, &PointLight{
+		Position: [3]float32{0, 0, -2},
+		Color:    [3]float32{rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5},
+		Constant: att.Constant,
+		Linear:   att.Linear,
+		Exp:      att.Exp,
+		rand:     rand.Float32() * 2,
+		enabled:  true,
+	})
+
+	for i := 1; i < numLights; i++ {
+
 		s.pointLights = append(s.pointLights, &PointLight{
 			Position: [3]float32{rand.Float32()*30 - 10, rand.Float32()*1 + 0.5, -rand.Float32()*6 + 2},
 			Color:    [3]float32{rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5},

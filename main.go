@@ -51,7 +51,8 @@ func realMain() error {
 	scene := NewScene()
 	//MaterialLevel(scene.graph)
 	//ScifiLevel(scene.graph)
-	ReferenceLevel(scene.graph)
+	//ReferenceLevel(scene.graph)
+	PBRLevel(scene.graph)
 
 	//var frame = 0
 	for !window.ShouldClose() {

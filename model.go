@@ -14,7 +14,7 @@ type Model struct {
 	Transforms []Transform
 }
 
-func LoadModel(directory string) []*Mesh {
+func LoadModel(directory string, shaderType ShaderType) []*Mesh {
 
 	var result []*Mesh
 
@@ -46,7 +46,7 @@ func LoadModel(directory string) []*Mesh {
 		glLogf("textures %d \n", len(textures))
 		glLogln("------------------------")
 
-		result = append(result, NewMesh(object.Name, vertices, textures, object.Mtr))
+		result = append(result, NewMesh(object.Name, vertices, textures, object.Mtr, shaderType))
 	}
 	return result
 

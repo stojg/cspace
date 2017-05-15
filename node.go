@@ -15,7 +15,7 @@ const (
 
 type SceneNode interface {
 	Render(projection, view mgl32.Mat4, tShader TextureShader, mShader MaterialShader)
-	Add(mesh []*Mesh, s ShaderType, transform mgl32.Mat4)
+	Add(mesh []*Mesh, transform mgl32.Mat4)
 	Destroy()
 }
 
@@ -57,20 +57,21 @@ func (n *BaseNode) Render(projection, view mgl32.Mat4, tShader TextureShader, mS
 }
 
 type Node struct {
-	children   []*Node
-	shaderType ShaderType
-	transform  *mgl32.Mat4
-	mesh       *Mesh
+	children  []*Node
+	transform *mgl32.Mat4
+	mesh      *Mesh
 }
 
 func (n *Node) Render(projection, view mgl32.Mat4, tShader TextureShader, mShader MaterialShader) {
 	transform := *n.transform
 	if n.mesh.MeshType == TextureMesh {
 		gl.UniformMatrix4fv(tShader.ModelUniform(), 1, false, &transform[0])
+		n.mesh.setTextures(tShader)
 	} else {
 		gl.UniformMatrix4fv(mShader.ModelUniform(), 1, false, &transform[0])
+		n.mesh.setMaterial(mShader)
 	}
-	n.mesh.Render(tShader, mShader)
+	n.mesh.Render()
 }
 
 func (n *Node) Destroy() {
@@ -86,13 +87,12 @@ func (n *Node) Children() []*Node {
 	return children
 }
 
-func (n *Node) Add(mesh []*Mesh, s ShaderType, transform mgl32.Mat4) {
+func (n *Node) Add(mesh []*Mesh, transform mgl32.Mat4) {
 
 	for i := range mesh {
 		child := &Node{
-			shaderType: s,
-			mesh:       mesh[i],
-			transform:  &transform,
+			mesh:      mesh[i],
+			transform: &transform,
 		}
 		n.children = append(n.children, child)
 	}

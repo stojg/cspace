@@ -9,42 +9,42 @@ import (
 	"github.com/stojg/cspace/lib/obj"
 )
 
-func NewGrassMesh() *Mesh {
-	var data = []float32{
-		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
-		0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
-		0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 1.0, 1.0, // top-right
-		0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
-		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
-		-0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0, // bottom-left
-	}
-	vertices := getVertices(data)
-	var textures []*Texture
-	//diffuseTexture, err := newTexture(Diffuse, "textures/grass/grass01.jpg", true)
-	//if err != nil {
-	//	log.Fatalln(err)
-	//}
-	//textures = append(textures, diffuseTexture)
-	//
-	//specularTexture, err := newTexture(Specular, "textures/grass/grass01_s.jpg", true)
-	//if err != nil {
-	//	log.Fatalln(err)
-	//}
-	//textures = append(textures, specularTexture)
-	//
-	//normalTexture, err := newTexture(Normal, "textures/grass/grass01_n.jpg", true)
-	//if err != nil {
-	//	log.Fatalln(err)
-	//}
-	//textures = append(textures, normalTexture)
-	mat := obj.NewMaterial()
-	mat.Ambient = [3]float32{1, 1, 1}
-	mat.Diffuse = [3]float32{0.242558, 0.079845, 0.040770}
-	mat.Name = "grass"
-	mat.SpecularExp = 0
-	mat.Specular = [3]float32{0, 0.3, 0}
-	return NewMesh("grass", vertices, textures, mat)
-}
+//func NewGrassMesh() *Mesh {
+//	var data = []float32{
+//		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
+//		0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
+//		0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 1.0, 1.0, // top-right
+//		0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom-right
+//		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, // top-left
+//		-0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0, // bottom-left
+//	}
+//	vertices := getVertices(data)
+//	var textures []*Texture
+//	//diffuseTexture, err := newTexture(Diffuse, "textures/grass/grass01.jpg", true)
+//	//if err != nil {
+//	//	log.Fatalln(err)
+//	//}
+//	//textures = append(textures, diffuseTexture)
+//	//
+//	//specularTexture, err := newTexture(Specular, "textures/grass/grass01_s.jpg", true)
+//	//if err != nil {
+//	//	log.Fatalln(err)
+//	//}
+//	//textures = append(textures, specularTexture)
+//	//
+//	//normalTexture, err := newTexture(Normal, "textures/grass/grass01_n.jpg", true)
+//	//if err != nil {
+//	//	log.Fatalln(err)
+//	//}
+//	//textures = append(textures, normalTexture)
+//	mat := obj.NewMaterial()
+//	mat.Ambient = [3]float32{1, 1, 1}
+//	mat.Diffuse = [3]float32{0.242558, 0.079845, 0.040770}
+//	mat.Name = "grass"
+//	mat.SpecularExp = 0
+//	mat.Specular = [3]float32{0, 0.3, 0}
+//	return NewMesh("grass", vertices, textures, mat)
+//}
 
 type Vertex struct {
 	Position  [3]float32
@@ -53,18 +53,14 @@ type Vertex struct {
 	Tangent   [3]float32
 }
 
-func NewMesh(name string, vertices []Vertex, textures []*Texture, mat *obj.Material) *Mesh {
+func NewMesh(name string, vertices []Vertex, textures []*Texture, mat *obj.Material, shaderType ShaderType) *Mesh {
 	q := &Mesh{
 		Name:     name,
 		Vertices: vertices,
 		Textures: textures,
 		Material: mat,
 	}
-	if len(textures) > 0 {
-		q.MeshType = TextureMesh
-	} else {
-		q.MeshType = MaterialMesh
-	}
+	q.MeshType = shaderType
 	q.init()
 	return q
 }
@@ -80,18 +76,12 @@ type Mesh struct {
 	vbo, vao, ebo uint32
 }
 
-func (s *Mesh) Render(tShader TextureShader, mShader MaterialShader) {
-
-	if s.MeshType == TextureMesh {
-		s.setTextures(tShader)
-	} else {
-		s.setMaterial(mShader)
-	}
+func (s *Mesh) Render() {
 
 	gl.BindVertexArray(s.vao)
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.Vertices)))
 	// reset
-	//gl.BindVertexArray(0)
+	gl.BindVertexArray(0)
 
 	// reset textures
 	//for i := range s.Textures {
