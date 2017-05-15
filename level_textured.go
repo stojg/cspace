@@ -2,7 +2,7 @@ package main
 
 import "github.com/go-gl/mathgl/mgl32"
 
-func TexturedLevel(graph SceneNode) {
+func ScifiLevel(graph SceneNode) {
 	{
 		corvette := LoadModel("models/corvette")
 		t := mgl32.Translate3D(0, 0.0, 0)

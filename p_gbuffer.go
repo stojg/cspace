@@ -13,7 +13,7 @@ func NewGBufferPipeline() *GBufferPipeline {
 	p.mShader.locSpecularExp = uniformLocation(p.mShader.Shader, "mat.specularExp")
 
 	p.tShader = &GbufferTShader{
-		Shader: NewDefaultShader("g_buffer", "g_buffer"),
+		Shader: NewDefaultShader("g_buffer", "g_buffer_t"),
 	}
 	p.tShader.uniformDiffuseLoc = uniformLocation(p.tShader.Shader, "mat.diffuse0")
 	p.tShader.uniformSpecularLoc = uniformLocation(p.tShader.Shader, "mat.specular0")

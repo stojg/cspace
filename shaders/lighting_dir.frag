@@ -58,6 +58,6 @@ void main()
     float spec = pow(max(dot(Normal, halfwayDir), 0.0), 256);
     vec3 specular = dirLight.Color * spec * Specular;
 
-    vec3 color = ambient + diffuse + specular;
+    vec3 color = diffuse;
     FragColor = vec4(color, 1.0);
 }

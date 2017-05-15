@@ -13,12 +13,13 @@ import (
 const numLights = 255
 
 var bloom = false
-
+var dirLightOn = true
+var showDebug = false
 var currentNumLights = 0
 
 var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{10, 10, 10}),
-	Color:     [3]float32{0.01, 0.01, 0.01},
+	Color:     [3]float32{0.7, 0.7, 0.7},
 }
 
 var passthroughShader *PassthroughShader
@@ -48,9 +49,9 @@ func NewScene() *Scene {
 	}
 
 	for i := 0; i < numLights; i++ {
-		att := ligthAtt[7]
+		att := ligthAtt[1]
 		s.pointLights = append(s.pointLights, &PointLight{
-			Position: [3]float32{rand.Float32()*50 - 25, rand.Float32()*10 - 5, rand.Float32()*20 - 10},
+			Position: [3]float32{rand.Float32()*30 - 10, rand.Float32()*1 + 0.5, -rand.Float32()*6 + 2},
 			Color:    [3]float32{rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5},
 			Constant: att.Constant,
 			Linear:   att.Linear,
@@ -233,7 +234,7 @@ func (s *Scene) Render() {
 	// we are done with the stencil testing
 	gl.Disable(gl.STENCIL_TEST)
 
-	{ // Render the directional term / ambient
+	if dirLightOn { // Render the directional term / ambient
 		ident := mgl32.Ident4()
 		s.dirLightShader.UsePV(ident, ident)
 
@@ -311,34 +312,39 @@ func (s *Scene) Render() {
 	gl.BindTexture(gl.TEXTURE_2D, out)
 	renderQuad()
 
-	//DisplayAlbedoBufferTexture(s.bloomEffect.bloomFbo.textures[1])
-	//DisplayAlbedoBufferTexture(s.gBufferPipeline.buffer.gAlbedoSpec)
-	//DisplayNormalBufferTexture(s.gBufferPipeline.buffer.gNormal)
-	//DisplayDepthbufferTexture(s.gBufferPipeline.buffer.gDepth)
+	if showDebug {
+		//DisplayAlbedoBufferTexture(s.bloomEffect.bloomFbo.textures[1])
+		DisplayAlbedoBufferTexture(s.gBufferPipeline.buffer.gAlbedoSpec)
+		DisplayNormalBufferTexture(s.gBufferPipeline.buffer.gNormal)
+		DisplayDepthbufferTexture(s.gBufferPipeline.buffer.gDepth)
+	}
 
 	chkError("end_of_frame")
 }
 func handleInputs() {
 	if keys[glfw.Key1] {
-		currentNumLights = 0
-	} else if keys[glfw.Key2] {
 		currentNumLights = 4
-	} else if keys[glfw.Key3] {
+	} else if keys[glfw.Key2] {
 		currentNumLights = 8
-	} else if keys[glfw.Key4] {
+	} else if keys[glfw.Key3] {
 		currentNumLights = 16
-	} else if keys[glfw.Key5] {
+	} else if keys[glfw.Key4] {
 		currentNumLights = 32
-	} else if keys[glfw.Key6] {
+	} else if keys[glfw.Key5] {
 		currentNumLights = 64
-	} else if keys[glfw.Key7] {
+	} else if keys[glfw.Key6] {
 		currentNumLights = 128
-	} else if keys[glfw.Key8] {
-		currentNumLights = 255
+	} else if keys[glfw.Key0] {
+		dirLightOn = false
+	} else if keys[glfw.KeyTab] {
+		showDebug = true
 	} else if keys[glfw.KeyEnter] {
 		bloom = true
 	} else if keys[glfw.KeyEscape] {
+		currentNumLights = 0
 		bloom = false
+		showDebug = false
+		dirLightOn = true
 	}
 }
 
