@@ -16,69 +16,6 @@ type Shader interface {
 	Program() uint32
 }
 
-type TextureShader interface {
-	Shader
-	ModelUniform() int32
-	TextureUniform(TextureType, int) int32
-}
-
-type MaterialShader interface {
-	Shader
-	ModelUniform() int32
-	DiffuseUniform() int32
-	SpecularExpUniform() int32
-}
-
-type GbufferMShader struct {
-	Shader
-	uniformModelLoc int32
-	locDiffuse      int32
-	locSpecularExp  int32
-}
-
-func (s *GbufferMShader) ModelUniform() int32 {
-	return s.uniformModelLoc
-}
-
-func (s *GbufferMShader) DiffuseUniform() int32 {
-	return s.locDiffuse
-}
-func (s *GbufferMShader) SpecularExpUniform() int32 {
-	return s.locSpecularExp
-}
-
-type GbufferLightShader interface {
-	Shader
-	UniformNormalLoc() int32
-	UniformAlbedoSpecLoc() int32
-	UniformDepthLoc() int32
-}
-
-type GbufferTShader struct {
-	Shader
-	uniformModelLoc    int32
-	uniformDiffuseLoc  int32
-	uniformNormalLoc   int32
-	uniformSpecularLoc int32
-}
-
-func (s *GbufferTShader) TextureUniform(t TextureType, num int) int32 {
-	if t == Diffuse {
-		return s.uniformDiffuseLoc
-	}
-	if t == Specular {
-		return s.uniformSpecularLoc
-	}
-	if t == Normal {
-		return s.uniformNormalLoc
-	}
-	return -1
-}
-
-func (s *GbufferTShader) ModelUniform() int32 {
-	return s.uniformModelLoc
-}
-
 type PassthroughShader struct {
 	Shader
 	uniformScreenTextureLoc int32
@@ -90,61 +27,6 @@ func NewPassthroughShader() *PassthroughShader {
 		Shader: NewDefaultShader("fx", "fx_text_pass"),
 	}
 	s.uniformScreenTextureLoc = uniformLocation(s.Shader, "screenTexture")
-	return s
-
-}
-
-type PointLightShader struct {
-	*DefaultShader
-	uniformNormalLoc     int32
-	uniformAlbedoSpecLoc int32
-	uniformDepthLoc      int32
-
-	uniformLightPosLoc              int32
-	uniformLightColorLoc            int32
-	uniformLightDiffuseIntensityLoc int32
-	uniformLightLinearLoc           int32
-	uniformLightQuadraticLoc        int32
-
-	locProjMatrixInv int32
-	locViewMatrixInv int32
-}
-
-func (s *PointLightShader) UniformNormalLoc() int32 {
-	return s.uniformNormalLoc
-}
-
-func (s *PointLightShader) UniformAlbedoSpecLoc() int32 {
-	return s.uniformAlbedoSpecLoc
-}
-
-func (s *PointLightShader) UniformDepthLoc() int32 {
-	return s.uniformDepthLoc
-}
-
-func (s *PointLightShader) SetLight(light *PointLight) {
-	gl.Uniform3f(s.uniformLightPosLoc, light.Position[0], light.Position[1], light.Position[2])
-	gl.Uniform3f(s.uniformLightColorLoc, light.Color[0], light.Color[1], light.Color[2])
-	gl.Uniform1f(s.uniformLightLinearLoc, light.Linear)
-	gl.Uniform1f(s.uniformLightQuadraticLoc, light.Exp)
-}
-
-func NewPointLightShader(vertex, frag string) *PointLightShader {
-	c := NewDefaultShader(vertex, frag)
-	s := &PointLightShader{
-		DefaultShader:        c,
-		uniformNormalLoc:     uniformLocation(c, "gNormal"),
-		uniformAlbedoSpecLoc: uniformLocation(c, "gAlbedoSpec"),
-		uniformDepthLoc:      uniformLocation(c, "gDepth"),
-
-		uniformLightPosLoc:       uniformLocation(c, "pointLight.Position"),
-		uniformLightColorLoc:     uniformLocation(c, "pointLight.Color"),
-		uniformLightLinearLoc:    uniformLocation(c, "pointLight.Linear"),
-		uniformLightQuadraticLoc: uniformLocation(c, "pointLight.Quadratic"),
-
-		locProjMatrixInv: uniformLocation(c, "projMatrixInv"),
-		locViewMatrixInv: uniformLocation(c, "viewMatrixInv"),
-	}
 	return s
 }
 

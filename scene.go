@@ -48,10 +48,10 @@ func NewScene() *Scene {
 		cubeMesh:         LoadModel("models/cube", MaterialMesh)[0],
 	}
 
-	att := ligthAtt[13]
+	att := ligthAtt[1]
 	s.pointLights = append(s.pointLights, &PointLight{
-		Position: [3]float32{0, 0, -2},
-		Color:    [3]float32{rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5},
+		Position: [3]float32{12, 12, 10},
+		Color:    [3]float32{1, 1, 1},
 		Constant: att.Constant,
 		Linear:   att.Linear,
 		Exp:      att.Exp,
@@ -62,7 +62,7 @@ func NewScene() *Scene {
 	for i := 1; i < numLights; i++ {
 
 		s.pointLights = append(s.pointLights, &PointLight{
-			Position: [3]float32{rand.Float32()*30 - 10, rand.Float32()*1 + 0.5, -rand.Float32()*6 + 2},
+			Position: [3]float32{rand.Float32() * 25, rand.Float32() * 25, 3},
 			Color:    [3]float32{rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5},
 			Constant: att.Constant,
 			Linear:   att.Linear,

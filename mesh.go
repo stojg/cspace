@@ -72,6 +72,10 @@ type Mesh struct {
 	Textures []*Texture
 	Material *obj.Material
 	MeshType ShaderType
+	// PRB material
+	Albedo    [3]float32
+	Metallic  float32
+	Roughness float32
 
 	vbo, vao, ebo uint32
 }
@@ -116,8 +120,9 @@ func (s *Mesh) setTextures(tShader TextureShader) {
 }
 
 func (s *Mesh) setMaterial(mShader MaterialShader) {
-	gl.Uniform3f(mShader.DiffuseUniform(), s.Material.Diffuse[0], s.Material.Diffuse[1], s.Material.Diffuse[2])
-	gl.Uniform1f(mShader.SpecularExpUniform(), 0.001)
+	gl.Uniform3f(mShader.AlbedoUniform(), s.Albedo[0], s.Albedo[1], s.Albedo[2])
+	gl.Uniform1f(mShader.MetallicUniform(), s.Metallic)
+	gl.Uniform1f(mShader.RoughnessUniform(), s.Roughness)
 }
 
 func (s *Mesh) init() {

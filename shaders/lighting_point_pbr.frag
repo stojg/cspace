@@ -20,10 +20,7 @@ uniform vec2 gScreenSize;
 uniform mat4 projMatrixInv;
 uniform mat4 viewMatrixInv;
 
-uniform vec3  albedo = vec3(0.9,0.5,0.2);
-uniform float metallic = 0.0; // almost all non metals have 0.0
-uniform float roughness = 0.9;
-uniform float ao = 0.4;
+uniform float ao = 0.0;
 
 const float PI = 3.14159265359;
 
@@ -44,23 +41,25 @@ void main()
 
     vec3 Lo = vec3(0.0);
 
-    vec3 tAlbedo = texture(gAlbedoSpec, TexCoords).rgb;
-    float tRoughness= texture(gAlbedoSpec, TexCoords).a;
+    vec3 albedo = texture(gAlbedoSpec, TexCoords).rgb;
+    float metallic = texture(gAlbedoSpec, TexCoords).a;
+    float roughness = texture(gNormal, TexCoords).w;
 
     // foreach here
     vec3 L = pointLight.Position - FragPos;
     vec3 H = normalize(V + L);
 
     float distance    = length(pointLight.Position - FragPos);
-    float attenuation = 1.0 / (distance * distance); // fake attentuation
+    float attenuation = 1.0 / (1.0 + pointLight.Linear * distance + pointLight.Quadratic * distance * distance);
+//    float attenuation = 1.0 / (distance * distance); // fake attentuation
     vec3 radiance     = pointLight.Color * attenuation;
 
     vec3 F0 = vec3(0.04);
-    F0      = mix(F0, tAlbedo, metallic);
+    F0      = mix(F0, albedo, metallic);
     vec3 F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
-    float NDF = DistributionGGX(N, H, tRoughness);
-    float G   = GeometrySmith(N, V, L, tRoughness);
+    float NDF = DistributionGGX(N, H, roughness);
+    float G   = GeometrySmith(N, V, L, roughness);
 
     // Cook-Torrance BRDF
     vec3 nominator    = NDF * G * F;
@@ -75,7 +74,7 @@ void main()
     kD *= 1.0 - metallic;
 
     float NdotL = max(dot(N, L), 0.0);
-    Lo += (kD * tAlbedo / PI + specular) * radiance * NdotL;
+    Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     // end foreach
 
     // improvised ambient term

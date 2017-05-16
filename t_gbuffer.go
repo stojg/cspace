@@ -20,15 +20,15 @@ func NewGbuffer() *Gbuffer {
 	gl.GenFramebuffers(1, &gbuffer.fbo)
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, gbuffer.fbo)
 
-	// Normal texture buffer
+	// Normal + roughtness texture buffer
 	gl.GenTextures(1, &gbuffer.gNormal)
 	gl.BindTexture(gl.TEXTURE_2D, gbuffer.gNormal)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB16F, windowWidth, windowHeight, 0, gl.RGB, gl.FLOAT, nil)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, windowWidth, windowHeight, 0, gl.RGBA, gl.FLOAT, nil)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, gbuffer.gNormal, 0)
 
-	// Color + Specular texture buffer
+	// Albedo + metallic texture buffer
 	gl.GenTextures(1, &gbuffer.gAlbedoSpec)
 	gl.BindTexture(gl.TEXTURE_2D, gbuffer.gAlbedoSpec)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, windowWidth, windowHeight, 0, gl.RGBA, gl.FLOAT, nil)

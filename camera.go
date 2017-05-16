@@ -9,12 +9,12 @@ import (
 
 func NewCamera() *Camera {
 	c := &Camera{
-		position:   mgl32.Vec3{10, 5, -10},
+		position:   mgl32.Vec3{10, 5, 10},
 		front:      mgl32.Vec3{0, 0, -1},
 		up:         mgl32.Vec3{0, 1, 0},
 		lastX:      windowWidth / 2,
 		lastY:      windowHeight / 2,
-		yaw:        135,
+		yaw:        -135,
 		pitch:      -1,
 		speed:      6.0,
 		firstMouse: true,
