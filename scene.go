@@ -10,6 +10,9 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+const near float32 = 0.5
+const far float32 = 200
+
 const numLights = 255
 
 var bloom = false
@@ -37,13 +40,14 @@ func NewScene() *Scene {
 	fxaaTextureloc = uniformLocation(fxaaShader, "screenTexture")
 
 	s := &Scene{
-		gBufferPipeline: NewGBufferPipeline(),
+		gBuffer: NewGBufferPipeline(),
 
-		fxBuffer:         NewFXbuffer(),
-		bloomEffect:      NewBloomEffect(),
+		shadow:           NewShadow(),
+		fxFBO:            NewFXbuffer(),
+		bloom:            NewBloomEffect(),
 		previousTime:     glfw.GetTime(),
 		camera:           NewCamera(),
-		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/float32(windowHeight), 0.5, 200.0),
+		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/float32(windowHeight), near, far),
 		graph:            NewBaseNode(),
 		pointLightShader: NewPointLightShader("lighting", "lighting_point_pbr"),
 		dirLightShader:   NewDirLightShader("lighting", "lighting_dir_pbr"),
@@ -54,20 +58,11 @@ func NewScene() *Scene {
 	}
 
 	att := ligthAtt[1]
-	s.pointLights = append(s.pointLights, &PointLight{
-		Position: [3]float32{12, 12, 10},
-		Color:    [3]float32{1, 1, 1},
-		Constant: att.Constant,
-		Linear:   att.Linear,
-		Exp:      att.Exp,
-		rand:     rand.Float32() * 2,
-		enabled:  true,
-	})
 
 	for i := 1; i < numLights; i++ {
 
 		s.pointLights = append(s.pointLights, &PointLight{
-			Position: [3]float32{rand.Float32() * 25, rand.Float32() * 25, 3},
+			Position: [3]float32{rand.Float32()*40 - 10, rand.Float32()*3 + 1, 1.2},
 			Color:    [3]float32{rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5},
 			Constant: att.Constant,
 			Linear:   att.Linear,
@@ -100,9 +95,11 @@ type Scene struct {
 	camera       *Camera
 	graph        SceneNode
 
-	fxBuffer        *FXFbo
-	gBufferPipeline *GBufferPipeline
-	bloomEffect     *BloomEffect
+	gBuffer *GBufferPipeline
+	bloom   *BloomEffect
+
+	fxFBO  *FXFbo
+	shadow *ShadowFBO
 
 	pointLightShader *PointLightShader
 	dirLightShader   *DirLightShader
@@ -134,18 +131,34 @@ func (s *Scene) Render() {
 	invView := view.Inv()
 
 	// bind and clear out the gbuffers final texture
-	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.gBufferPipeline.buffer.fbo)
+	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.gBuffer.buffer.fbo)
 
 	// 1. render into the gBuffer
 	var attachments = [2]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1}
 	gl.DrawBuffers(int32(len(attachments)), &attachments[0])
 
-	// Only the geometry pass updates the depth buffer
+	// Only the geometry pass updates the depthMap buffer
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthMask(true)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	// enable depth mask writing, draw, and disable writing to the depth buffer
-	s.graph.Render(s.projection, view, s.gBufferPipeline.tShader, s.gBufferPipeline.mShader)
+	// enable depthMap mask writing, draw, and disable writing to the depthMap buffer
+	s.graph.Render(s.projection, view, s.gBuffer.tShader, s.gBuffer.mShader)
+
+	{ // draw the shadow mask
+		//lightProjection := mgl32.Ortho(-10, 10, -10, 10, near, far)
+		//lightView := mgl32.LookAt(10, 10, 10, 0, 0, 0, 0, 1, 0)
+		//ligthSpaceMatrix := lightProjection.Mul4(lightView)
+		//s.shadow.shader.Use()
+		//gl.UniformMatrix4fv(s.shadow.locLightSpaceMatrix, 1, false, &ligthSpaceMatrix[0])
+		//gl.Viewport(0, 0, 1024, 1024)
+		//gl.BindFramebuffer(gl.FRAMEBUFFER, s.shadow.fbo)
+		//gl.DrawBuffer(gl.NONE)
+		//gl.ReadBuffer(gl.NONE)
+		//chkError("here?")
+		//gl.Clear(gl.DEPTH_BUFFER_BIT)
+		//// @todo render meshes
+	}
+
 	gl.DepthMask(false)
 
 	// All rendering should now go into the gbuffers final texture
@@ -164,7 +177,7 @@ func (s *Scene) Render() {
 		{
 			s.nullShader.UsePV(s.projection, view)
 
-			// Disable color/depth write and enable depth testing
+			// Disable color/depthMap write and enable depthMap testing
 			gl.Enable(gl.DEPTH_TEST)
 
 			// otherwise the light will be inside by the light bounding volume
@@ -173,7 +186,7 @@ func (s *Scene) Render() {
 			// clear previous runs stencil tests
 			gl.Clear(gl.STENCIL_BUFFER_BIT)
 
-			// We need the stencil test to be enabled but we want it to succeed always. Only the depth test matters.
+			// We need the stencil test to be enabled but we want it to succeed always. Only the depthMap test matters.
 			gl.StencilFunc(gl.ALWAYS, 0, 0)
 			// The following stencil setup that we saw guarantees that only the pixels in the stencil buffer covered by
 			// objects inside the bounding sphere will have a value greater than zero
@@ -206,16 +219,16 @@ func (s *Scene) Render() {
 			gl.CullFace(gl.FRONT)
 
 			gl.ActiveTexture(gl.TEXTURE0)
-			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gDepth)
+			gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gDepth)
 			gl.Uniform1i(s.pointLightShader.UniformDepthLoc(), 0)
 
 			gl.ActiveTexture(gl.TEXTURE1)
-			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gNormal)
+			gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormal)
 			gl.Uniform1i(s.pointLightShader.UniformNormalLoc(), 1)
 
 			gl.ActiveTexture(gl.TEXTURE2)
 			gl.Uniform1i(s.pointLightShader.UniformAlbedoSpecLoc(), 2)
-			gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gAlbedoSpec)
+			gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gAlbedoSpec)
 
 			gl.UniformMatrix4fv(s.pointLightShader.locProjMatrixInv, 1, false, &invProj[0])
 			gl.UniformMatrix4fv(s.pointLightShader.locViewMatrixInv, 1, false, &invView[0])
@@ -256,15 +269,15 @@ func (s *Scene) Render() {
 
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.Uniform1i(s.dirLightShader.UniformDepthLoc(), 0)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gDepth)
+		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gDepth)
 
 		gl.ActiveTexture(gl.TEXTURE1)
 		gl.Uniform1i(s.dirLightShader.UniformNormalLoc(), 1)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gNormal)
+		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormal)
 
 		gl.ActiveTexture(gl.TEXTURE2)
 		gl.Uniform1i(s.dirLightShader.UniformAlbedoSpecLoc(), 2)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBufferPipeline.buffer.gAlbedoSpec)
+		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gAlbedoSpec)
 
 		gl.UniformMatrix4fv(s.dirLightShader.locProjMatrixInv, 1, false, &invProj[0])
 		gl.UniformMatrix4fv(s.dirLightShader.locViewMatrixInv, 1, false, &invView[0])
@@ -316,9 +329,9 @@ func (s *Scene) Render() {
 	// from here on, there are only texture manipulations
 	gl.Disable(gl.DEPTH_TEST)
 
-	out := s.gBufferPipeline.buffer.finalTexture
+	out := s.gBuffer.buffer.finalTexture
 	if bloom {
-		out = s.bloomEffect.Render(s.gBufferPipeline.buffer.finalTexture)
+		out = s.bloom.Render(s.gBuffer.buffer.finalTexture)
 	}
 
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
@@ -336,10 +349,10 @@ func (s *Scene) Render() {
 	renderQuad()
 
 	if showDebug {
-		//DisplayAlbedoBufferTexture(s.bloomEffect.bloomFbo.textures[1])
-		DisplayAlbedoBufferTexture(s.gBufferPipeline.buffer.gAlbedoSpec)
-		DisplayNormalBufferTexture(s.gBufferPipeline.buffer.gNormal)
-		DisplayDepthbufferTexture(s.gBufferPipeline.buffer.gDepth)
+		//DisplayAlbedoBufferTexture(s.bloom.bloomFbo.textures[1])
+		DisplayAlbedoBufferTexture(s.gBuffer.buffer.gAlbedoSpec)
+		DisplayNormalBufferTexture(s.gBuffer.buffer.gNormal)
+		DisplayDepthbufferTexture(s.gBuffer.buffer.gDepth)
 	}
 
 	chkError("end_of_frame")

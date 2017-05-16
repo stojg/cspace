@@ -41,7 +41,7 @@ func PBRLevel(graph SceneNode) {
 		meshes := LoadModel("models/ico", MaterialMesh)
 		for _, mesh := range meshes {
 			mesh.Albedo = [3]float32{1, 0, 0}
-			mesh.Metallic = 0
+			mesh.Metallic = 0.01
 			mesh.Roughness = x
 		}
 		t := mgl32.Translate3D(x*25, 5, -2)
