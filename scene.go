@@ -13,23 +13,28 @@ import (
 const numLights = 255
 
 var bloom = false
-var dirLightOn = false
+var dirLightOn = true
+var fxaa = false
 var showDebug = false
-var currentNumLights = 1
+var currentNumLights = 0
 
 var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{10, 10, 10}),
-	Color:     [3]float32{0.7, 0.7, 0.7},
+	Color:     [3]float32{1, 1, 1},
 }
 
 var passthroughShader *PassthroughShader
 var depthShader *DefaultShader
 var hdrShader *DefaultShader
+var fxaaShader *DefaultShader
+var fxaaTextureloc int32
 
 func NewScene() *Scene {
 
 	passthroughShader = NewPassthroughShader()
 	hdrShader = NewDefaultShader("fx", "fx_tone")
+	fxaaShader = NewDefaultShader("fx", "fx_fxaa")
+	fxaaTextureloc = uniformLocation(fxaaShader, "screenTexture")
 
 	s := &Scene{
 		gBufferPipeline: NewGBufferPipeline(),
@@ -317,10 +322,17 @@ func (s *Scene) Render() {
 	}
 
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
-	hdrShader.Use()
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.Uniform1i(passthroughShader.uniformScreenTextureLoc, 0)
-	gl.BindTexture(gl.TEXTURE_2D, out)
+	if fxaa {
+		fxaaShader.Use()
+		gl.ActiveTexture(gl.TEXTURE0)
+		gl.Uniform1i(fxaaTextureloc, 0)
+		gl.BindTexture(gl.TEXTURE_2D, out)
+	} else {
+		hdrShader.Use()
+		gl.ActiveTexture(gl.TEXTURE0)
+		gl.Uniform1i(passthroughShader.uniformScreenTextureLoc, 0)
+		gl.BindTexture(gl.TEXTURE_2D, out)
+	}
 	renderQuad()
 
 	if showDebug {
@@ -347,6 +359,8 @@ func handleInputs() {
 		currentNumLights = 128
 	} else if keys[glfw.Key0] {
 		dirLightOn = false
+	} else if keys[glfw.KeyF] {
+		fxaa = true
 	} else if keys[glfw.KeyTab] {
 		showDebug = true
 	} else if keys[glfw.KeyEnter] {
@@ -356,6 +370,7 @@ func handleInputs() {
 		bloom = false
 		showDebug = false
 		dirLightOn = true
+		fxaa = false
 	}
 }
 
