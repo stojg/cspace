@@ -24,7 +24,7 @@ uniform sampler2D shadowMap;
 uniform mat4 lightProjection;
 uniform mat4 lightView;
 
-uniform float ao = 0.0;
+uniform float ao = 0.2;
 
 const float PI = 3.14159265359;
 
@@ -34,7 +34,7 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0);
 float DistributionGGX(vec3 N, vec3 H, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
-float ShadowCalculation(vec4 fragPosLightSpace);
+float ShadowCalculation(vec4 worldPos, vec3 normal);
 
 void main()
 {
@@ -45,29 +45,17 @@ void main()
     vec3 N = normalize(texture(gNormal, TexCoords).rgb);
     vec3 V = normalize(viewPos - FragPos.xyz);
 
-    // shadow calc
-    // This will be in clip-space
-    vec4 lightSpacePos = lightProjection * lightView * FragPos;
-    // Transform it into NDC-space by dividing by w
-    lightSpacePos /= lightSpacePos.w;
-    // Range is now [-1.0, 1.0], but we need [0.0, 1.0]
-    lightSpacePos = lightSpacePos * vec4 (0.5) + vec4 (0.5);
-
-    float shadow = 0.0;
-    float closestDepth = texture(shadowMap, lightSpacePos.xy).r;
-    float currentDepth = lightSpacePos.z;
-    if(currentDepth < 1.0) {
-    float bias = max(0.05 * (1.0 - dot(N, dirLight.Direction)), 0.005);
-        shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
-    }
-
-    vec3 Lo = vec3(0.0);
+    float shadow = ShadowCalculation(FragPos, N);
 
     vec3 albedo = texture(gAlbedoSpec, TexCoords).rgb;
     float metallic = texture(gAlbedoSpec, TexCoords).a;
     float roughness = texture(gNormal, TexCoords).w;
+    if(shadow > 0) {
+        vec3 ambient = vec3(0.03) * albedo * ao * (1-shadow);
+    }
 
-    // foreach here
+    vec3 Lo = vec3(0.0);
+    vec3 kD;
     vec3 L = dirLight.Direction;
     vec3 H = normalize(V + L);
 
@@ -80,20 +68,21 @@ void main()
     float NDF = DistributionGGX(N, H, roughness);
     float G   = GeometrySmith(N, V, L, roughness);
 
+    vec3 specular = vec3(0);
     // Cook-Torrance BRDF
     vec3 nominator    = NDF * G * F;
     //  0.001 to the denominator to prevent a divide by zero
     float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;
-    vec3 specular     = nominator / denominator;
+    specular     = nominator / denominator;
+    specular *= (1-shadow);
 
     // and add to kD
     vec3 kS = F;
-    vec3 kD = vec3(1.0) - kS;
+    kD = vec3(1.0) - kS;
 
     kD *= (1 - shadow);
 
     kD *= 1.0 - metallic;
-
     float NdotL = max(dot(N, L), 0.0);
     Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     // end foreach
@@ -103,15 +92,34 @@ void main()
     FragColor   = vec4(ambient + Lo,1);
 }
 
-float ShadowCalculation(vec4 fragPosLightSpace)
+float ShadowCalculation(vec4 worldPos, vec3 normal)
 {
-    // perform perspective divide
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // This will be in clip-space
+    vec4 lightSpacePos = lightProjection * lightView * worldPos;
+    // Transform it into NDC-space by dividing by w
+    lightSpacePos /= lightSpacePos.w;
+    // Range is now [-1.0, 1.0], but we need [0.0, 1.0]
+    lightSpacePos = lightSpacePos * vec4 (0.5) + vec4 (0.5);
 
-    projCoords = projCoords * 0.5 + 0.5;
-    float closestDepth = texture(shadowMap, projCoords.xy).r;
-    float currentDepth = projCoords.z;
-    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+    float currentDepth = lightSpacePos.z;
+
+    float shadow = 0.0;
+    // dont shadow things outside the light frustrum far plane
+    if(currentDepth < 1.0) {
+        // change the amount of bias based on the surface angle towards the light
+        float bias = max(0.05 * (1.0 - dot(normal, dirLight.Direction)), 0.005);
+        // shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+        vec2 texelSize = 0.5 / textureSize(shadowMap, 0);
+
+        // Percentage Closing Filter
+        for(int x = -1; x <= 1; ++x) {
+            for(int y = -1; y <= 1; ++y) {
+                float pcfDepth = texture(shadowMap, lightSpacePos.xy + vec2(x, y) * texelSize).r;
+                shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+            }
+        }
+        shadow /= 9.0;
+    }
     return shadow;
 }
 
