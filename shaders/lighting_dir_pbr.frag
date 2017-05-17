@@ -20,25 +20,46 @@ uniform vec2 gScreenSize;
 uniform mat4 projMatrixInv;
 uniform mat4 viewMatrixInv;
 
+uniform sampler2D shadowMap;
+uniform mat4 lightProjection;
+uniform mat4 lightView;
+
 uniform float ao = 0.0;
 
 const float PI = 3.14159265359;
 
 vec2 CalcTexCoord();
-vec3 WorldPosFromDepth(float depth, vec2 TexCoords);
+vec4 WorldPosFromDepth(float depth, vec2 TexCoords);
 vec3 fresnelSchlick(float cosTheta, vec3 F0);
 float DistributionGGX(vec3 N, vec3 H, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
+float ShadowCalculation(vec4 fragPosLightSpace);
 
 void main()
 {
     vec2 TexCoords = CalcTexCoord();
     float depth = texture(gDepth, TexCoords).x;
-    vec3 FragPos   = WorldPosFromDepth(depth, TexCoords);
+    vec4 FragPos = WorldPosFromDepth(depth, TexCoords);
 
     vec3 N = normalize(texture(gNormal, TexCoords).rgb);
-    vec3 V = normalize(viewPos - FragPos);
+    vec3 V = normalize(viewPos - FragPos.xyz);
+
+    // shadow calc
+    // This will be in clip-space
+    vec4 lightSpacePos = lightProjection * lightView * FragPos;
+    // Transform it into NDC-space by dividing by w
+    lightSpacePos /= lightSpacePos.w;
+    // Range is now [-1.0, 1.0], but we need [0.0, 1.0]
+    lightSpacePos = lightSpacePos * vec4 (0.5) + vec4 (0.5);
+
+    float shadow = 0.0;
+    float closestDepth = texture(shadowMap, lightSpacePos.xy).r;
+    float currentDepth = lightSpacePos.z;
+    if(currentDepth < 1.0) {
+    float bias = max(0.05 * (1.0 - dot(N, dirLight.Direction)), 0.005);
+        shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+    }
 
     vec3 Lo = vec3(0.0);
 
@@ -69,6 +90,8 @@ void main()
     vec3 kS = F;
     vec3 kD = vec3(1.0) - kS;
 
+    kD *= (1 - shadow);
+
     kD *= 1.0 - metallic;
 
     float NdotL = max(dot(N, L), 0.0);
@@ -80,18 +103,30 @@ void main()
     FragColor   = vec4(ambient + Lo,1);
 }
 
+float ShadowCalculation(vec4 fragPosLightSpace)
+{
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+
+    projCoords = projCoords * 0.5 + 0.5;
+    float closestDepth = texture(shadowMap, projCoords.xy).r;
+    float currentDepth = projCoords.z;
+    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+    return shadow;
+}
+
 vec2 CalcTexCoord() {
    return gl_FragCoord.xy / gScreenSize;
 }
 
-vec3 WorldPosFromDepth(float depth, vec2 TexCoords) {
+vec4 WorldPosFromDepth(float depth, vec2 TexCoords) {
     float z = depth * 2.0 - 1.0;
     vec4 clipSpacePosition = vec4(TexCoords * 2.0 - 1.0, z, 1.0);
     vec4 viewSpacePosition = projMatrixInv * clipSpacePosition;
     // Perspective division
     viewSpacePosition /= viewSpacePosition.w;
     vec4 worldSpacePosition = viewMatrixInv * viewSpacePosition;
-    return worldSpacePosition.xyz;
+    return worldSpacePosition;
 }
 
 // The Fresnel equation returns the ratio of light that gets reflected on a surface

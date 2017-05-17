@@ -50,7 +50,7 @@ func NewScene() *Scene {
 		projection:       mgl32.Perspective(mgl32.DegToRad(67.0), float32(windowWidth)/float32(windowHeight), near, far),
 		graph:            NewBaseNode(),
 		pointLightShader: NewPointLightShader("lighting", "lighting_point_pbr"),
-		dirLightShader:   NewDirLightShader("lighting", "lighting_dir_pbr"),
+		dirLightShader:   NewDirLightShader(),
 		nullShader:       NewDefaultShader("null", "null"),
 		lightBoxShader:   NewDefaultShader("simple", "emissive"),
 		icoMesh:          LoadModel("models/ico", MaterialMesh)[0],
@@ -130,6 +130,27 @@ func (s *Scene) Render() {
 	invProj := s.projection.Inv()
 	invView := view.Inv()
 
+	// @todo move somewhere
+	lightProjection := mgl32.Ortho(-30, 30, -30, 30, 5, 60)
+	lightView := mgl32.LookAt(20, 20, 20, 0, 0, 0, 0, 1, 0)
+	ligthSpaceMatrix := lightProjection.Mul4(lightView)
+
+	{ // draw the shadow mask
+		gl.Enable(gl.DEPTH_TEST)
+		gl.DepthMask(true)
+
+		s.shadow.shader.Use()
+		gl.UniformMatrix4fv(s.shadow.locLightSpaceMatrix, 1, false, &ligthSpaceMatrix[0])
+		gl.Viewport(0, 0, s.shadow.Width, s.shadow.Height)
+		gl.BindFramebuffer(gl.FRAMEBUFFER, s.shadow.fbo)
+		gl.Clear(gl.DEPTH_BUFFER_BIT)
+		gl.CullFace(gl.FRONT)
+		s.graph.SimpleRender(s.shadow.shader)
+		gl.CullFace(gl.BACK)
+		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+		gl.Viewport(0, 0, windowWidth, windowHeight)
+	}
+
 	// bind and clear out the gbuffers final texture
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.gBuffer.buffer.fbo)
 
@@ -143,21 +164,6 @@ func (s *Scene) Render() {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	// enable depthMap mask writing, draw, and disable writing to the depthMap buffer
 	s.graph.Render(s.projection, view, s.gBuffer.tShader, s.gBuffer.mShader)
-
-	{ // draw the shadow mask
-		//lightProjection := mgl32.Ortho(-10, 10, -10, 10, near, far)
-		//lightView := mgl32.LookAt(10, 10, 10, 0, 0, 0, 0, 1, 0)
-		//ligthSpaceMatrix := lightProjection.Mul4(lightView)
-		//s.shadow.shader.Use()
-		//gl.UniformMatrix4fv(s.shadow.locLightSpaceMatrix, 1, false, &ligthSpaceMatrix[0])
-		//gl.Viewport(0, 0, 1024, 1024)
-		//gl.BindFramebuffer(gl.FRAMEBUFFER, s.shadow.fbo)
-		//gl.DrawBuffer(gl.NONE)
-		//gl.ReadBuffer(gl.NONE)
-		//chkError("here?")
-		//gl.Clear(gl.DEPTH_BUFFER_BIT)
-		//// @todo render meshes
-	}
 
 	gl.DepthMask(false)
 
@@ -279,8 +285,14 @@ func (s *Scene) Render() {
 		gl.Uniform1i(s.dirLightShader.UniformAlbedoSpecLoc(), 2)
 		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gAlbedoSpec)
 
+		gl.ActiveTexture(gl.TEXTURE3)
+		gl.Uniform1i(s.dirLightShader.locShadowMap, 3)
+		gl.BindTexture(gl.TEXTURE_2D, s.shadow.depthMap)
+
 		gl.UniformMatrix4fv(s.dirLightShader.locProjMatrixInv, 1, false, &invProj[0])
 		gl.UniformMatrix4fv(s.dirLightShader.locViewMatrixInv, 1, false, &invView[0])
+		gl.UniformMatrix4fv(s.dirLightShader.locLightProjection, 1, false, &lightProjection[0])
+		gl.UniformMatrix4fv(s.dirLightShader.locLightView, 1, false, &lightView[0])
 
 		gl.Disable(gl.DEPTH_TEST)
 		gl.Enable(gl.BLEND)
@@ -352,7 +364,8 @@ func (s *Scene) Render() {
 		//DisplayAlbedoBufferTexture(s.bloom.bloomFbo.textures[1])
 		DisplayAlbedoBufferTexture(s.gBuffer.buffer.gAlbedoSpec)
 		DisplayNormalBufferTexture(s.gBuffer.buffer.gNormal)
-		DisplayDepthbufferTexture(s.gBuffer.buffer.gDepth)
+		//DisplayDepthbufferTexture(s.gBuffer.buffer.gDepth)
+		DisplayDepthbufferTexture(s.shadow.depthMap)
 	}
 
 	chkError("end_of_frame")

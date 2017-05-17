@@ -1,5 +1,9 @@
 package main
 
+type ModelShader interface {
+	ModelUniform() int32
+}
+
 type TextureShader interface {
 	Shader
 	ModelUniform() int32

@@ -30,53 +30,6 @@ func NewPassthroughShader() *PassthroughShader {
 	return s
 }
 
-type DirLightShader struct {
-	*DefaultShader
-	uniformDepthLoc      int32
-	uniformNormalLoc     int32
-	uniformAlbedoSpecLoc int32
-
-	uniformLightDirectionLoc        int32
-	uniformLightColorLoc            int32
-	uniformLightDiffuseIntensityLoc int32
-
-	locProjMatrixInv int32
-	locViewMatrixInv int32
-}
-
-func (s *DirLightShader) UniformNormalLoc() int32 {
-	return s.uniformNormalLoc
-}
-
-func (s *DirLightShader) UniformAlbedoSpecLoc() int32 {
-	return s.uniformAlbedoSpecLoc
-}
-
-func (s *DirLightShader) UniformDepthLoc() int32 {
-	return s.uniformDepthLoc
-}
-
-func (s *DirLightShader) SetLight(light *DirectionalLight) {
-	gl.Uniform3f(s.uniformLightDirectionLoc, light.Direction[0], light.Direction[1], light.Direction[2])
-	gl.Uniform3f(s.uniformLightColorLoc, light.Color[0], light.Color[1], light.Color[2])
-}
-
-func NewDirLightShader(vertex, frag string) *DirLightShader {
-	c := NewDefaultShader(vertex, frag)
-	s := &DirLightShader{
-		DefaultShader:            c,
-		uniformDepthLoc:          uniformLocation(c, "gDepth"),
-		uniformNormalLoc:         uniformLocation(c, "gNormal"),
-		uniformAlbedoSpecLoc:     uniformLocation(c, "gAlbedoSpec"),
-		uniformLightDirectionLoc: uniformLocation(c, "dirLight.Direction"),
-		uniformLightColorLoc:     uniformLocation(c, "dirLight.Color"),
-
-		locProjMatrixInv: uniformLocation(c, "projMatrixInv"),
-		locViewMatrixInv: uniformLocation(c, "viewMatrixInv"),
-	}
-	return s
-}
-
 type DefaultShader struct {
 	program    uint32
 	projection int32

@@ -14,6 +14,7 @@ const (
 )
 
 type SceneNode interface {
+	SimpleRender(ModelShader)
 	Render(projection, view mgl32.Mat4, tShader TextureShader, mShader MaterialShader)
 	Add(mesh []*Mesh, transform mgl32.Mat4)
 	Destroy()
@@ -56,10 +57,26 @@ func (n *BaseNode) Render(projection, view mgl32.Mat4, tShader TextureShader, mS
 	}
 }
 
+func (n *BaseNode) SimpleRender(shader ModelShader) {
+	children := n.Node.Children()
+	for _, child := range children {
+		child.SimpleRender(shader)
+	}
+}
+
 type Node struct {
 	children  []*Node
 	transform *mgl32.Mat4
 	mesh      *Mesh
+}
+
+func (n *Node) SimpleRender(shader ModelShader) {
+	gl.UniformMatrix4fv(shader.ModelUniform(), 1, false, &n.transform[0])
+	n.mesh.Render()
+	for _, child := range n.children {
+		child.SimpleRender(shader)
+	}
+
 }
 
 func (n *Node) Render(projection, view mgl32.Mat4, tShader TextureShader, mShader MaterialShader) {
