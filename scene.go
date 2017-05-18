@@ -169,6 +169,7 @@ func (s *Scene) Render() {
 
 	// All rendering should now go into the gbuffers final texture
 	gl.DrawBuffer(gl.COLOR_ATTACHMENT4)
+
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
 	// We need stencil to be enabled in the stencil pass to get the stencil buffer updated and we also need it in the
