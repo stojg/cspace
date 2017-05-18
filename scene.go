@@ -17,10 +17,10 @@ const far float32 = 200
 const numLights = 255
 
 var bloom = false
-var dirLightOn = false
+var dirLightOn = true
 var fxaa = false
 var showDebug = false
-var currentNumLights = 2
+var currentNumLights = 0
 
 var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{10, 10, 10}),
@@ -60,7 +60,7 @@ func NewScene() *Scene {
 	for i := 1; i < numLights; i++ {
 
 		s.pointLights = append(s.pointLights, &PointLight{
-			Position: [3]float32{rand.Float32()*40 - 10, rand.Float32()*3 + 1, 1.2},
+			Position: [3]float32{rand.Float32()*40 - 10, rand.Float32()*5 + 1, -rand.Float32()*3 + 1},
 			Color:    [3]float32{rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5, rand.Float32()*3 + 0.5},
 			Constant: att.Constant,
 			Linear:   att.Linear,

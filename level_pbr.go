@@ -48,6 +48,18 @@ func PBRLevel(graph SceneNode) {
 		graph.Add(meshes, t)
 	}
 
+	for x := float32(0); x < 1.1; x += 0.1 {
+		meshes := LoadModel("models/cube", MaterialMesh)
+		for _, mesh := range meshes {
+			mesh.Albedo = [3]float32{0, x, 1 - x}
+			mesh.Metallic = 0.0
+			mesh.Roughness = 0.2
+		}
+		t := mgl32.Translate3D(x*25, 8, -4)
+		t = t.Mul4(mgl32.HomogRotate3D(-x*3, mgl32.Vec3{1, 0, 0}))
+		graph.Add(meshes, t)
+	}
+
 	{
 		meshes := LoadModel("models/Wood_Log_qdtdP_256_3d_ms-1", MaterialMesh)
 		for _, mesh := range meshes {
