@@ -1,4 +1,4 @@
-package main
+package shaders
 
 import (
 	"fmt"
@@ -10,55 +10,12 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-type Shader interface {
-	Use()
-	UsePV(projection, view mgl32.Mat4)
-	Program() uint32
+func Use(program uint32) {
+	gl.UseProgram(program)
 }
 
-type PassthroughShader struct {
-	Shader
-	uniformScreenTextureLoc int32
-}
-
-func NewPassthroughShader() *PassthroughShader {
-
-	s := &PassthroughShader{
-		Shader: NewDefaultShader("fx", "fx_text_pass"),
-	}
-	s.uniformScreenTextureLoc = uniformLocation(s.Shader, "screenTexture")
-	return s
-}
-
-type DefaultShader struct {
-	program    uint32
-	projection int32
-	view       int32
-}
-
-func (s *DefaultShader) Program() uint32 {
-	return s.program
-}
-
-func (s *DefaultShader) Use() {
-	gl.UseProgram(s.program)
-}
-
-func (s *DefaultShader) UsePV(projection, view mgl32.Mat4) {
-	gl.UseProgram(s.program)
-	gl.UniformMatrix4fv(s.projection, 1, false, &projection[0])
-	gl.UniformMatrix4fv(s.view, 1, false, &view[0])
-}
-
-func NewDefaultShader(vertex, frag string) *DefaultShader {
-	shader := &DefaultShader{}
-
-	program := buildShader(vertex, frag)
-	// try to find these pretty standard uniforms
-	shader.program = program
-	shader.view = gl.GetUniformLocation(shader.Program(), gl.Str("view\x00"))
-	shader.projection = gl.GetUniformLocation(shader.Program(), gl.Str("projection\x00"))
-	return shader
+func SetMatrix4f(loc int32, mat mgl32.Mat4) {
+	gl.UniformMatrix4fv(loc, 1, false, &mat[0])
 }
 
 func buildShader(vertex, frag string) uint32 {
@@ -104,7 +61,7 @@ func buildShader(vertex, frag string) uint32 {
 	gl.DetachShader(program, fragmentShader)
 	gl.DeleteShader(fragmentShader)
 
-	glLogShader(program, vertex, frag)
+	//glLogShader(program, vertex, frag)
 	return program
 }
 
@@ -134,4 +91,12 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 		return 0, fmt.Errorf("failed to compile \n%v \n%v", l, source)
 	}
 	return shader, nil
+}
+
+func loc(program uint32, name string) int32 {
+	location := gl.GetUniformLocation(program, gl.Str(name+"\x00"))
+	if location < 0 {
+		panic(fmt.Sprintf("uniform location for tShader.Program '%d' and name '%s' not found", program, name))
+	}
+	return location
 }

@@ -81,6 +81,7 @@ func DisplayNormalBufferTexture(textureID uint32) {
 }
 
 var depthShaderTextureLoc int32
+var depthShader *DefaultShader
 
 func DisplayDepthbufferTexture(textureID uint32) {
 	if vaoDebugDepthTexturedRect == 0 {
@@ -189,9 +190,8 @@ func fpsCounter(window *glfw.Window) {
 	fpsFrameCount++
 }
 
-func glLogShader(shader Shader, vertex, frag string) {
+func glLogShader(program uint32, vertex, frag string) {
 
-	program := shader.Program()
 	glLogf("------- info tShader programme %d | %s / %s -------\n", program, vertex, frag)
 
 	var params int32
@@ -251,7 +251,7 @@ func glLogShader(shader Shader, vertex, frag string) {
 				glLogf("\t%d) %s ", i, glTypeToString(xtype), bytes.Trim(longName, "\x00"), location)
 			}
 		} else {
-			location := uniformLocation(shader, fmt.Sprintf("%s\n", name))
+			location := pUniformLocation(program, fmt.Sprintf("%s\n", name))
 			glLogf("\t%d) %s %s @ location %d\n", i, glTypeToString(xtype), bytes.Trim(name, "\x00"), location)
 		}
 	}

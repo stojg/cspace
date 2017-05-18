@@ -15,6 +15,14 @@ func uniformLocation(shader Shader, name string) int32 {
 	return location
 }
 
+func pUniformLocation(program uint32, name string) int32 {
+	location := gl.GetUniformLocation(program, gl.Str(name+"\x00"))
+	if location < 0 {
+		glError(fmt.Errorf("uniform location for tShader.Program '%d' and name '%s' not found", program, name))
+	}
+	return location
+}
+
 func initWindow(width, height int) (*glfw.Window, error) {
 	// initialise and setup a window with user inputs
 	var window *glfw.Window

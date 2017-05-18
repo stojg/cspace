@@ -49,6 +49,8 @@ func realMain() error {
 	}
 
 	scene := NewScene()
+
+	scene.Init()
 	//MaterialLevel(scene.graph)
 	//ScifiLevel(scene.graph)
 	//ReferenceLevel(scene.graph)

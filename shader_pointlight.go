@@ -2,14 +2,14 @@ package main
 
 import "github.com/go-gl/gl/v4.1-core/gl"
 
-func NewPointLightShader(vertex, frag string) *PointLightShader {
-	c := NewDefaultShader(vertex, frag)
+func NewPointLightShader() *PointLightShader {
+	c := NewDefaultShader("lighting", "lighting_point_pbr")
 	s := &PointLightShader{
 		DefaultShader: c,
 		locNormal:     uniformLocation(c, "gNormal"),
 
-		uniformAlbedoSpecLoc: uniformLocation(c, "gAlbedoSpec"),
-		uniformDepthLoc:      uniformLocation(c, "gDepth"),
+		LocGAlbedo:      uniformLocation(c, "gAlbedoSpec"),
+		uniformDepthLoc: uniformLocation(c, "gDepth"),
 
 		uniformLightPosLoc:       uniformLocation(c, "pointLight.Position"),
 		uniformLightColorLoc:     uniformLocation(c, "pointLight.Color"),
@@ -24,9 +24,9 @@ func NewPointLightShader(vertex, frag string) *PointLightShader {
 
 type PointLightShader struct {
 	*DefaultShader
-	locNormal            int32
-	uniformAlbedoSpecLoc int32
-	uniformDepthLoc      int32
+	locNormal       int32
+	LocGAlbedo      int32
+	uniformDepthLoc int32
 
 	uniformLightPosLoc              int32
 	uniformLightColorLoc            int32
@@ -43,7 +43,7 @@ func (s *PointLightShader) UniformNormalLoc() int32 {
 }
 
 func (s *PointLightShader) UniformAlbedoSpecLoc() int32 {
-	return s.uniformAlbedoSpecLoc
+	return s.LocGAlbedo
 }
 
 func (s *PointLightShader) UniformDepthLoc() int32 {
