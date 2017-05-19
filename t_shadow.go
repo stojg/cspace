@@ -18,8 +18,8 @@ type ShadowFBO struct {
 
 func NewShadow() *ShadowFBO {
 	shadow := &ShadowFBO{
-		Width:  1024,
-		Height: 1024,
+		Width:  1024 * 4,
+		Height: 1024 * 4,
 	}
 
 	gl.GenFramebuffers(1, &shadow.fbo)

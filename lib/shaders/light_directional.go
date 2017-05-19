@@ -1,11 +1,5 @@
 package shaders
 
-/*
-	s.dirLightShaderScreenSizeLoc = uniformLocation(s.dirLightShader, "gScreenSize")
-	s.dirLightViewPosLoc = uniformLocation(s.dirLightShader, "viewPos")
-	s.dirLightModelLoc = uniformLocation(s.dirLightShader, "model")
-
-*/
 func NewDirectionalLight() *DirectionalLight {
 	c := buildShader("lighting_dir_pbr", "lighting_dir_pbr")
 	s := &DirectionalLight{
@@ -58,8 +52,3 @@ func (s *DirectionalLight) UniformAlbedoSpecLoc() int32 {
 func (s *DirectionalLight) UniformDepthLoc() int32 {
 	return s.LocGDepth
 }
-
-//func (s *DirectionalLight) SetLight(light *DirectionalLight) {
-//	gl.Uniform3f(s.LocLightDirection, light.Direction[0], light.Direction[1], light.Direction[2])
-//	gl.Uniform3f(s.LocLightColor, light.Color[0], light.Color[1], light.Color[2])
-//}

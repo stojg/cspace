@@ -29,14 +29,12 @@ var directionLight = &DirectionalLight{
 
 var passthroughShader *PassthroughShader
 
-var hdrShader *DefaultShader
 var fxaaShader *DefaultShader
 var fxaaTextureloc int32
 
 func NewScene() *Scene {
 
 	passthroughShader = NewPassthroughShader()
-	hdrShader = NewDefaultShader("fx", "fx_tone")
 	fxaaShader = NewDefaultShader("fx", "fx_fxaa")
 	fxaaTextureloc = uniformLocation(fxaaShader, "screenTexture")
 
@@ -92,6 +90,7 @@ type Scene struct {
 
 	pointLightShader *shaders.PointLight
 	dirLightShader   *shaders.DirectionalLight
+	hdrShader        *shaders.HDR
 	lightBoxShader   *DefaultShader
 
 	pointLights []*PointLight
@@ -108,6 +107,7 @@ func (s *Scene) Init() {
 	s.stencilShader = shaders.NewStencil()
 	s.dirLightShader = shaders.NewDirectionalLight()
 	s.pointLightShader = shaders.NewPointLightShader()
+	s.hdrShader = shaders.NewHDR()
 }
 
 func (s *Scene) Render() {
@@ -345,18 +345,16 @@ func (s *Scene) Render() {
 		gl.Uniform1i(fxaaTextureloc, 0)
 		gl.BindTexture(gl.TEXTURE_2D, out)
 	} else {
-		hdrShader.Use()
+		gl.UseProgram(s.hdrShader.Program)
 		gl.ActiveTexture(gl.TEXTURE0)
-		gl.Uniform1i(passthroughShader.uniformScreenTextureLoc, 0)
+		gl.Uniform1i(s.hdrShader.LocScreenTexture, 0)
 		gl.BindTexture(gl.TEXTURE_2D, out)
 	}
 	renderQuad()
 
 	if showDebug {
-		//DisplayAlbedoBufferTexture(s.bloom.bloomFbo.textures[1])
 		DisplayAlbedoBufferTexture(s.gBuffer.buffer.gAlbedoSpec)
 		DisplayNormalBufferTexture(s.gBuffer.buffer.gNormal)
-		//DisplayDepthbufferTexture(s.gBuffer.buffer.gDepth)
 		DisplayDepthbufferTexture(s.shadow.depthMap)
 	}
 
