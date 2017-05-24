@@ -8,6 +8,7 @@ layout (std140) uniform Matrices
     mat4 view;
     mat4 invProjection;
     mat4 invView;
+    vec3 cameraPos;
 };
 
 uniform sampler2D gDepth;

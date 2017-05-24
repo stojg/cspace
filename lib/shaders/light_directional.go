@@ -19,7 +19,6 @@ func NewDirectionalLight() *DirectionalLight {
 		LocLightProjection: loc(c, "lightProjection"),
 		LocLightView:       loc(c, "lightView"),
 		LocScreenSize:      loc(c, "gScreenSize"),
-		LocViewPos:         loc(c, "viewPos"),
 	}
 
 	blockIndex := gl.GetUniformBlockIndex(c, gl.Str("Matrices\x00"))
@@ -42,17 +41,4 @@ type DirectionalLight struct {
 	LocLightProjection int32
 	LocLightView       int32
 	LocScreenSize      int32
-	LocViewPos         int32
-}
-
-func (s *DirectionalLight) UniformNormalLoc() int32 {
-	return s.LocGNormal
-}
-
-func (s *DirectionalLight) UniformAlbedoSpecLoc() int32 {
-	return s.LocGAlbedo
-}
-
-func (s *DirectionalLight) UniformDepthLoc() int32 {
-	return s.LocGDepth
 }

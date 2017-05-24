@@ -16,7 +16,9 @@ const windowWidth = 1280
 const windowHeight = 720
 const maxPointLights = 32
 
-const sizeMat4 = 64
+const sizeUboScalar = 4
+const sizeUboMat4 = 16 * sizeUboScalar
+const sizeUboVec3 = 4 * sizeUboScalar
 
 var viewPortWidth int32 = windowWidth
 var viewPortHeight int32 = windowHeight
@@ -61,15 +63,15 @@ func NewScene() *Scene {
 
 	gl.GenBuffers(1, &s.uboMatrices)
 	gl.BindBuffer(gl.UNIFORM_BUFFER, s.uboMatrices)
-	gl.BufferData(gl.UNIFORM_BUFFER, 4*sizeMat4, gl.Ptr(nil), gl.STATIC_DRAW) // allocate 150 bytes of memory
+	gl.BufferData(gl.UNIFORM_BUFFER, 4*sizeUboMat4+sizeUboVec3, gl.Ptr(nil), gl.STATIC_DRAW) // allocate 150 bytes of memory
 	// link a specific range of the buffer which in this case is the entire buffer, to binding point 0.
-	gl.BindBufferRange(gl.UNIFORM_BUFFER, 0, s.uboMatrices, 0, 4*sizeMat4)
+	gl.BindBufferRange(gl.UNIFORM_BUFFER, 0, s.uboMatrices, 0, 4*sizeUboMat4+sizeUboVec3)
 
 	proj := s.projection
-	gl.BufferSubData(gl.UNIFORM_BUFFER, 0, sizeMat4, gl.Ptr(&proj[0]))
+	gl.BufferSubData(gl.UNIFORM_BUFFER, 0, sizeUboMat4, gl.Ptr(&proj[0]))
 
 	invP := s.projection.Inv()
-	gl.BufferSubData(gl.UNIFORM_BUFFER, 2*sizeMat4, sizeMat4, gl.Ptr(&invP[0]))
+	gl.BufferSubData(gl.UNIFORM_BUFFER, 2*sizeUboMat4, sizeUboMat4, gl.Ptr(&invP[0]))
 	gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
 
 	s.pointLights = append(s.pointLights, &PointLight{
@@ -139,7 +141,7 @@ func (s *Scene) Init() {
 	s.cubeMap = GetCubeMap()
 	s.skybox = shaders.NewSkybox()
 
-	chkError("init")
+	chkError("scene.init")
 
 }
 
@@ -151,14 +153,17 @@ func (s *Scene) Render() {
 
 	handleInputs()
 
-	view := s.camera.View(s.elapsed)
 	sin := float32(math.Sin(glfw.GetTime()))
-	tInvView := view.Inv()
 
 	gl.BindBuffer(gl.UNIFORM_BUFFER, s.uboMatrices)
-	gl.BufferSubData(gl.UNIFORM_BUFFER, sizeMat4, sizeMat4, gl.Ptr(&view[0]))
-	gl.BufferSubData(gl.UNIFORM_BUFFER, 3*sizeMat4, sizeMat4, gl.Ptr(&tInvView[0]))
+	view := s.camera.View(s.elapsed)
+	gl.BufferSubData(gl.UNIFORM_BUFFER, sizeUboMat4, sizeUboMat4, gl.Ptr(&view[0]))
+	invView := view.Inv()
+	gl.BufferSubData(gl.UNIFORM_BUFFER, 3*sizeUboMat4, sizeUboMat4, gl.Ptr(&invView[0]))
+	camPos := s.camera.position
+	gl.BufferSubData(gl.UNIFORM_BUFFER, 4*sizeUboMat4, sizeUboVec3, gl.Ptr(&camPos[0]))
 	gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
+	chkError("ubo binding")
 
 	// @todo move somewhere and calculate the proper bounding box
 	lightProjection := mgl32.Ortho(-44, 40, -25, 25, -45, 40)
@@ -271,8 +276,6 @@ func (s *Scene) Render() {
 
 		gl.Uniform2f(s.pointLightShader.LocScreenSize, float32(windowWidth), float32(windowHeight))
 
-		gl.Uniform3fv(s.pointLightShader.LocViewPos, 1, &s.camera.position[0])
-
 		renderQuad()
 	}
 
@@ -303,7 +306,6 @@ func (s *Scene) Render() {
 		gl.UniformMatrix4fv(s.dirLightShader.LocLightView, 1, false, &lightView[0])
 		gl.Uniform3fv(s.dirLightShader.LocLightDirection, 1, &directionLight.Direction[0])
 		gl.Uniform3fv(s.dirLightShader.LocLightColor, 1, &directionLight.Color[0])
-		gl.Uniform3fv(s.dirLightShader.LocViewPos, 1, &s.camera.position[0])
 		gl.Uniform2f(s.dirLightShader.LocScreenSize, float32(windowWidth), float32(windowHeight))
 
 		renderQuad()

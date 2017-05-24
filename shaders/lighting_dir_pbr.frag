@@ -13,6 +13,7 @@ layout (std140) uniform Matrices
     mat4 view;
     mat4 invProjection;
     mat4 invView;
+    vec3 cameraPos;
 };
 
 struct Light {
@@ -20,8 +21,6 @@ struct Light {
     vec3 Color;
 };
 uniform Light dirLight;
-
-uniform vec3 viewPos;
 
 uniform vec2 gScreenSize;
 
@@ -45,7 +44,7 @@ void main()
     vec4 FragPos   = WorldPosFromDepth(texture(gDepth, TexCoords).x, TexCoords);
 
     vec3 N = normalize(texture(gNormal, TexCoords).rgb);
-    vec3 V = normalize(viewPos - FragPos.xyz);
+    vec3 V = normalize(cameraPos - FragPos.xyz);
 
     vec3 albedo     = texture(gAlbedoSpec, TexCoords).rgb;
     float metallic  = texture(gAlbedoSpec, TexCoords).a;

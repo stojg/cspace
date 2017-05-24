@@ -20,7 +20,6 @@ func NewPointLightShader(lights int) *PointLight {
 		LocNumLights: loc(c, "numLights"),
 
 		LocScreenSize: loc(c, "gScreenSize"),
-		LocViewPos:    loc(c, "viewPos"),
 	}
 
 	blockIndex := gl.GetUniformBlockIndex(c, gl.Str("Matrices\x00"))
@@ -51,5 +50,4 @@ type PointLight struct {
 	LocLightLinear    []int32
 	LocLightQuadratic []int32
 	LocScreenSize     int32
-	LocViewPos        int32
 }
