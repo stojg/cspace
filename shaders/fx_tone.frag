@@ -29,15 +29,11 @@ vec3 RRTAndODTFit(vec3 v) {
 
 vec3 ACESFitted(vec3 color) {
     color = ACESInputMat * color;
-
     // Apply RRT and ODT
     color = RRTAndODTFit(color);
-
     color = ACESOutputMat * color;
-
     // Clamp to [0, 1]
     color = clamp(color, 0, 1);
-
     return color;
 }
 
@@ -53,27 +49,13 @@ vec3 Uncharted2Tonemap(vec3 x)
 }
 
 void main() {
-
     const float exposure = 1.0;
     const float gamma = 2.2;
 
     vec3 hdrColor = texture(screenTexture, TexCoords).rgb;
-//    vec3 mapped = Uncharted2Tonemap(hdrColor);
-//    return;
-
-
-
-//    color = vec4(hdrColor / (hdrColor + 1.0), 1);
-
-//    color = vec4(ACESFitted(hdrColor), 1);
-//    color = vec4(hdrColor, 1);
-//    return;
-    // Exposure tone mapping
-    vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
-    // Gamma correction
-    mapped = pow(mapped, vec3(1.0 / gamma));
-
-    color = vec4(mapped, 1.0);
+    hdrColor = Uncharted2Tonemap(hdrColor);
+    hdrColor = vec3(1.0) - exp(-hdrColor * exposure);
+    color = vec4(pow(hdrColor, vec3(1.0 / gamma)), 1.0);
 }
 
 
