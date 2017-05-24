@@ -7,6 +7,14 @@ uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 uniform sampler2D gAmbientOcclusion;
 
+layout (std140) uniform Matrices
+{
+    mat4 projection;
+    mat4 view;
+    mat4 invProjection;
+    mat4 invView;
+};
+
 struct Light {
     vec3 Direction;
     vec3 Color;
@@ -16,8 +24,6 @@ uniform Light dirLight;
 uniform vec3 viewPos;
 
 uniform vec2 gScreenSize;
-uniform mat4 projMatrixInv;
-uniform mat4 viewMatrixInv;
 
 uniform sampler2D shadowMap;
 uniform mat4 lightProjection;
@@ -121,10 +127,10 @@ vec2 CalcTexCoord() {
 vec4 WorldPosFromDepth(float depth, vec2 TexCoords) {
     float z = depth * 2.0 - 1.0;
     vec4 clipSpacePosition = vec4(TexCoords * 2.0 - 1.0, z, 1.0);
-    vec4 viewSpacePosition = projMatrixInv * clipSpacePosition;
+    vec4 viewSpacePosition = invProjection * clipSpacePosition;
     // Perspective division
     viewSpacePosition /= viewSpacePosition.w;
-    return viewMatrixInv * viewSpacePosition;
+    return invView * viewSpacePosition;
 }
 
 // The Fresnel equation returns the ratio of light that gets reflected on a surface

@@ -1,5 +1,7 @@
 package shaders
 
+import "github.com/go-gl/gl/v4.1-core/gl"
+
 func NewDirectionalLight() *DirectionalLight {
 	c := buildShader("lighting_dir_pbr", "lighting_dir_pbr")
 	s := &DirectionalLight{
@@ -13,14 +15,16 @@ func NewDirectionalLight() *DirectionalLight {
 		LocLightDirection: loc(c, "dirLight.Direction"),
 		LocLightColor:     loc(c, "dirLight.Color"),
 
-		LocProjMatrixInv:   loc(c, "projMatrixInv"),
-		LocViewMatrixInv:   loc(c, "viewMatrixInv"),
 		LocShadowMap:       loc(c, "shadowMap"),
 		LocLightProjection: loc(c, "lightProjection"),
 		LocLightView:       loc(c, "lightView"),
 		LocScreenSize:      loc(c, "gScreenSize"),
 		LocViewPos:         loc(c, "viewPos"),
 	}
+
+	blockIndex := gl.GetUniformBlockIndex(c, gl.Str("Matrices\x00"))
+	gl.UniformBlockBinding(c, blockIndex, 0)
+
 	return s
 }
 
@@ -34,8 +38,6 @@ type DirectionalLight struct {
 
 	LocLightDirection  int32
 	LocLightColor      int32
-	LocProjMatrixInv   int32
-	LocViewMatrixInv   int32
 	LocShadowMap       int32
 	LocLightProjection int32
 	LocLightView       int32

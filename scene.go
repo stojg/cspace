@@ -4,8 +4,6 @@ import (
 	"math"
 	"math/rand"
 
-	"unsafe"
-
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
@@ -17,6 +15,8 @@ const far float32 = 200
 const windowWidth = 1280
 const windowHeight = 720
 const maxPointLights = 32
+
+const sizeMat4 = 64
 
 var viewPortWidth int32 = windowWidth
 var viewPortHeight int32 = windowHeight
@@ -58,20 +58,18 @@ func NewScene() *Scene {
 		icoMesh:        LoadModel("models/ico", MaterialMesh)[0],
 		cubeMesh:       LoadModel("models/cube", MaterialMesh)[0],
 	}
-	s.invProjection = s.projection.Inv()
 
 	gl.GenBuffers(1, &s.uboMatrices)
 	gl.BindBuffer(gl.UNIFORM_BUFFER, s.uboMatrices)
-	matSize := unsafe.Sizeof(mgl32.Mat4{})
-	gl.BufferData(gl.UNIFORM_BUFFER, int(2*matSize), gl.Ptr(nil), gl.STATIC_DRAW) // allocate 150 bytes of memory
-	// link a specific range of the buffer wich in this case is the entire buffer, to binding point 0.
-	gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
-	gl.BindBufferRange(gl.UNIFORM_BUFFER, 0, s.uboMatrices, 0, int(2*matSize))
+	gl.BufferData(gl.UNIFORM_BUFFER, 4*sizeMat4, gl.Ptr(nil), gl.STATIC_DRAW) // allocate 150 bytes of memory
+	// link a specific range of the buffer which in this case is the entire buffer, to binding point 0.
+	gl.BindBufferRange(gl.UNIFORM_BUFFER, 0, s.uboMatrices, 0, 4*sizeMat4)
 
-	gl.BindBuffer(gl.UNIFORM_BUFFER, s.uboMatrices)
-	//gl.BufferSubData(gl.UNIFORM_BUFFER, 0, int(matSize), gl.Ptr*[16]float32(s.projection)))
-	f := s.projection
-	gl.BufferSubData(gl.UNIFORM_BUFFER, 0, int(matSize), gl.Ptr(&f[0]))
+	proj := s.projection
+	gl.BufferSubData(gl.UNIFORM_BUFFER, 0, sizeMat4, gl.Ptr(&proj[0]))
+
+	invP := s.projection.Inv()
+	gl.BufferSubData(gl.UNIFORM_BUFFER, 2*sizeMat4, sizeMat4, gl.Ptr(&invP[0]))
 	gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
 
 	s.pointLights = append(s.pointLights, &PointLight{
@@ -99,12 +97,11 @@ func NewScene() *Scene {
 }
 
 type Scene struct {
-	previousTime  float64
-	elapsed       float32
-	projection    mgl32.Mat4
-	invProjection mgl32.Mat4
-	camera        *Camera
-	graph         SceneNode
+	previousTime float64
+	elapsed      float32
+	projection   mgl32.Mat4
+	camera       *Camera
+	graph        SceneNode
 
 	gBuffer *GBufferPipeline
 	bloom   *BloomEffect
@@ -156,10 +153,11 @@ func (s *Scene) Render() {
 
 	view := s.camera.View(s.elapsed)
 	sin := float32(math.Sin(glfw.GetTime()))
-	invView := view.Inv()
+	tInvView := view.Inv()
 
 	gl.BindBuffer(gl.UNIFORM_BUFFER, s.uboMatrices)
-	gl.BufferSubData(gl.UNIFORM_BUFFER, int(unsafe.Sizeof(mgl32.Mat4{})), int(unsafe.Sizeof(mgl32.Mat4{})), gl.Ptr(&view[0]))
+	gl.BufferSubData(gl.UNIFORM_BUFFER, sizeMat4, sizeMat4, gl.Ptr(&view[0]))
+	gl.BufferSubData(gl.UNIFORM_BUFFER, 3*sizeMat4, sizeMat4, gl.Ptr(&tInvView[0]))
 	gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
 
 	// @todo move somewhere and calculate the proper bounding box
@@ -213,7 +211,6 @@ func (s *Scene) Render() {
 		for i, sample := range s.ssao.Kernel {
 			gl.Uniform3f(s.ssao.shader.LocSamples[i], sample[0], sample[1], sample[2])
 		}
-		gl.UniformMatrix4fv(s.ssao.shader.LocInvProjection, 1, false, &s.invProjection[0])
 		gl.Uniform2f(s.ssao.shader.LocScreenSize, float32(windowWidth), float32(windowHeight))
 
 		gl.ActiveTexture(gl.TEXTURE0)
@@ -272,8 +269,6 @@ func (s *Scene) Render() {
 		gl.Uniform1i(s.pointLightShader.LocGAmbientOcclusion, 3)
 		gl.BindTexture(gl.TEXTURE_2D, s.ssao.texture)
 
-		gl.UniformMatrix4fv(s.pointLightShader.LocProjMatrixInv, 1, false, &s.invProjection[0])
-		gl.UniformMatrix4fv(s.pointLightShader.LocViewMatrixInv, 1, false, &invView[0])
 		gl.Uniform2f(s.pointLightShader.LocScreenSize, float32(windowWidth), float32(windowHeight))
 
 		gl.Uniform3fv(s.pointLightShader.LocViewPos, 1, &s.camera.position[0])
@@ -304,8 +299,6 @@ func (s *Scene) Render() {
 		gl.Uniform1i(s.dirLightShader.LocGAmbientOcclusion, 4)
 		gl.BindTexture(gl.TEXTURE_2D, s.ssao.texture)
 
-		gl.UniformMatrix4fv(s.dirLightShader.LocProjMatrixInv, 1, false, &s.invProjection[0])
-		gl.UniformMatrix4fv(s.dirLightShader.LocViewMatrixInv, 1, false, &invView[0])
 		gl.UniformMatrix4fv(s.dirLightShader.LocLightProjection, 1, false, &lightProjection[0])
 		gl.UniformMatrix4fv(s.dirLightShader.LocLightView, 1, false, &lightView[0])
 		gl.Uniform3fv(s.dirLightShader.LocLightDirection, 1, &directionLight.Direction[0])

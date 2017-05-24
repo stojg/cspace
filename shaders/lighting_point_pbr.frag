@@ -4,6 +4,14 @@ out vec4 FragColor;
 
 const int NR_LIGHTS = 32;
 
+layout (std140) uniform Matrices
+{
+    mat4 projection;
+    mat4 view;
+    mat4 invProjection;
+    mat4 invView;
+};
+
 uniform sampler2D gDepth;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
@@ -20,8 +28,6 @@ uniform Light pointLight[NR_LIGHTS];
 uniform vec3 viewPos;
 
 uniform vec2 gScreenSize;
-uniform mat4 projMatrixInv;
-uniform mat4 viewMatrixInv;
 uniform int numLights = 1;
 
 const float PI = 3.14159265359;
@@ -97,10 +103,10 @@ vec2 CalcTexCoord() {
 vec3 WorldPosFromDepth(float depth, vec2 TexCoords) {
     float z = depth * 2.0 - 1.0;
     vec4 clipSpacePosition = vec4(TexCoords * 2.0 - 1.0, z, 1.0);
-    vec4 viewSpacePosition = projMatrixInv * clipSpacePosition;
+    vec4 viewSpacePosition = invProjection * clipSpacePosition;
     // Perspective division
     viewSpacePosition /= viewSpacePosition.w;
-    vec4 worldSpacePosition = viewMatrixInv * viewSpacePosition;
+    vec4 worldSpacePosition = invView * viewSpacePosition;
     return worldSpacePosition.xyz;
 }
 

@@ -6,6 +6,8 @@ layout (std140) uniform Matrices
 {
     mat4 projection;
     mat4 view;
+    mat4 invProjection;
+    mat4 invView;
 };
 
 uniform sampler2D gDepth;
@@ -13,7 +15,6 @@ uniform sampler2D gNormal;
 uniform sampler2D texNoise;
 
 uniform vec2 gScreenSize;
-uniform mat4 projMatrixInv;
 uniform mat4 viewMatrixInv;
 
 uniform int enabled = 0;
@@ -79,7 +80,7 @@ void main() {
 vec3 ViewPosFromDepth(float depth, vec2 TexCoords) {
     float z = depth * 2.0 - 1.0;
     vec4 clipSpacePosition = vec4(TexCoords * 2.0 - 1.0, z, 1.0);
-    vec4 viewSpacePosition = projMatrixInv * clipSpacePosition;
+    vec4 viewSpacePosition = invProjection * clipSpacePosition;
     viewSpacePosition /= viewSpacePosition.w;
     return viewSpacePosition.xyz;
 }
@@ -87,7 +88,7 @@ vec3 ViewPosFromDepth(float depth, vec2 TexCoords) {
 vec4 WorldPosFromDepth(float depth, vec2 TexCoords) {
     float z = depth * 2.0 - 1.0;
     vec4 clipSpacePosition = vec4(TexCoords * 2.0 - 1.0, z, 1.0);
-    vec4 viewSpacePosition = projMatrixInv * clipSpacePosition;
+    vec4 viewSpacePosition = invProjection * clipSpacePosition;
     // Perspective division
     viewSpacePosition /= viewSpacePosition.w;
     return viewMatrixInv * viewSpacePosition;

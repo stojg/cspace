@@ -1,9 +1,13 @@
 package shaders
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/go-gl/gl/v4.1-core/gl"
+)
 
 func NewPointLightShader(lights int) *PointLight {
-	c := buildShader("lighting", "lighting_point_pbr")
+	c := buildShader("lighting_point_pbr", "lighting_point_pbr")
 	s := &PointLight{
 		Program: c,
 		lights:  lights,
@@ -15,11 +19,12 @@ func NewPointLightShader(lights int) *PointLight {
 
 		LocNumLights: loc(c, "numLights"),
 
-		LocProjMatrixInv: loc(c, "projMatrixInv"),
-		LocViewMatrixInv: loc(c, "viewMatrixInv"),
-		LocScreenSize:    loc(c, "gScreenSize"),
-		LocViewPos:       loc(c, "viewPos"),
+		LocScreenSize: loc(c, "gScreenSize"),
+		LocViewPos:    loc(c, "viewPos"),
 	}
+
+	blockIndex := gl.GetUniformBlockIndex(c, gl.Str("Matrices\x00"))
+	gl.UniformBlockBinding(c, blockIndex, 0)
 
 	for i := 0; i < lights; i++ {
 		s.LocLightPos = append(s.LocLightPos, loc(c, fmt.Sprintf("pointLight[%d].Position", i)))
@@ -47,6 +52,4 @@ type PointLight struct {
 	LocLightQuadratic []int32
 	LocScreenSize     int32
 	LocViewPos        int32
-	LocProjMatrixInv  int32
-	LocViewMatrixInv  int32
 }
