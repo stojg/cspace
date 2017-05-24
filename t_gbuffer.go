@@ -14,6 +14,8 @@ func NewGBufferPipeline() *GBufferPipeline {
 	p.mShader = NewMaterialShader()
 
 	p.tShader = NewTextureShader()
+	blockIndex := gl.GetUniformBlockIndex(p.tShader.Program(), gl.Str("Matrices\x00"))
+	gl.UniformBlockBinding(p.tShader.Program(), blockIndex, 0)
 	return p
 }
 

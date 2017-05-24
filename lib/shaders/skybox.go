@@ -2,14 +2,12 @@ package shaders
 
 import (
 	"github.com/go-gl/gl/v4.1-core/gl"
-	_ "github.com/go-gl/glfw/v3.2/glfw"
 )
 
 type Skybox struct {
 	Program          uint32
 	LocScreenTexture int32
-	LocProjection    int32
-	LocView          int32
+	LocSkyView       int32
 	SkyboxVAO        uint32
 }
 
@@ -18,8 +16,7 @@ func NewSkybox() *Skybox {
 	shader := &Skybox{
 		Program:          c,
 		LocScreenTexture: loc(c, "skybox"),
-		LocProjection:    loc(c, "projection"),
-		LocView:          loc(c, "view"),
+		LocSkyView:       loc(c, "skyView"),
 	}
 	gl.GenVertexArrays(1, &shader.SkyboxVAO)
 	gl.BindVertexArray(shader.SkyboxVAO)
@@ -30,6 +27,9 @@ func NewSkybox() *Skybox {
 	gl.EnableVertexAttribArray(0)
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, nil)
 	gl.BindVertexArray(0)
+
+	blockIndex := gl.GetUniformBlockIndex(c, gl.Str("Matrices\x00"))
+	gl.UniformBlockBinding(c, blockIndex, 0)
 
 	return shader
 

@@ -14,7 +14,7 @@ const (
 
 type SceneNode interface {
 	SimpleRender(ModelShader)
-	Render(projection, view mgl32.Mat4, tShader TextureShader, mShader MaterialShader)
+	Render(tShader TextureShader, mShader MaterialShader)
 	Add(mesh []*Mesh, transform mgl32.Mat4)
 	Destroy()
 }
@@ -33,7 +33,7 @@ type BaseNode struct {
 	Node
 }
 
-func (n *BaseNode) Render(projection, view mgl32.Mat4, tShader TextureShader, mShader MaterialShader) {
+func (n *BaseNode) Render(tShader TextureShader, mShader MaterialShader) {
 	var tMeshes []*Node
 	var mMeshes []*Node
 	children := n.Node.Children()
@@ -45,14 +45,14 @@ func (n *BaseNode) Render(projection, view mgl32.Mat4, tShader TextureShader, mS
 		}
 	}
 
-	tShader.UsePV(projection, view)
+	gl.UseProgram(tShader.Program())
 	for i := range tMeshes {
-		tMeshes[i].Render(projection, view, tShader, mShader)
+		tMeshes[i].Render(tShader, mShader)
 	}
 
-	mShader.UsePV(projection, view)
+	gl.UseProgram(mShader.Program())
 	for i := range mMeshes {
-		mMeshes[i].Render(projection, view, tShader, mShader)
+		mMeshes[i].Render(tShader, mShader)
 	}
 }
 
@@ -77,7 +77,7 @@ func (n *Node) SimpleRender(shader ModelShader) {
 	}
 }
 
-func (n *Node) Render(projection, view mgl32.Mat4, tShader TextureShader, mShader MaterialShader) {
+func (n *Node) Render(tShader TextureShader, mShader MaterialShader) {
 	transform := *n.transform
 	if n.mesh.MeshType == TextureMesh {
 		gl.UniformMatrix4fv(tShader.ModelUniform(), 1, false, &transform[0])

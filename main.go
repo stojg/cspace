@@ -62,8 +62,8 @@ func realMain() error {
 	}
 
 	scene := NewScene()
-
 	scene.Init()
+
 	PBRLevel(scene.graph)
 
 	for !window.ShouldClose() {

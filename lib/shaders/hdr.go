@@ -11,5 +11,4 @@ func NewHDR() *HDR {
 		Program:          c,
 		LocScreenTexture: loc(c, "screenTexture"),
 	}
-
 }

@@ -2,8 +2,8 @@
 
 uniform vec3 emissive;
 
-out vec4 color;
+out vec4 Color;
 
 void main() {
-    color = vec4(emissive, 1.0f);
+    Color = vec4(emissive, 1.0f);
 }

@@ -4,6 +4,8 @@ import (
 	"math"
 	"math/rand"
 
+	"unsafe"
+
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
@@ -52,11 +54,25 @@ func NewScene() *Scene {
 		camera:         NewCamera(),
 		projection:     mgl32.Perspective(mgl32.DegToRad(45.0), float32(windowWidth)/float32(windowHeight), near, far),
 		graph:          NewBaseNode(),
-		lightBoxShader: NewDefaultShader("simple", "emissive"),
+		lightBoxShader: shaders.NewEmissive(),
 		icoMesh:        LoadModel("models/ico", MaterialMesh)[0],
 		cubeMesh:       LoadModel("models/cube", MaterialMesh)[0],
 	}
 	s.invProjection = s.projection.Inv()
+
+	gl.GenBuffers(1, &s.uboMatrices)
+	gl.BindBuffer(gl.UNIFORM_BUFFER, s.uboMatrices)
+	matSize := unsafe.Sizeof(mgl32.Mat4{})
+	gl.BufferData(gl.UNIFORM_BUFFER, int(2*matSize), gl.Ptr(nil), gl.STATIC_DRAW) // allocate 150 bytes of memory
+	// link a specific range of the buffer wich in this case is the entire buffer, to binding point 0.
+	gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
+	gl.BindBufferRange(gl.UNIFORM_BUFFER, 0, s.uboMatrices, 0, int(2*matSize))
+
+	gl.BindBuffer(gl.UNIFORM_BUFFER, s.uboMatrices)
+	//gl.BufferSubData(gl.UNIFORM_BUFFER, 0, int(matSize), gl.Ptr*[16]float32(s.projection)))
+	f := s.projection
+	gl.BufferSubData(gl.UNIFORM_BUFFER, 0, int(matSize), gl.Ptr(&f[0]))
+	gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
 
 	s.pointLights = append(s.pointLights, &PointLight{
 		Position: [3]float32{-3, 4, -2},
@@ -78,8 +94,6 @@ func NewScene() *Scene {
 			rand:     rand.Float32() * 2,
 		})
 	}
-	s.lightBoxModelLoc = uniformLocation(s.lightBoxShader, "model")
-	s.lightBoxEmissiveLoc = uniformLocation(s.lightBoxShader, "emissive")
 	chkError("end_of_new_scene")
 	return s
 }
@@ -102,19 +116,18 @@ type Scene struct {
 	pointLightShader *shaders.PointLight
 	dirLightShader   *shaders.DirectionalLight
 	hdrShader        *shaders.HDR
-	lightBoxShader   *DefaultShader
+	lightBoxShader   *shaders.Emissive
 
 	pointLights []*PointLight
 	icoMesh     *Mesh
 	cubeMesh    *Mesh
 
-	lightBoxModelLoc    int32
-	lightBoxEmissiveLoc int32
-
 	stencilShader *shaders.Stencil
 
 	cubeMap uint32
 	skybox  *shaders.Skybox
+
+	uboMatrices uint32
 }
 
 func (s *Scene) Init() {
@@ -129,9 +142,12 @@ func (s *Scene) Init() {
 	s.cubeMap = GetCubeMap()
 	s.skybox = shaders.NewSkybox()
 
+	chkError("init")
+
 }
 
 func (s *Scene) Render() {
+
 	now := glfw.GetTime()
 	s.elapsed = float32(now - s.previousTime)
 	s.previousTime = now
@@ -141,6 +157,10 @@ func (s *Scene) Render() {
 	view := s.camera.View(s.elapsed)
 	sin := float32(math.Sin(glfw.GetTime()))
 	invView := view.Inv()
+
+	gl.BindBuffer(gl.UNIFORM_BUFFER, s.uboMatrices)
+	gl.BufferSubData(gl.UNIFORM_BUFFER, int(unsafe.Sizeof(mgl32.Mat4{})), int(unsafe.Sizeof(mgl32.Mat4{})), gl.Ptr(&view[0]))
+	gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
 
 	// @todo move somewhere and calculate the proper bounding box
 	lightProjection := mgl32.Ortho(-44, 40, -25, 25, -45, 40)
@@ -171,7 +191,7 @@ func (s *Scene) Render() {
 		gl.DrawBuffers(int32(len(attachments)), &attachments[0])
 		gl.Clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 
-		s.graph.Render(s.projection, view, s.gBuffer.tShader, s.gBuffer.mShader)
+		s.graph.Render(s.gBuffer.tShader, s.gBuffer.mShader)
 	}
 
 	// we have written all the depth buffer information we wanted.
@@ -193,7 +213,6 @@ func (s *Scene) Render() {
 		for i, sample := range s.ssao.Kernel {
 			gl.Uniform3f(s.ssao.shader.LocSamples[i], sample[0], sample[1], sample[2])
 		}
-		gl.UniformMatrix4fv(s.ssao.shader.LocProjection, 1, false, &s.projection[0])
 		gl.UniformMatrix4fv(s.ssao.shader.LocInvProjection, 1, false, &s.invProjection[0])
 		gl.Uniform2f(s.ssao.shader.LocScreenSize, float32(windowWidth), float32(windowHeight))
 
@@ -305,9 +324,8 @@ func (s *Scene) Render() {
 	if dirLightOn {
 		gl.DepthFunc(gl.LEQUAL)
 		gl.UseProgram(s.skybox.Program)
-		gl.UniformMatrix4fv(s.skybox.LocProjection, 1, false, &s.projection[0])
 		skyboxView := view.Mat3().Mat4()
-		gl.UniformMatrix4fv(s.skybox.LocView, 1, false, &skyboxView[0])
+		gl.UniformMatrix4fv(s.skybox.LocSkyView, 1, false, &skyboxView[0])
 		gl.BindVertexArray(s.skybox.SkyboxVAO)
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.Uniform1i(s.skybox.LocScreenTexture, 0)
@@ -316,18 +334,19 @@ func (s *Scene) Render() {
 	}
 
 	{ // render emissive objects
-		s.lightBoxShader.UsePV(s.projection, view)
+
+		gl.UseProgram(s.lightBoxShader.Program)
 
 		for i := range s.pointLights[:currentNumLights] {
 			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin, s.pointLights[i].Position[2])
 			model = model.Mul4(mgl32.Scale3D(0.03, 0.03, 0.03))
 			model = model.Mul4(mgl32.HomogRotate3D(float32(math.Cos(glfw.GetTime())), mgl32.Vec3{1, 1, 1}.Normalize()))
 
-			gl.UniformMatrix4fv(s.lightBoxModelLoc, 1, false, &model[0])
-			gl.Uniform3fv(s.lightBoxEmissiveLoc, 1, &s.pointLights[i].Color[0])
+			gl.UniformMatrix4fv(s.lightBoxShader.LocModel, 1, false, &model[0])
+			gl.Uniform3fv(s.lightBoxShader.LocColor, 1, &s.pointLights[i].Color[0])
 
 			gl.BindVertexArray(s.cubeMesh.vao)
-			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.icoMesh.Vertices)))
+			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.cubeMesh.Vertices)))
 		}
 	}
 

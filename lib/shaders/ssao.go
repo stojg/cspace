@@ -1,13 +1,16 @@
 package shaders
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/go-gl/gl/v4.1-core/gl"
+)
 
 func NewSSAO() *SSAO {
 	c := buildShader("ssao", "ssao")
 	s := &SSAO{
 		Program:          c,
 		LocEnabled:       loc(c, "enabled"),
-		LocProjection:    loc(c, "projection"),
 		LocInvProjection: loc(c, "projMatrixInv"),
 		LocGDepth:        loc(c, "gDepth"),
 		LocScreenSize:    loc(c, "gScreenSize"),
@@ -15,6 +18,9 @@ func NewSSAO() *SSAO {
 		//LocGNormal:       loc(c, "gNormal"),
 		//LocTexNoise:      loc(c, "texNoise"),
 	}
+
+	blockIndex := gl.GetUniformBlockIndex(c, gl.Str("Matrices\x00"))
+	gl.UniformBlockBinding(c, blockIndex, 0)
 
 	for i := range s.LocSamples {
 		s.LocSamples[i] = loc(c, fmt.Sprintf("samples[%d]", i))
@@ -26,7 +32,6 @@ type SSAO struct {
 	Program uint32
 
 	LocEnabled       int32
-	LocProjection    int32
 	LocInvProjection int32
 	LocGAlbedo       int32
 	LocGDepth        int32

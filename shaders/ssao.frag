@@ -2,12 +2,17 @@
 
 out float FragColor;
 
+layout (std140) uniform Matrices
+{
+    mat4 projection;
+    mat4 view;
+};
+
 uniform sampler2D gDepth;
 uniform sampler2D gNormal;
 uniform sampler2D texNoise;
 
 uniform vec2 gScreenSize;
-uniform mat4 projection;
 uniform mat4 projMatrixInv;
 uniform mat4 viewMatrixInv;
 
