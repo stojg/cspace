@@ -353,39 +353,18 @@ func (s *Scene) Render() {
 		out = s.bloom.Render(s.gBuffer.buffer.finalTexture)
 	}
 
-	gl.BindFramebuffer(gl.FRAMEBUFFER, s.hdr.fbo)
-	gl.UseProgram(s.hdrShader.Program)
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.Uniform1i(s.hdrShader.LocScreenTexture, 0)
-	gl.BindTexture(gl.TEXTURE_2D, out)
-	renderQuad()
-	gl.BindTexture(gl.TEXTURE_2D, 0)
-
 	// do the final rendering to the backbuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 	// taking care of retina having more actual pixels
 	gl.Viewport(0, 0, viewPortWidth, viewPortHeight)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
-	fxaaShader.Use()
-	if fxaaOn {
-		gl.Uniform1i(fxaaLoc_enabled, 1)
-	} else {
-		gl.Uniform1i(fxaaLoc_enabled, 0)
-	}
-	if showDebug {
-		gl.Uniform1i(fxaaLocU_showEdges, 1)
-	} else {
-		gl.Uniform1i(fxaaLocU_showEdges, 0)
-	}
-	gl.Uniform1f(fxaaLocU_lumaThreshold, u_lumaThreshold)
-	gl.Uniform1f(fxaaLocU_minReduce, u_minReduce)
-	gl.Uniform1f(fxaaLocU_mulReduce, u_mulReduce)
-	gl.Uniform1f(fxaaLocU_maxSpan, u_maxSpan)
+	gl.UseProgram(s.hdrShader.Program)
 	gl.ActiveTexture(gl.TEXTURE0)
-	gl.Uniform1i(fxaaTextureloc, 0)
-	gl.BindTexture(gl.TEXTURE_2D, s.hdr.texture)
+	gl.Uniform1i(s.hdrShader.LocScreenTexture, 0)
+	gl.BindTexture(gl.TEXTURE_2D, out)
 	renderQuad()
+	gl.BindTexture(gl.TEXTURE_2D, 0)
 
 	// and if debug is on, quad print them on top off everything
 	if showDebug {
