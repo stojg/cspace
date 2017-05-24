@@ -354,12 +354,13 @@ func (s *Scene) Render() {
 		out = s.bloom.Render(s.gBuffer.buffer.finalTexture)
 	}
 
-	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.hdr.fbo)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, s.hdr.fbo)
 	gl.UseProgram(s.hdrShader.Program)
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.Uniform1i(s.hdrShader.LocScreenTexture, 0)
 	gl.BindTexture(gl.TEXTURE_2D, out)
 	renderQuad()
+	gl.BindTexture(gl.TEXTURE_2D, 0)
 
 	// do the final rendering to the backbuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
@@ -389,8 +390,8 @@ func (s *Scene) Render() {
 
 	// and if debug is on, quad print them on top off everything
 	if showDebug {
-		DisplayColorTexBuffer(s.gBuffer.buffer.gAlbedoSpec)
 		DisplayNormalBufferTexture(s.gBuffer.buffer.gNormal)
+		DisplayColorTexBuffer(s.gBuffer.buffer.gAlbedoSpec)
 		DisplayDepthbufferTexture(s.gBuffer.buffer.gDepth)
 		//DisplayDepthbufferTexture(s.ssao.texture)
 		//DisplayDepthbufferTexture(s.shadow.depthMap)
