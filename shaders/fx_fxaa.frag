@@ -23,11 +23,6 @@ void main(void)
 {
 
     vec3 rgbM = texture(screenTexture, TexCoords).rgb;
-    if(u_enabled != 1.0) {
-        color = vec4(rgbM, 1);
-        return;
-    }
-
     // warn if colours are to bright / outside the RGB range
     if (rgbM.r > 1.0) {
         color = vec4(0.47,0.19,0.33,1);
@@ -39,6 +34,11 @@ void main(void)
     }
     if (rgbM.b > 1.0) {
         color = vec4(0.19,0.33,0.47,1);
+        return;
+    }
+
+    if(u_enabled != 1.0) {
+        color = vec4(rgbM, 1);
         return;
     }
 

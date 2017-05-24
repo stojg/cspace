@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 
@@ -19,16 +18,12 @@ const maxPointLights = 32
 
 var viewPortWidth int32 = windowWidth
 var viewPortHeight int32 = windowHeight
+
 var bloomOn = true
 var ssaoOn = true
 var dirLightOn = true
 var fxaaOn = false
 var showDebug = false
-
-var u_lumaThreshold float32 = 1 / 16.0 // (1/3), (1/4), (1/8), (1/16)
-var u_mulReduce float32 = 1 / 8.0      //
-var u_minReduce float32 = 1 / 128.0
-var u_maxSpan float32 = 8.0
 
 var currentNumLights = 1
 
@@ -36,16 +31,6 @@ var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{-80, 60, -100}),
 	Color:     [3]float32{1, 1, 1},
 }
-
-var fxaaShader *DefaultShader
-var fxaaTextureloc int32
-
-var fxaaLocU_showEdges int32
-var fxaaLocU_lumaThreshold int32
-var fxaaLocU_mulReduce int32
-var fxaaLocU_minReduce int32
-var fxaaLocU_maxSpan int32
-var fxaaLoc_enabled int32
 
 func NewScene() *Scene {
 
@@ -435,35 +420,10 @@ func handleInputs() {
 		fxaaOn = false
 		ssaoOn = false
 		showDebug = false
-		u_lumaThreshold = 1 / 16.0
+		u_lumaThreshold = 0.6
 		u_mulReduce = 1 / 8.0
 		u_minReduce = 1 / 128.0
 		u_maxSpan = 8
-
-	} else if keys[glfw.KeyH] {
-		u_lumaThreshold -= 0.05
-		fmt.Println("threshold", u_lumaThreshold)
-	} else if keys[glfw.KeyY] {
-		u_lumaThreshold += 0.05
-		fmt.Println("threshold", u_lumaThreshold)
-	} else if keys[glfw.KeyJ] {
-		u_mulReduce *= 2.0
-		fmt.Println("mulReduce", u_mulReduce)
-	} else if keys[glfw.KeyU] {
-		u_mulReduce /= 2.0
-		fmt.Println("mulReduce", u_mulReduce)
-	} else if keys[glfw.KeyK] {
-		u_minReduce *= 2.0
-		fmt.Println("minreduce", u_minReduce)
-	} else if keys[glfw.KeyI] {
-		u_minReduce /= 2.0
-		fmt.Println("minreduce", u_minReduce)
-	} else if keys[glfw.KeyL] {
-		u_maxSpan -= 1.0
-		fmt.Println("maxSpan", u_maxSpan)
-	} else if keys[glfw.KeyO] {
-		u_maxSpan += 1.0
-		fmt.Println("maxSpan", u_maxSpan)
 	}
 
 }
