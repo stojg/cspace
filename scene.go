@@ -22,11 +22,11 @@ var viewPortHeight int32 = windowHeight
 var bloomOn = true
 var ssaoOn = true
 var dirLightOn = true
-var fxaaOn = true
+var fxaaOn = false
 var showDebug = false
 
-var u_lumaThreshold float32 = 0.1
-var u_mulReduce float32 = 1 / 8.0
+var u_lumaThreshold float32 = 1 / 16.0 // (1/3), (1/4), (1/8), (1/16)
+var u_mulReduce float32 = 1 / 8.0      //
 var u_minReduce float32 = 1 / 128.0
 var u_maxSpan float32 = 8.0
 
@@ -40,6 +40,7 @@ var directionLight = &DirectionalLight{
 var fxaaShader *DefaultShader
 var fxaaTextureloc int32
 
+var fxaaLocU_showEdges int32
 var fxaaLocU_lumaThreshold int32
 var fxaaLocU_mulReduce int32
 var fxaaLocU_minReduce int32
@@ -50,6 +51,7 @@ func NewScene() *Scene {
 
 	fxaaShader = NewDefaultShader("fx", "fx_fxaa")
 	fxaaTextureloc = uniformLocation(fxaaShader, "screenTexture")
+	fxaaLocU_showEdges = pUniformLocation(fxaaShader.program, "u_showEdges")
 	fxaaLocU_lumaThreshold = pUniformLocation(fxaaShader.program, "u_lumaThreshold")
 	fxaaLocU_mulReduce = pUniformLocation(fxaaShader.program, "u_mulReduce")
 	fxaaLocU_minReduce = pUniformLocation(fxaaShader.program, "u_minReduce")
@@ -371,6 +373,11 @@ func (s *Scene) Render() {
 	} else {
 		gl.Uniform1i(fxaaLoc_enabled, 0)
 	}
+	if showDebug {
+		gl.Uniform1i(fxaaLocU_showEdges, 1)
+	} else {
+		gl.Uniform1i(fxaaLocU_showEdges, 0)
+	}
 	gl.Uniform1f(fxaaLocU_lumaThreshold, u_lumaThreshold)
 	gl.Uniform1f(fxaaLocU_minReduce, u_minReduce)
 	gl.Uniform1f(fxaaLocU_mulReduce, u_mulReduce)
@@ -427,10 +434,10 @@ func handleInputs() {
 		fxaaOn = false
 		ssaoOn = false
 		showDebug = false
-		u_lumaThreshold = 0.6
+		u_lumaThreshold = 1 / 16.0
 		u_mulReduce = 1 / 8.0
 		u_minReduce = 1 / 128.0
-		u_maxSpan = 8.0
+		u_maxSpan = 8
 
 	} else if keys[glfw.KeyH] {
 		u_lumaThreshold -= 0.05

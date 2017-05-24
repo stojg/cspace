@@ -17,6 +17,7 @@ uniform float u_maxSpan = 8.0f;
 // http://developer.download.nvidia.com/assets/gamedev/files/sdk/11/FXAA_WhitePaper.pdf
 // http://iryoku.com/aacourse/downloads/09-FXAA-3.11-in-15-Slides.pdf
 // http://horde3d.org/wiki/index.php5?title=Shading_Technique_-_FXAA
+// https://github.com/Asmodean-/PsxFX/blob/master/PsxFX/gpuPeteOGL2.slf
 
 void main(void)
 {
@@ -24,6 +25,20 @@ void main(void)
     vec3 rgbM = texture(screenTexture, TexCoords).rgb;
     if(u_enabled != 1.0) {
         color = vec4(rgbM, 1);
+        return;
+    }
+
+    // warn if colours are to bright / outside the RGB range
+    if (rgbM.r > 1.0) {
+        color = vec4(0.47,0.19,0.33,1);
+        return;
+    }
+    if (rgbM.g > 1.0) {
+        color = vec4(0.33,0.47,0.19,1);
+        return;
+    }
+    if (rgbM.b > 1.0) {
+        color = vec4(0.19,0.33,0.47,1);
         return;
     }
 
@@ -90,18 +105,12 @@ void main(void)
 	{
 		// ... yes, so use only two samples.
         color = vec4(rgbTwoTab, 1.0);
-//        color.g = 1.0f;
 	}
 	else
 	{
         // ... no, so use four samples.
         color = vec4(rgbFourTab, 1.0);
-//        color.b = 1.0f;
 	}
-
-//	if (color.b > 1.0) {
-//	color = vec4(1,1,1,1);
-//	}
 
 	// Show edges for debug purposes.
 	if (u_showEdges == 1) {
