@@ -21,14 +21,15 @@ func NewSkybox() *Skybox {
 		LocProjection:    loc(c, "projection"),
 		LocView:          loc(c, "view"),
 	}
-
 	gl.GenVertexArrays(1, &shader.SkyboxVAO)
-	gl.GenBuffers(1, &shader.SkyboxVAO)
 	gl.BindVertexArray(shader.SkyboxVAO)
-	gl.BindBuffer(gl.ARRAY_BUFFER, shader.SkyboxVAO)
+	var vbo uint32
+	gl.GenBuffers(1, &vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, 4*len(skyboxVertices), gl.Ptr(skyboxVertices), gl.STATIC_DRAW)
 	gl.EnableVertexAttribArray(0)
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, nil)
+	gl.BindVertexArray(0)
 
 	return shader
 

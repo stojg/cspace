@@ -23,12 +23,12 @@ func DisplayColorTexBuffer(textureID uint32) {
 			0.5, 1, 0.0, 1.0, 1.0,
 			0.5, 0.5, 0.0, 1.0, 0.0,
 		}
-
 		// Setup plane VAO
 		gl.GenVertexArrays(1, &vaoDebugAlbedoTextureRect)
-		gl.GenBuffers(1, &vaoDebugAlbedoTextureRect)
 		gl.BindVertexArray(vaoDebugAlbedoTextureRect)
-		gl.BindBuffer(gl.ARRAY_BUFFER, vaoDebugAlbedoTextureRect)
+		var vbo uint32
+		gl.GenBuffers(1, &vbo)
+		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 		gl.BufferData(gl.ARRAY_BUFFER, 4*len(quadVertices), gl.Ptr(quadVertices), gl.STATIC_DRAW)
 		gl.EnableVertexAttribArray(0)
 		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
@@ -58,9 +58,10 @@ func DisplayNormalBufferTexture(textureID uint32) {
 		}
 		// Setup plane VAO
 		gl.GenVertexArrays(1, &vaoDebugNormalTextureRect)
-		gl.GenBuffers(1, &vaoDebugNormalTextureRect)
 		gl.BindVertexArray(vaoDebugNormalTextureRect)
-		gl.BindBuffer(gl.ARRAY_BUFFER, vaoDebugNormalTextureRect)
+		var vbo uint32
+		gl.GenBuffers(1, &vbo)
+		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 		gl.BufferData(gl.ARRAY_BUFFER, 4*len(quadVertices), gl.Ptr(quadVertices), gl.STATIC_DRAW)
 		gl.EnableVertexAttribArray(0)
 		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
@@ -93,9 +94,10 @@ func DisplayDepthbufferTexture(textureID uint32) {
 		}
 		// Setup plane VAO
 		gl.GenVertexArrays(1, &vaoDebugDepthTexturedRect)
-		gl.GenBuffers(1, &vaoDebugDepthTexturedRect)
 		gl.BindVertexArray(vaoDebugDepthTexturedRect)
-		gl.BindBuffer(gl.ARRAY_BUFFER, vaoDebugDepthTexturedRect)
+		var vbo uint32
+		gl.GenBuffers(1, &vbo)
+		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 		gl.BufferData(gl.ARRAY_BUFFER, 4*len(quadVertices), gl.Ptr(quadVertices), gl.STATIC_DRAW)
 		gl.EnableVertexAttribArray(0)
 		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
@@ -246,26 +248,26 @@ func glLogShader(program uint32, vertex, frag string) {
 		}
 	}
 
-	gl.GetProgramiv(program, gl.ACTIVE_UNIFORMS, &params)
-	glLogf("%d gl.ACTIVE_UNIFORMS\n", params)
-	for i := int32(0); i < params; i++ {
-		var actualLength int32
-		var size int32
-		var xtype uint32
-		var maxLength int32 = 64
-		name := make([]byte, maxLength)
-		gl.GetActiveUniform(program, uint32(i), maxLength, &actualLength, &size, &xtype, &name[0])
-		if size > 1 {
-			for j := int32(0); j < size; j++ {
-				longName := []byte(fmt.Sprintf("%s[%d]", name, j))
-				location := gl.GetAttribLocation(program, &longName[0])
-				glLogf("\t%d) %s ", i, glTypeToString(xtype), bytes.Trim(longName, "\x00"), location)
-			}
-		} else {
-			location := pUniformLocation(program, fmt.Sprintf("%s\n", name))
-			glLogf("\t%d) %s %s @ location %d\n", i, glTypeToString(xtype), bytes.Trim(name, "\x00"), location)
-		}
-	}
+	//gl.GetProgramiv(program, gl.ACTIVE_UNIFORMS, &params)
+	//glLogf("%d gl.ACTIVE_UNIFORMS\n", params)
+	//for i := int32(0); i < params; i++ {
+	//	var actualLength int32
+	//	var size int32
+	//	var xtype uint32
+	//	var maxLength int32 = 64
+	//	name := make([]byte, maxLength)
+	//	gl.GetActiveUniform(program, uint32(i), maxLength, &actualLength, &size, &xtype, &name[0])
+	//	if size > 1 {
+	//		for j := int32(0); j < size; j++ {
+	//			longName := []byte(fmt.Sprintf("%s[%d]", name, j))
+	//			location := gl.GetAttribLocation(program, &longName[0])
+	//			glLogf("\t%d) %s ", i, glTypeToString(xtype), bytes.Trim(longName, "\x00"), location)
+	//		}
+	//	} else {
+	//		location := pUniformLocation(program, fmt.Sprintf("%s\n", name))
+	//		glLogf("\t%d) %s %s @ location %d\n", i, glTypeToString(xtype), bytes.Trim(name, "\x00"), location)
+	//	}
+	//}
 
 	glLogln("---------------------------------------")
 }

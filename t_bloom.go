@@ -77,10 +77,11 @@ func (b *BloomEffect) Render(inTexture uint32) uint32 {
 			1, 1, 0.0, 1.0, 1.0,
 			1, -1, 0.0, 1.0, 0.0,
 		}
+		var vbo uint32
 		gl.GenVertexArrays(1, &b.quadVAO)
-		gl.GenBuffers(1, &b.quadVAO)
 		gl.BindVertexArray(b.quadVAO)
-		gl.BindBuffer(gl.ARRAY_BUFFER, b.quadVAO)
+		gl.GenBuffers(1, &vbo)
+		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 		gl.BufferData(gl.ARRAY_BUFFER, 4*len(quadVertices), gl.Ptr(quadVertices), gl.STATIC_DRAW)
 		gl.EnableVertexAttribArray(0)
 		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)

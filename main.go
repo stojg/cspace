@@ -83,7 +83,6 @@ var quadVAO uint32
 // renderQuad renders a full screen quad
 func renderQuad() {
 	if quadVAO == 0 {
-		var quadVBO uint32
 		quadVertices := []float32{
 			-1, 1, 0.0, 0.0, 1.0,
 			-1, -1, 0.0, 0.0, 0.0,
@@ -92,8 +91,9 @@ func renderQuad() {
 		}
 		// Setup plane VAO
 		gl.GenVertexArrays(1, &quadVAO)
-		gl.GenBuffers(1, &quadVBO)
 		gl.BindVertexArray(quadVAO)
+		var quadVBO uint32
+		gl.GenBuffers(1, &quadVBO)
 		gl.BindBuffer(gl.ARRAY_BUFFER, quadVBO)
 		gl.BufferData(gl.ARRAY_BUFFER, 4*len(quadVertices), gl.Ptr(quadVertices), gl.STATIC_DRAW)
 		gl.EnableVertexAttribArray(0)
