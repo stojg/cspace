@@ -24,7 +24,7 @@ var viewPortWidth int32 = windowWidth
 var viewPortHeight int32 = windowHeight
 
 var bloomOn = true
-var ssaoOn = true
+var ssaoOn = false
 var dirLightOn = true
 var fxaaOn = false
 var showDebug = false
@@ -203,7 +203,7 @@ func (s *Scene) Render() {
 	// we wont be needing the depth tests for until we start a forward rendering again
 	gl.Disable(gl.DEPTH_TEST)
 
-	{ // screen space ambient occlusion (SSAO)
+	{ // screen space ambient occlusion (SSAO) ~ 40fps
 		gl.BindFramebuffer(gl.FRAMEBUFFER, s.ssao.fbo)
 		gl.UseProgram(s.ssao.shader.Program)
 
@@ -350,7 +350,7 @@ func (s *Scene) Render() {
 
 	out := s.gBuffer.buffer.finalTexture
 	if bloomOn {
-		out = s.bloom.Render(s.gBuffer.buffer.finalTexture)
+		out = s.bloom.Render(out)
 	}
 
 	// do the final rendering to the backbuffer
