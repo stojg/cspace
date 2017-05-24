@@ -133,7 +133,7 @@ type Scene struct {
 }
 
 func (s *Scene) Init() {
-	gl.Disable(gl.MULTISAMPLE)
+	gl.Disable(gl.FRAMEBUFFER_SRGB)
 	s.stencilShader = shaders.NewStencil()
 	s.dirLightShader = shaders.NewDirectionalLight()
 	s.pointLightShader = shaders.NewPointLightShader(maxPointLights)
