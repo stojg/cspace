@@ -17,6 +17,8 @@ const windowWidth = 1280
 const windowHeight = 720
 const maxPointLights = 32
 
+var viewPortWidth int32 = windowWidth
+var viewPortHeight int32 = windowHeight
 var bloomOn = true
 var ssaoOn = true
 var dirLightOn = true
@@ -359,6 +361,8 @@ func (s *Scene) Render() {
 
 	// do the final rendering to the backbuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
+	// taking care of retina having more actual pixels
+	gl.Viewport(0, 0, viewPortWidth, viewPortHeight)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
 	fxaaShader.Use()

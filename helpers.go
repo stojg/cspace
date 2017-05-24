@@ -58,6 +58,10 @@ func initWindow() (*glfw.Window, error) {
 		cursor[0] = xpos
 		cursor[1] = ypos
 	})
+
+	w, h := window.GetFramebufferSize()
+	viewPortWidth = int32(w)
+	viewPortHeight = int32(h)
 	return window, nil
 }
 
