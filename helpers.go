@@ -36,7 +36,7 @@ func initWindow() (*glfw.Window, error) {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	//glfw.WindowHint(glfw.Samples, 0)
+	glfw.WindowHint(glfw.Samples, 0)
 
 	var err error
 	window, err = glfw.CreateWindow(windowWidth, windowHeight, "Cspace", nil, nil)
@@ -67,6 +67,7 @@ func initGL() error {
 		return err
 	}
 
+	gl.Disable(gl.MULTISAMPLE)
 	glLogGLParams()
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
