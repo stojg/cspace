@@ -49,12 +49,14 @@ vec3 Uncharted2Tonemap(vec3 x)
 }
 
 void main() {
-    const float exposure = 1.0;
+    const float exposure = 1.2;
     const float gamma = 2.2;
 
     vec3 hdrColor = texture(screenTexture, TexCoords).rgb;
-    hdrColor = Uncharted2Tonemap(hdrColor);
-    hdrColor = vec3(1.0) - exp(-hdrColor * exposure);
+//    hdrColor = Uncharted2Tonemap(hdrColor);
+// Reinhard tone mapping
+//    hdrColor = hdrColor / (hdrColor + vec3(1.0));
+//    hdrColor = vec3(1.0) - exp(-hdrColor * exposure);
     color = vec4(pow(hdrColor, vec3(1.0 / gamma)), 1.0);
 }
 

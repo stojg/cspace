@@ -58,7 +58,7 @@ func GetCubeMap() uint32 {
 		}
 		gl.TexImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X+uint32(i),
 			0,
-			gl.RGBA,
+			gl.SRGB8_ALPHA8,
 			int32(rgba.Rect.Size().X),
 			int32(rgba.Rect.Size().Y),
 			0,
@@ -121,7 +121,6 @@ func newTexture(name TextureType, file string, gammaCorrect bool) (*Texture, err
 	gl.ActiveTexture(gl.TEXTURE0)
 
 	var internalFormat int32 = gl.RGBA
-	var format uint32 = gl.RGBA
 	if gammaCorrect {
 		internalFormat = gl.SRGB8_ALPHA8
 	}
@@ -133,7 +132,7 @@ func newTexture(name TextureType, file string, gammaCorrect bool) (*Texture, err
 		int32(rgba.Rect.Size().X),
 		int32(rgba.Rect.Size().Y),
 		0,
-		format,
+		gl.RGBA,
 		gl.UNSIGNED_BYTE,
 		gl.Ptr(rgba.Pix))
 
