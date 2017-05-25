@@ -21,8 +21,8 @@ func NewGBufferPipeline() *GBufferPipeline {
 
 type GBufferPipeline struct {
 	buffer     *Gbuffer
-	tShader    TextureShader
-	mShader    MaterialShader
+	tShader    *GbufferTShader
+	mShader    *GbufferMShader
 	nullShader *DefaultShader
 }
 

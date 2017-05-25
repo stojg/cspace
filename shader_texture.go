@@ -4,13 +4,7 @@ type ModelShader interface {
 	ModelUniform() int32
 }
 
-type TextureShader interface {
-	Shader
-	ModelUniform() int32
-	TextureUniform(TextureType) int32
-}
-
-func NewTextureShader() TextureShader {
+func NewTextureShader() *GbufferTShader {
 	shader := &GbufferTShader{
 		Shader: NewDefaultShader("g_buffer", "g_buffer_t"),
 	}
@@ -32,21 +26,16 @@ type GbufferTShader struct {
 }
 
 func (s *GbufferTShader) TextureUniform(t TextureType) int32 {
-	if t == Albedo {
+	switch t {
+	case Albedo:
 		return s.LocAlbedo
-	}
-	if t == Metallic {
+	case Metallic:
 		return s.LocMetallic
-	}
-	if t == Roughness {
+	case Roughness:
 		return s.LocRoughness
-	}
-	if t == Normal {
+	case Normal:
 		return s.LocNormal
+	default:
+		return -1
 	}
-	return -1
-}
-
-func (s *GbufferTShader) ModelUniform() int32 {
-	return s.LocModel
 }

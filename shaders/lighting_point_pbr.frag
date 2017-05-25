@@ -2,7 +2,7 @@
 
 out vec4 FragColor;
 
-const int NR_LIGHTS = 32;
+const int NR_LIGHTS = 64;
 
 layout (std140) uniform Matrices
 {

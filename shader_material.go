@@ -2,15 +2,7 @@ package main
 
 import "github.com/go-gl/gl/v4.1-core/gl"
 
-type MaterialShader interface {
-	Shader
-	ModelUniform() int32
-	AlbedoUniform() int32
-	MetallicUniform() int32
-	RoughnessUniform() int32
-}
-
-func NewMaterialShader() MaterialShader {
+func NewMaterialShader() *GbufferMShader {
 	shader := &GbufferMShader{
 		Shader: NewDefaultShader("g_buffer", "g_buffer_m"),
 	}
@@ -31,20 +23,4 @@ type GbufferMShader struct {
 	locAlbedo    int32
 	locMetallic  int32
 	locRoughness int32
-}
-
-func (s *GbufferMShader) ModelUniform() int32 {
-	return s.locModel
-}
-
-func (s *GbufferMShader) AlbedoUniform() int32 {
-	return s.locAlbedo
-}
-
-func (s *GbufferMShader) MetallicUniform() int32 {
-	return s.locMetallic
-}
-
-func (s *GbufferMShader) RoughnessUniform() int32 {
-	return s.locRoughness
 }

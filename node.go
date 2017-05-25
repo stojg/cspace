@@ -14,7 +14,7 @@ const (
 
 type SceneNode interface {
 	SimpleRender(ModelShader)
-	Render(tShader TextureShader, mShader MaterialShader)
+	Render(tShader *GbufferTShader, mShader *GbufferMShader)
 	Add(mesh []*Mesh, transform mgl32.Mat4)
 	Destroy()
 }
@@ -33,7 +33,7 @@ type BaseNode struct {
 	Node
 }
 
-func (n *BaseNode) Render(tShader TextureShader, mShader MaterialShader) {
+func (n *BaseNode) Render(tShader *GbufferTShader, mShader *GbufferMShader) {
 	var tMeshes []*Node
 	var mMeshes []*Node
 	children := n.Node.Children()
@@ -47,12 +47,12 @@ func (n *BaseNode) Render(tShader TextureShader, mShader MaterialShader) {
 
 	gl.UseProgram(tShader.Program())
 	for i := range tMeshes {
-		tMeshes[i].Render(tShader, mShader)
+		tMeshes[i].RenderTexture(tShader)
 	}
 
 	gl.UseProgram(mShader.Program())
 	for i := range mMeshes {
-		mMeshes[i].Render(tShader, mShader)
+		mMeshes[i].RenderMaterial(mShader)
 	}
 }
 
@@ -77,15 +77,15 @@ func (n *Node) SimpleRender(shader ModelShader) {
 	}
 }
 
-func (n *Node) Render(tShader TextureShader, mShader MaterialShader) {
-	transform := *n.transform
-	if n.mesh.MeshType == TextureMesh {
-		gl.UniformMatrix4fv(tShader.ModelUniform(), 1, false, &transform[0])
-		n.mesh.setTextures(tShader)
-	} else {
-		gl.UniformMatrix4fv(mShader.ModelUniform(), 1, false, &transform[0])
-		n.mesh.setMaterial(mShader)
-	}
+func (n *Node) RenderTexture(tShader *GbufferTShader) {
+	gl.UniformMatrix4fv(tShader.LocModel, 1, false, &n.transform[0])
+	n.mesh.setTextures(tShader)
+	n.mesh.Render()
+}
+
+func (n *Node) RenderMaterial(mShader *GbufferMShader) {
+	gl.UniformMatrix4fv(mShader.locModel, 1, false, &n.transform[0])
+	n.mesh.setMaterial(mShader)
 	n.mesh.Render()
 }
 

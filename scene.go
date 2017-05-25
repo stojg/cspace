@@ -13,7 +13,7 @@ import (
 const near float32 = 0.5
 const far float32 = 200
 
-const maxPointLights = 32
+const maxPointLights = 64
 
 const sizeUboScalar = 4
 const sizeUboMat4 = 16 * sizeUboScalar
@@ -66,20 +66,11 @@ func NewScene() *Scene {
 	gl.BufferSubData(gl.UNIFORM_BUFFER, 2*sizeUboMat4, sizeUboMat4, gl.Ptr(&invP[0]))
 	gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
 
-	//s.pointLights = append(s.pointLights, &PointLight{
-	//	Position: [3]float32{-3, 4, -2},
-	//	Color:    [3]float32{10, 9, 8},
-	//	Constant: ligthAtt[1].Constant,
-	//	Linear:   ligthAtt[1].Linear,
-	//	Exp:      ligthAtt[1].Exp,
-	//	rand:     0,
-	//})
-
 	att := ligthAtt[1]
 	for i := 0; i < maxPointLights; i++ {
 		s.pointLights = append(s.pointLights, &PointLight{
-			Position: [3]float32{rand.Float32()*60 - 30, rand.Float32()*5 + 1, rand.Float32()*60 - 10},
-			Color:    [3]float32{rand.Float32()*10 + 0.5, rand.Float32()*10 + 0.5, rand.Float32()*10 + 0.5},
+			Position: [3]float32{rand.Float32()*60 - 30, rand.Float32()*5 + 1, rand.Float32()*60 - 30},
+			Color:    [3]float32{rand.Float32()*1 + 0.5, rand.Float32()*1 + 0.5, rand.Float32()*1 + 0.5},
 			Constant: att.Constant,
 			Linear:   att.Linear,
 			Exp:      att.Exp,
@@ -116,8 +107,8 @@ type Scene struct {
 
 	stencilShader *shaders.Stencil
 
-	cubeMap uint32
-	skybox  *shaders.Skybox
+	skyboxMap uint32
+	skybox    *shaders.Skybox
 
 	uboMatrices uint32
 }
@@ -131,7 +122,7 @@ func (s *Scene) Init() {
 	s.ssao = NewSSAO()
 	s.hdr = NewHDRFBO()
 	s.exposure = NewAverageExposure()
-	s.cubeMap = GetCubeMap()
+	s.skyboxMap = GetCubeMap()
 	s.skybox = shaders.NewSkybox()
 
 	chkError("scene.init")
@@ -196,7 +187,7 @@ func (s *Scene) Render() {
 	// we wont be needing the depth tests for until we start a forward rendering again
 	gl.Disable(gl.DEPTH_TEST)
 
-	{ // screen space ambient occlusion (SSAO) ~ 40fps
+	{ // screen space ambient occlusion (SSAO)
 		gl.BindFramebuffer(gl.FRAMEBUFFER, s.ssao.fbo)
 		gl.UseProgram(s.ssao.shader.Program)
 
@@ -317,7 +308,7 @@ func (s *Scene) Render() {
 		gl.BindVertexArray(s.skybox.SkyboxVAO)
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.Uniform1i(s.skybox.LocScreenTexture, 0)
-		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap)
+		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.skyboxMap)
 		gl.DrawArrays(gl.TRIANGLES, 0, 36)
 	}
 
@@ -348,6 +339,7 @@ func (s *Scene) Render() {
 
 	exp := s.exposure.Exposure(out)
 
+	//exp := float32(1)
 	// do the final rendering to the backbuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 	// taking care of retina having more actual pixels
@@ -378,19 +370,24 @@ func (s *Scene) Render() {
 
 func handleInputs() {
 	if keys[glfw.Key1] {
-		currentNumLights = 1
+		dirLightOn = true
 	} else if keys[glfw.Key2] {
-		currentNumLights = 2
+		currentNumLights = 1
 	} else if keys[glfw.Key3] {
-		currentNumLights = 4
+		currentNumLights = 2
 	} else if keys[glfw.Key4] {
-		currentNumLights = 8
+		currentNumLights = 4
 	} else if keys[glfw.Key5] {
+		currentNumLights = 8
+	} else if keys[glfw.Key6] {
 		currentNumLights = 16
 	} else if keys[glfw.Key6] {
 		currentNumLights = 32
+	} else if keys[glfw.Key7] {
+		currentNumLights = 64
 	} else if keys[glfw.Key0] {
 		dirLightOn = false
+		currentNumLights = 0
 	} else if keys[glfw.KeyF] {
 		fxaaOn = true
 	} else if keys[glfw.KeyR] {

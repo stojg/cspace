@@ -18,10 +18,11 @@ type Vertex struct {
 
 func NewMesh(name string, vertices []Vertex, textures []*Texture, mat *obj.Material, shaderType ShaderType) *Mesh {
 	q := &Mesh{
-		Name:     name,
-		Vertices: vertices,
-		Textures: textures,
-		Material: mat,
+		Name:        name,
+		Vertices:    vertices,
+		NumVertices: int32(len(vertices)),
+		Textures:    textures,
+		Material:    mat,
 	}
 	q.MeshType = shaderType
 	q.init()
@@ -29,47 +30,38 @@ func NewMesh(name string, vertices []Vertex, textures []*Texture, mat *obj.Mater
 }
 
 type Mesh struct {
-	Name     string
-	Vertices []Vertex
-	Indices  []uint32
-	Textures []*Texture
-	Material *obj.Material
-	MeshType ShaderType
+	Name        string
+	Vertices    []Vertex
+	NumVertices int32
+	Indices     []uint32
+	Textures    []*Texture
+	Material    *obj.Material
+	MeshType    ShaderType
 	// PRB material
 	Albedo    [3]float32
 	Metallic  float32
 	Roughness float32
 
-	vbo, vao, ebo uint32
+	vbo, vao uint32
 }
 
 func (s *Mesh) Render() {
-
 	gl.BindVertexArray(s.vao)
-	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.Vertices)))
-	// reset
-	gl.BindVertexArray(0)
-
-	// reset textures
-	//for i := range s.Textures {
-	//	gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-	//	gl.BindTexture(gl.TEXTURE_2D, 0)
-	//}
+	gl.DrawArrays(gl.TRIANGLES, 0, s.NumVertices)
 }
 
-func (s *Mesh) setTextures(tShader TextureShader) {
-
-	for i, texture := range s.Textures {
+func (s *Mesh) setTextures(tShader *GbufferTShader) {
+	for i := range s.Textures {
 		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-		gl.Uniform1i(tShader.TextureUniform(texture.textureType), int32(i))
-		gl.BindTexture(gl.TEXTURE_2D, texture.ID)
+		gl.Uniform1i(tShader.TextureUniform(s.Textures[i].textureType), int32(i))
+		gl.BindTexture(gl.TEXTURE_2D, s.Textures[i].ID)
 	}
 }
 
-func (s *Mesh) setMaterial(mShader MaterialShader) {
-	gl.Uniform3f(mShader.AlbedoUniform(), s.Albedo[0], s.Albedo[1], s.Albedo[2])
-	gl.Uniform1f(mShader.MetallicUniform(), s.Metallic)
-	gl.Uniform1f(mShader.RoughnessUniform(), s.Roughness)
+func (s *Mesh) setMaterial(mShader *GbufferMShader) {
+	gl.Uniform3f(mShader.locAlbedo, s.Albedo[0], s.Albedo[1], s.Albedo[2])
+	gl.Uniform1f(mShader.locMetallic, s.Metallic)
+	gl.Uniform1f(mShader.locRoughness, s.Roughness)
 }
 
 func (s *Mesh) init() {
