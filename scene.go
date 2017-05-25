@@ -12,16 +12,17 @@ import (
 
 const near float32 = 0.5
 const far float32 = 200
-const windowWidth = 1280
-const windowHeight = 720
+
 const maxPointLights = 32
 
 const sizeUboScalar = 4
 const sizeUboMat4 = 16 * sizeUboScalar
 const sizeUboVec3 = 4 * sizeUboScalar
 
-var viewPortWidth int32 = windowWidth
-var viewPortHeight int32 = windowHeight
+var windowWidth int32 = 1280
+var windowHeight int32 = 720
+var viewPortWidth int32
+var viewPortHeight int32
 
 var bloomOn = true
 var ssaoOn = false

@@ -43,8 +43,8 @@ func realMain() error {
 	}
 
 	keys = make(map[glfw.Key]bool)
-	cursor[0] = windowWidth / 2
-	cursor[1] = windowHeight / 2
+	cursor[0] = float64(windowWidth / 2)
+	cursor[1] = float64(windowHeight / 2)
 
 	if err := restartLog(); err != nil {
 		return err

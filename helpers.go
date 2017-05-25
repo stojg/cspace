@@ -39,24 +39,46 @@ func initWindow() (*glfw.Window, error) {
 	glfw.WindowHint(glfw.Samples, 0)
 
 	var err error
-	window, err = glfw.CreateWindow(windowWidth, windowHeight, "Cspace", nil, nil)
+	window, err = glfw.CreateWindow(int(windowWidth), int(windowHeight), "cspace", nil, nil)
 	if err != nil {
 		return window, err
 	}
 	window.MakeContextCurrent()
 	// disable or enable vertical refresh (vsync)
 	glfw.SwapInterval(0)
+	mouseCaptured := true
+	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		if action == glfw.Release && key == glfw.KeySpace {
+			if !mouseCaptured {
+				window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+				mouseCaptured = true
+			} else {
+				window.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
+				mouseCaptured = false
+			}
+		}
+
 		if action == glfw.Press {
 			keys[key] = true
 		} else if action == glfw.Release {
 			keys[key] = false
 		}
 	})
-	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+
 	window.SetCursorPosCallback(func(w *glfw.Window, xpos float64, ypos float64) {
-		cursor[0] = xpos
-		cursor[1] = ypos
+		if mouseCaptured {
+			cursor[0] = xpos
+			cursor[1] = ypos
+		}
+	})
+
+	window.SetSizeCallback(func(w *glfw.Window, width int, height int) {
+		fboWidth, fboHeight := w.GetFramebufferSize()
+		viewPortWidth = int32(fboWidth)
+		viewPortHeight = int32(fboHeight)
+		windowWidth = int32(width)
+		windowHeight = int32(height)
 	})
 
 	w, h := window.GetFramebufferSize()
