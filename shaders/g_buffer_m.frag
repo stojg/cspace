@@ -25,5 +25,4 @@ void main()
     // store the per-fragment metallicness
     gAlbedoMetallic.a = mat.metallic;
 
-
 }
