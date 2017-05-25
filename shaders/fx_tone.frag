@@ -3,6 +3,7 @@ in vec2 TexCoords;
 out vec4 color;
 
 uniform sampler2D screenTexture;
+uniform float exposure;
 
 // The code in this file was originally written by Stephen Hill (@self_shadow), who deserves all
 // credit for coming up with this fit and implementing it. Buy him a beer next time you see him. :)
@@ -49,14 +50,13 @@ vec3 Uncharted2Tonemap(vec3 x)
 }
 
 void main() {
-    const float exposure = 1.2;
     const float gamma = 2.2;
 
     vec3 hdrColor = texture(screenTexture, TexCoords).rgb;
 //    hdrColor = Uncharted2Tonemap(hdrColor);
 // Reinhard tone mapping
 //    hdrColor = hdrColor / (hdrColor + vec3(1.0));
-//    hdrColor = vec3(1.0) - exp(-hdrColor * exposure);
+    hdrColor = vec3(1.0) - exp(-hdrColor * exposure);
     color = vec4(pow(hdrColor, vec3(1.0 / gamma)), 1.0);
 }
 

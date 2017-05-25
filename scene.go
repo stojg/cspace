@@ -25,12 +25,12 @@ var viewPortWidth int32
 var viewPortHeight int32
 
 var bloomOn = true
-var ssaoOn = false
+var ssaoOn = true
 var dirLightOn = true
 var fxaaOn = false
 var showDebug = false
 
-var currentNumLights = 1
+var currentNumLights = 0
 
 var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{-80, 60, -100}),
@@ -38,15 +38,6 @@ var directionLight = &DirectionalLight{
 }
 
 func NewScene() *Scene {
-
-	fxaaShader = NewDefaultShader("fx", "fx_fxaa")
-	fxaaTextureloc = uniformLocation(fxaaShader, "screenTexture")
-	fxaaLocU_showEdges = pUniformLocation(fxaaShader.program, "u_showEdges")
-	fxaaLocU_lumaThreshold = pUniformLocation(fxaaShader.program, "u_lumaThreshold")
-	fxaaLocU_mulReduce = pUniformLocation(fxaaShader.program, "u_mulReduce")
-	fxaaLocU_minReduce = pUniformLocation(fxaaShader.program, "u_minReduce")
-	fxaaLocU_maxSpan = pUniformLocation(fxaaShader.program, "u_maxSpan")
-	fxaaLoc_enabled = pUniformLocation(fxaaShader.program, "u_enabled")
 
 	s := &Scene{
 		gBuffer: NewGBufferPipeline(),
@@ -75,17 +66,17 @@ func NewScene() *Scene {
 	gl.BufferSubData(gl.UNIFORM_BUFFER, 2*sizeUboMat4, sizeUboMat4, gl.Ptr(&invP[0]))
 	gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
 
-	s.pointLights = append(s.pointLights, &PointLight{
-		Position: [3]float32{-3, 4, -2},
-		Color:    [3]float32{10, 9, 8},
-		Constant: ligthAtt[1].Constant,
-		Linear:   ligthAtt[1].Linear,
-		Exp:      ligthAtt[1].Exp,
-		rand:     0,
-	})
+	//s.pointLights = append(s.pointLights, &PointLight{
+	//	Position: [3]float32{-3, 4, -2},
+	//	Color:    [3]float32{10, 9, 8},
+	//	Constant: ligthAtt[1].Constant,
+	//	Linear:   ligthAtt[1].Linear,
+	//	Exp:      ligthAtt[1].Exp,
+	//	rand:     0,
+	//})
 
 	att := ligthAtt[1]
-	for i := 1; i < maxPointLights; i++ {
+	for i := 0; i < maxPointLights; i++ {
 		s.pointLights = append(s.pointLights, &PointLight{
 			Position: [3]float32{rand.Float32()*60 - 30, rand.Float32()*5 + 1, rand.Float32()*60 - 10},
 			Color:    [3]float32{rand.Float32()*10 + 0.5, rand.Float32()*10 + 0.5, rand.Float32()*10 + 0.5},
@@ -109,9 +100,10 @@ type Scene struct {
 	gBuffer *GBufferPipeline
 	bloom   *BloomEffect
 
-	shadow *ShadowFBO
-	ssao   *SsaoFBO
-	hdr    *HDRFBO
+	shadow   *ShadowFBO
+	ssao     *SsaoFBO
+	hdr      *HDRFBO
+	exposure *AverageExposure
 
 	pointLightShader *shaders.PointLight
 	dirLightShader   *shaders.DirectionalLight
@@ -138,7 +130,7 @@ func (s *Scene) Init() {
 	s.hdrShader = shaders.NewHDR()
 	s.ssao = NewSSAO()
 	s.hdr = NewHDRFBO()
-
+	s.exposure = NewAverageExposure()
 	s.cubeMap = GetCubeMap()
 	s.skybox = shaders.NewSkybox()
 
@@ -335,7 +327,7 @@ func (s *Scene) Render() {
 
 		for i := range s.pointLights[:currentNumLights] {
 			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin, s.pointLights[i].Position[2])
-			model = model.Mul4(mgl32.Scale3D(0.03, 0.03, 0.03))
+			model = model.Mul4(mgl32.Scale3D(0.1, 0.1, 0.1))
 			model = model.Mul4(mgl32.HomogRotate3D(float32(math.Cos(glfw.GetTime())), mgl32.Vec3{1, 1, 1}.Normalize()))
 
 			gl.UniformMatrix4fv(s.lightBoxShader.LocModel, 1, false, &model[0])
@@ -354,6 +346,8 @@ func (s *Scene) Render() {
 		out = s.bloom.Render(out)
 	}
 
+	exp := s.exposure.Exposure(out)
+
 	// do the final rendering to the backbuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 	// taking care of retina having more actual pixels
@@ -361,6 +355,8 @@ func (s *Scene) Render() {
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
 	gl.UseProgram(s.hdrShader.Program)
+
+	gl.Uniform1f(s.hdrShader.LocExposure, exp)
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.Uniform1i(s.hdrShader.LocScreenTexture, 0)
 	gl.BindTexture(gl.TEXTURE_2D, out)

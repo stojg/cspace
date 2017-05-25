@@ -38,7 +38,7 @@ func NewBloom() *BloomFBO {
 	return frameBuffer
 }
 
-const bloomScreenDiv = 4.0
+const bloomScreenDiv = 2.0
 
 func NewBloomEffect() *BloomEffect {
 	b := &BloomEffect{
@@ -105,7 +105,7 @@ func (b *BloomEffect) Render(inTexture uint32) uint32 {
 	gl.BindVertexArray(0)
 
 	// blur the bright part
-	const blurAmount = 16
+	const blurAmount = 4
 	horizontal := 0
 	firstIteration := true
 
