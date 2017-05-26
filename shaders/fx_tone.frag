@@ -53,7 +53,7 @@ void main() {
     const float gamma = 2.2;
 
     vec3 hdrColor = texture(screenTexture, TexCoords).rgb;
-//    hdrColor = Uncharted2Tonemap(hdrColor);
+    hdrColor = Uncharted2Tonemap(hdrColor);
 // Reinhard tone mapping
 //    hdrColor = hdrColor / (hdrColor + vec3(1.0));
     hdrColor = vec3(1.0) - exp(-hdrColor * exposure);
