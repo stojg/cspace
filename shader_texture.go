@@ -6,7 +6,7 @@ type ModelShader interface {
 
 func NewTextureShader() *GbufferTShader {
 	shader := &GbufferTShader{
-		Shader: NewDefaultShader("g_buffer", "g_buffer_t"),
+		Shader: NewDefaultShader("g_buffer_t", "g_buffer_t"),
 	}
 	shader.LocModel = uniformLocation(shader, "model")
 	shader.LocAlbedo = uniformLocation(shader, "mat.albedo")

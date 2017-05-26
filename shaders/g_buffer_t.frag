@@ -6,6 +6,16 @@ layout (location = 1) out vec4 gAlbedoMetallic;
 in vec2 TexCoords;
 in vec3 Normal;
 in vec3 Tangent;
+in mat3 TBN;
+
+layout (std140) uniform Matrices
+{
+    mat4 projection;
+    mat4 view;
+    mat4 invProjection;
+    mat4 invView;
+    vec3 cameraPos;
+};
 
 struct Material {
     sampler2D albedo;
@@ -32,9 +42,7 @@ void main()
 
 vec3 CalcBumpedNormal(vec3 normal, vec3 tangent)
 {
-    vec3 Tangent = normalize(tangent - dot(tangent, normal) * normal);
-    vec3 Bitangent = cross(Tangent, normal);
     vec3 BumpMapNormal = texture(mat.normal, TexCoords).xyz;
     BumpMapNormal = 2.0 * BumpMapNormal - vec3(1.0);
-    return normalize(mat3(Tangent, Bitangent, normal) * BumpMapNormal);
+    return (vec4(normalize(TBN * BumpMapNormal),1)).xyz;
 }

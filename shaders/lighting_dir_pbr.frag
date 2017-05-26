@@ -31,6 +31,7 @@ uniform mat4 lightView;
 const float PI = 3.14159265359;
 
 vec2 CalcTexCoord();
+vec4 ViewPosFromDepth(float depth, vec2 TexCoords);
 vec4 WorldPosFromDepth(float depth, vec2 TexCoords);
 vec3 fresnelSchlick(float cosTheta, vec3 F0);
 float DistributionGGX(vec3 N, vec3 H, float roughness);
@@ -41,20 +42,22 @@ float ShadowCalculation(vec4 worldPos, vec3 normal);
 void main()
 {
     vec2 TexCoords = CalcTexCoord();
-    vec4 FragPos   = WorldPosFromDepth(texture(gDepth, TexCoords).x, TexCoords);
+    vec4 FragPos   = ViewPosFromDepth(texture(gDepth, TexCoords).x, TexCoords);
+    vec4 wFragPos   = WorldPosFromDepth(texture(gDepth, TexCoords).x, TexCoords);
 
     vec3 N = normalize(texture(gNormal, TexCoords).rgb);
-    vec3 V = normalize(cameraPos - FragPos.xyz);
+    vec3 V = normalize(-FragPos.xyz);
 
     vec3 albedo     = texture(gAlbedoSpec, TexCoords).rgb;
     float metallic  = texture(gAlbedoSpec, TexCoords).a;
     float roughness = texture(gNormal, TexCoords).w;
     float ao = texture(gAmbientOcclusion, TexCoords).r;
-    float shadow    = ShadowCalculation(FragPos, N);
+    float shadow    = ShadowCalculation(wFragPos, N);
 
     vec3 Lo = vec3(0.0);
     vec3 kD = vec3(0.0);
-    vec3 L = dirLight.Direction;
+    vec3 lightPos = transpose(mat3(invView)) * normalize(dirLight.Direction);
+    vec3 L = normalize(lightPos);
     vec3 H = normalize(V + L);
 
     vec3 radiance = dirLight.Color;
@@ -81,12 +84,10 @@ void main()
 
     float NdotL = max(dot(N, L), 0.0);
     Lo += (kD * albedo / PI + specular) * radiance * NdotL;
-    // end foreach
 
     Lo *= 1 - shadow;
-
-    vec3 ambient = vec3(0.03) * albedo * ao;
-    FragColor   = vec4(ambient + Lo,1);
+    vec3 ambient = vec3(0.01) * albedo;
+    FragColor   = vec4(ambient + Lo ,1) * ao;
 }
 
 float ShadowCalculation(vec4 worldPos, vec3 normal)
@@ -105,9 +106,8 @@ float ShadowCalculation(vec4 worldPos, vec3 normal)
 
     float shadow = 0.0;
     // change the amount of bias based on the surface angle towards the light
-    // @todo, removed the bias because it cause to much peter panning on light with low angle
-//    float bias = max(0.05 * (1.0 - dot(normal, dirLight.Direction)), 0.005);
-    float bias = 0.005;
+    float bias = max(0.001 * (1.0 - dot(normal, dirLight.Direction)), 0.001);
+    // float bias = 0.001;
     vec2 texelSize = 0.5 / textureSize(shadowMap, 0);
     // Percentage Closing Filter
     for(int x = -1; x <= 1; ++x) {
@@ -123,13 +123,15 @@ vec2 CalcTexCoord() {
    return gl_FragCoord.xy / gScreenSize;
 }
 
-vec4 WorldPosFromDepth(float depth, vec2 TexCoords) {
+vec4 ViewPosFromDepth(float depth, vec2 TexCoords) {
     float z = depth * 2.0 - 1.0;
     vec4 clipSpacePosition = vec4(TexCoords * 2.0 - 1.0, z, 1.0);
     vec4 viewSpacePosition = invProjection * clipSpacePosition;
-    // Perspective division
-    viewSpacePosition /= viewSpacePosition.w;
-    return invView * viewSpacePosition;
+    return viewSpacePosition /= viewSpacePosition.w;
+}
+
+vec4 WorldPosFromDepth(float depth, vec2 TexCoords) {
+    return invView * ViewPosFromDepth(depth, TexCoords);
 }
 
 // The Fresnel equation returns the ratio of light that gets reflected on a surface

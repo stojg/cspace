@@ -32,7 +32,7 @@ uniform int numLights = 1;
 const float PI = 3.14159265359;
 
 vec2 CalcTexCoord();
-vec3 WorldPosFromDepth(float depth, vec2 TexCoords);
+vec3 ViewPosFromDepth(float depth, vec2 TexCoords);
 vec3 fresnelSchlick(float cosTheta, vec3 F0);
 float DistributionGGX(vec3 N, vec3 H, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
@@ -40,11 +40,13 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
 
 void main()
 {
+
+    // point light direction to point in view space
     vec2 TexCoords = CalcTexCoord();
-    vec3 FragPos   = WorldPosFromDepth(texture(gDepth, TexCoords).x, TexCoords);
+    vec3 FragPos   = ViewPosFromDepth(texture(gDepth, TexCoords).x, TexCoords);
 
     vec3 N = texture(gNormal, TexCoords).rgb;
-    vec3 V = normalize(cameraPos - FragPos);
+    vec3 V = normalize(-FragPos);
 
     vec3 albedo = texture(gAlbedoSpec, TexCoords).rgb;
     float metallic = texture(gAlbedoSpec, TexCoords).a;
@@ -56,13 +58,15 @@ void main()
     vec3 ambient = vec3(0.0);
     for(int i = 0; i < numLights; i++){
 
+        vec3 lightPos = (view * vec4(pointLight[i].Position, 1)).xyz;
+
         vec3 kD = vec3(0.0);
-        vec3 L = normalize(pointLight[i].Position - FragPos);
+        vec3 L = normalize(lightPos - FragPos);
         vec3 H = normalize(V + L);
 
         float distance = length(L);
-        float attenuation = 1.0 / (1.0 + pointLight[i].Linear * distance + pointLight[i].Quadratic * distance * distance * distance);
-        // float attenuation = 1.0 / (distance * distance);
+        float attenuation = 1.0 / (1.0 + pointLight[i].Linear * distance + pointLight[i].Quadratic * distance * distance);
+        // float attenuation = 1.0 / (distance * distance* distance* distance);
         vec3 radiance     = pointLight[i].Color * attenuation;
 
         vec3 F0 = vec3(0.04);
@@ -75,7 +79,7 @@ void main()
         vec3 specular = vec3(0.0);
         // Cook-Torrance BRDF
         vec3 nominator    = NDF * G * F;
-        //  0.001 to the denominator to prevent a divide by zero
+        // 0.001 to the denominator to prevent a divide by zero
         float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;
         specular          = nominator / denominator;
 
@@ -88,25 +92,23 @@ void main()
         float NdotL = max(dot(N, L), 0.0);
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
 
-        ambient = vec3(0.0006) * albedo * ao;
+//        ambient = vec3(0.0006) * albedo;
     }
     // end foreach
 
-    FragColor   = vec4(ambient + Lo, 1.0);
+    FragColor   = vec4(ambient + Lo, 1.0) * ao;
 }
 
 vec2 CalcTexCoord() {
    return gl_FragCoord.xy / gScreenSize;
 }
 
-vec3 WorldPosFromDepth(float depth, vec2 TexCoords) {
+vec3 ViewPosFromDepth(float depth, vec2 TexCoords) {
     float z = depth * 2.0 - 1.0;
     vec4 clipSpacePosition = vec4(TexCoords * 2.0 - 1.0, z, 1.0);
     vec4 viewSpacePosition = invProjection * clipSpacePosition;
-    // Perspective division
     viewSpacePosition /= viewSpacePosition.w;
-    vec4 worldSpacePosition = invView * viewSpacePosition;
-    return worldSpacePosition.xyz;
+    return viewSpacePosition.xyz;
 }
 
 // The Fresnel equation returns the ratio of light that gets reflected on a surface

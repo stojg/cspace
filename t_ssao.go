@@ -13,7 +13,9 @@ type SsaoFBO struct {
 	fbo          uint32
 	texture      uint32
 	noiseTexture uint32
+	outTexture   uint32
 	shader       *shaders.SSAO
+	blurShader   *shaders.Blur
 
 	Width  int32
 	Height int32
@@ -31,7 +33,7 @@ func NewSSAO() *SsaoFBO {
 	gl.GenTextures(1, &ssao.texture)
 	gl.BindTexture(gl.TEXTURE_2D, ssao.texture)
 
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, ssao.Width, ssao.Height, 0, gl.RGB, gl.FLOAT, nil)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, ssao.Width, ssao.Height, 0, gl.RGB, gl.UNSIGNED_INT, nil)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	borderColor := [4]float32{1.0, 1.0, 1.0, 1.0}
@@ -39,11 +41,18 @@ func NewSSAO() *SsaoFBO {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER)
 
+	gl.GenTextures(1, &ssao.outTexture)
+	gl.BindTexture(gl.TEXTURE_2D, ssao.outTexture)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, ssao.Width, ssao.Height, 0, gl.RGB, gl.UNSIGNED_INT, nil)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+
 	gl.BindFramebuffer(gl.FRAMEBUFFER, ssao.fbo)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, ssao.texture, 0)
+	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, ssao.outTexture, 0)
 
 	for i := range ssao.Kernel {
-		smp := mgl32.Vec3{rand.Float32()*2 - 1, rand.Float32()*2 - 1, rand.Float32()*2 - 1}
+		smp := mgl32.Vec3{rand.Float32()*2 - 1, rand.Float32()*2 - 1, rand.Float32()}
 		smp = smp.Normalize()
 		scale := float32(i) / 64.0
 		//scale samples s.t. they're more aligned to center of kernel
@@ -86,6 +95,7 @@ func NewSSAO() *SsaoFBO {
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 
 	ssao.shader = shaders.NewSSAO()
+	ssao.blurShader = shaders.NewBlur()
 	chkError("Shader?")
 	return ssao
 }

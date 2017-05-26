@@ -189,6 +189,7 @@ func (s *Scene) Render() {
 
 	{ // screen space ambient occlusion (SSAO)
 		gl.BindFramebuffer(gl.FRAMEBUFFER, s.ssao.fbo)
+		gl.DrawBuffer(gl.COLOR_ATTACHMENT0)
 		gl.UseProgram(s.ssao.shader.Program)
 
 		if ssaoOn {
@@ -207,16 +208,25 @@ func (s *Scene) Render() {
 		gl.Uniform1i(s.ssao.shader.LocGDepth, 0)
 
 		// see @todo in the shader
-		//gl.ActiveTexture(gl.TEXTURE1)
-		//gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormal)
-		//gl.Uniform1i(s.ssao.shader.LocGNormal, 1)
+		gl.ActiveTexture(gl.TEXTURE1)
+		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormal)
+		gl.Uniform1i(s.ssao.shader.LocGNormal, 1)
 
 		// see @todo in the shader
-		//gl.ActiveTexture(gl.TEXTURE2)
-		//gl.BindTexture(gl.TEXTURE_2D, s.ssao.noiseTexture)
-		//gl.Uniform1i(s.ssao.shader.LocTexNoise, 2)
+		gl.ActiveTexture(gl.TEXTURE2)
+		gl.BindTexture(gl.TEXTURE_2D, s.ssao.noiseTexture)
+		gl.Uniform1i(s.ssao.shader.LocTexNoise, 2)
 
 		renderQuad()
+
+		gl.DrawBuffer(gl.COLOR_ATTACHMENT1)
+		gl.UseProgram(s.ssao.blurShader.Program)
+
+		gl.ActiveTexture(gl.TEXTURE0)
+		gl.Uniform1i(s.ssao.blurShader.LocScreenTexture, 0)
+		gl.BindTexture(gl.TEXTURE_2D, s.ssao.texture)
+		renderQuad()
+
 	}
 
 	// start drawing light calculations into the finalTexture of the gbuffer
@@ -357,10 +367,10 @@ func (s *Scene) Render() {
 
 	// and if debug is on, quad print them on top off everything
 	if showDebug {
-		DisplayNormalBufferTexture(s.gBuffer.buffer.gNormal)
 		DisplayColorTexBuffer(s.gBuffer.buffer.gAlbedoSpec)
 		DisplayDepthbufferTexture(s.gBuffer.buffer.gDepth)
-		//DisplayDepthbufferTexture(s.ssao.texture)
+		DisplayDepthbufferTexture(s.ssao.outTexture)
+		DisplayNormalBufferTexture(s.gBuffer.buffer.gNormal)
 		//DisplayDepthbufferTexture(s.shadow.depthMap)
 	}
 

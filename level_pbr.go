@@ -58,6 +58,7 @@ func PBRLevel(graph SceneNode) {
 			mesh.Roughness = x
 		}
 		t := mgl32.Translate3D(x*25, 5, -1)
+		t = t.Mul4(mgl32.HomogRotate3D(float32(x)*0.314*4, mgl32.Vec3{0, 1, 0}))
 		graph.Add(meshes, t)
 	}
 
@@ -145,6 +146,7 @@ func PBRLevel(graph SceneNode) {
 			mesh.Textures = append(mesh.Textures, plasticNormTex)
 		}
 		t := mgl32.Translate3D(-8, 1, 12)
+		t = t.Mul4(mgl32.HomogRotate3D(float32(1)*0.314*4, mgl32.Vec3{0, 1, 0}))
 		graph.Add(meshes, t)
 	}
 
@@ -202,6 +204,7 @@ func PBRLevel(graph SceneNode) {
 			//mesh.Roughness = 0.1
 		}
 		t := mgl32.Translate3D(-8, 1, 16)
+		t = t.Mul4(mgl32.HomogRotate3D(float32(2)*0.314*4, mgl32.Vec3{0, 1, 0}))
 		graph.Add(meshes, t)
 	}
 
@@ -259,6 +262,7 @@ func PBRLevel(graph SceneNode) {
 			//mesh.Roughness = 0.1
 		}
 		t := mgl32.Translate3D(-8, 1, 20)
+		t = t.Mul4(mgl32.HomogRotate3D(float32(3)*0.314*4, mgl32.Vec3{0, 1, 0}))
 		graph.Add(meshes, t)
 	}
 
@@ -283,9 +287,9 @@ func PBRLevel(graph SceneNode) {
 		meshes[0].Textures = append(meshes[0].Textures, oNorm)
 		meshes[0].Textures = append(meshes[0].Textures, oRough)
 
-		for i := 0; i < 7; i++ {
+		for i := 1; i < 6; i++ {
 			t := mgl32.Translate3D(-24, -0.1, float32(i)*3.5)
-			t = t.Mul4(mgl32.HomogRotate3D(3.14/2, mgl32.Vec3{0, 1, 0}))
+			t = t.Mul4(mgl32.HomogRotate3D(float32(i)*0.314*4, mgl32.Vec3{0, 1, 0}))
 			graph.Add(meshes, t)
 		}
 	}

@@ -14,8 +14,8 @@ func NewSSAO() *SSAO {
 		LocGDepth:     loc(c, "gDepth"),
 		LocScreenSize: loc(c, "gScreenSize"),
 		// see todo in ssao.frag
-		//LocGNormal:       loc(c, "gNormal"),
-		//LocTexNoise:      loc(c, "texNoise"),
+		LocGNormal:  loc(c, "gNormal"),
+		LocTexNoise: loc(c, "texNoise"),
 	}
 
 	blockIndex := gl.GetUniformBlockIndex(c, gl.Str("Matrices\x00"))
@@ -36,6 +36,6 @@ type SSAO struct {
 	LocSamples    [64]int32
 	LocScreenSize int32
 	// see todo in ssao.frag
-	//LocGNormal       int32
-	//LocTexNoise      int32
+	LocGNormal  int32
+	LocTexNoise int32
 }
