@@ -68,9 +68,9 @@ func (cube *CubeMap) Update(texture *Texture) {
 
 	// convert HDR equirectangular environment map to cubemap equivalent
 
-	//gl.BindFramebuffer(gl.FRAMEBUFFER, cube.fbo)
-	//gl.BindRenderbuffer(gl.RENDERBUFFER, cube.rbo)
-	//gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, cube.width, cube.height)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, cube.fbo)
+	gl.BindRenderbuffer(gl.RENDERBUFFER, cube.rbo)
+	gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, cube.width, cube.height)
 	//gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, cube.rbo)
 
 	gl.UseProgram(cube.equirectangularToCubemapShader.Program)

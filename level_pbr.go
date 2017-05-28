@@ -6,10 +6,10 @@ func PBRLevel(graph SceneNode) {
 	{
 		meshes := LoadModel("models/cube", TextureMesh)
 
-		albTexture := GetTexture(Albedo, "rubber/Base_Color.png", true)
-		metallicTexture := GetTexture(Metallic, "rubber/Metallic.png", false)
-		roughnessTexture := GetTexture(Roughness, "rubber/Roughness.png", false)
-		normalTexture := GetTexture(Normal, "rubber/Normal.png", false)
+		albTexture := GetTexture(Albedo, "sculptedfloorboards1/sculptedfloorboards1_basecolor.png", true)
+		metallicTexture := GetTexture(Metallic, "sculptedfloorboards1/sculptedfloorboards1_metalness.png", false)
+		normalTexture := GetTexture(Normal, "sculptedfloorboards1/sculptedfloorboards1_normal.png", false)
+		roughnessTexture := GetTexture(Roughness, "sculptedfloorboards1/sculptedfloorboards1_roughness.png", false)
 
 		for _, mesh := range meshes {
 			mesh.Textures = append(mesh.Textures, albTexture)
