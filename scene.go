@@ -107,8 +107,9 @@ type Scene struct {
 
 	stencilShader *shaders.Stencil
 
-	skyboxMap uint32
-	skybox    *shaders.Skybox
+	skybox        *shaders.Skybox
+	skyBoxTexture *Texture
+	cubeMap       *CubeMap
 
 	uboMatrices uint32
 }
@@ -122,8 +123,12 @@ func (s *Scene) Init() {
 	s.ssao = NewSSAO()
 	s.hdr = NewHDRFBO()
 	s.exposure = NewAverageExposure()
-	s.skyboxMap = GetCubeMap()
+
 	s.skybox = shaders.NewSkybox()
+	s.skyBoxTexture = GetHDRTexture("Road_to_MonumentValley_Ref.hdr")
+	s.cubeMap = NewCubeMap(512, 512)
+
+	s.cubeMap.Update(s.skyBoxTexture)
 
 	chkError("scene.init")
 
@@ -318,7 +323,7 @@ func (s *Scene) Render() {
 		gl.BindVertexArray(s.skybox.SkyboxVAO)
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.Uniform1i(s.skybox.LocScreenTexture, 0)
-		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.skyboxMap)
+		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.envCubemap)
 		gl.DrawArrays(gl.TRIANGLES, 0, 36)
 	}
 

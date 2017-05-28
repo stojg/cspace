@@ -7,10 +7,10 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
-
 	"path/filepath"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/stojg/cspace/lib/rgbe"
 )
 
 type TextureType string
@@ -36,8 +36,17 @@ func GetTexture(texType TextureType, file string, gammaCorrect bool) *Texture {
 	return texture
 }
 
-// GetCubeMap will load and return an Texture id for a OpenGL texture cube map
-func GetCubeMap() uint32 {
+// GetHDRTexture will load and return a Texture and panic if the texture could not be loaded
+func GetHDRTexture(file string) *Texture {
+	texture, err := NewHDRTexture(filepath.Join("textures", file))
+	if err != nil {
+		panic(err)
+	}
+	return texture
+}
+
+// GetLDRCubeMap will load and return an Texture id for a OpenGL texture cube map
+func GetLDRCubeMap() uint32 {
 	var textureID uint32
 	gl.GenTextures(1, &textureID)
 	gl.BindTexture(gl.TEXTURE_CUBE_MAP, textureID)
@@ -77,11 +86,53 @@ func GetCubeMap() uint32 {
 	return textureID
 }
 
+func NewHDRTexture(file string) (*Texture, error) {
+
+	fi, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer fi.Close()
+
+	width, height, data, err := rgbe.Decode(fi)
+	if err != nil {
+		return nil, err
+	}
+
+	data = flipImgData(width, height, data)
+
+	var textureID uint32
+	gl.GenTextures(1, &textureID)
+	gl.BindTexture(gl.TEXTURE_2D, textureID)
+
+	gl.TexImage2D(gl.TEXTURE_2D,
+		0,
+		gl.RGB32F,
+		int32(width),
+		int32(height),
+		0,
+		gl.RGB,
+		gl.FLOAT,
+		gl.Ptr(data),
+	)
+
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+
+	return &Texture{
+		ID:          textureID,
+		textureType: Albedo,
+	}, nil
+}
+
 func loadImage(file string) (*image.RGBA, error) {
 	imgFile, err := os.Open(file)
 	if err != nil {
 		return nil, fmt.Errorf("Texture %q not found on disk: %v", file, err)
 	}
+
 	img, _, err := image.Decode(imgFile)
 	if err != nil {
 		return nil, err
@@ -167,5 +218,22 @@ func flip(src *image.RGBA) *image.RGBA {
 		}
 	}
 
+	return dst
+}
+
+func flipImgData(width, height int, src []float32) []float32 {
+	dst := make([]float32, len(src))
+
+	rowSize := width * 3
+
+	for y := 0; y < height; y++ {
+		srcStart := y * rowSize
+		srcEnd := srcStart + rowSize
+
+		dstStart := (height - y - 1) * rowSize
+		dstEnd := dstStart + rowSize
+
+		copy(dst[dstStart:dstEnd], src[srcStart:srcEnd])
+	}
 	return dst
 }

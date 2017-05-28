@@ -105,3 +105,15 @@ func renderQuad() {
 	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
 	gl.BindVertexArray(0)
 }
+
+var cubeVAO *Mesh
+
+// renderQuad renders a full screen quad
+func renderCube() {
+	if cubeVAO == nil {
+		meshes := LoadModel("models/cube", TextureMesh)
+		cubeVAO = meshes[0]
+	}
+	cubeVAO.Render()
+	gl.BindVertexArray(0)
+}
