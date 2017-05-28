@@ -71,6 +71,7 @@ void main() {
     }
     occlusion = 1.0 - (occlusion / kernelSize);
     FragColor = occlusion;
+    // FragColor = pow(occlusion, 3);
 }
 
 vec3 ViewPosFromDepth(float depth, vec2 TexCoords) {

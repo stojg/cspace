@@ -125,7 +125,8 @@ func (s *Scene) Init() {
 	s.exposure = NewAverageExposure()
 
 	s.skybox = shaders.NewSkybox()
-	s.skyBoxTexture = GetHDRTexture("Road_to_MonumentValley_Ref.hdr")
+	//s.skyBoxTexture = GetHDRTexture("Road_to_MonumentValley_Ref.hdr")
+	s.skyBoxTexture = GetHDRTexture("woods_1k.hdr")
 	s.cubeMap = NewCubeMap(512, 512)
 
 	s.cubeMap.Update(s.skyBoxTexture)
@@ -301,6 +302,10 @@ func (s *Scene) Render() {
 		gl.Uniform1i(s.dirLightShader.LocGAmbientOcclusion, 4)
 		gl.BindTexture(gl.TEXTURE_2D, s.ssao.texture)
 
+		gl.ActiveTexture(gl.TEXTURE5)
+		gl.Uniform1i(s.dirLightShader.LocIrradianceMap, 5)
+		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.irradianceMap)
+
 		gl.UniformMatrix4fv(s.dirLightShader.LocLightProjection, 1, false, &lightProjection[0])
 		gl.UniformMatrix4fv(s.dirLightShader.LocLightView, 1, false, &lightView[0])
 		gl.Uniform3fv(s.dirLightShader.LocLightDirection, 1, &directionLight.Direction[0])
@@ -314,7 +319,6 @@ func (s *Scene) Render() {
 	// start a forward rendering pass from here
 	gl.Enable(gl.DEPTH_TEST)
 
-	// draw sky box, this could probably coded in a way that is more performant
 	if dirLightOn {
 		gl.DepthFunc(gl.LEQUAL)
 		gl.UseProgram(s.skybox.Program)
@@ -323,7 +327,7 @@ func (s *Scene) Render() {
 		gl.BindVertexArray(s.skybox.SkyboxVAO)
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.Uniform1i(s.skybox.LocScreenTexture, 0)
-		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.envCubemap)
+		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.radianceMap)
 		gl.DrawArrays(gl.TRIANGLES, 0, 36)
 	}
 

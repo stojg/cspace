@@ -6,6 +6,7 @@ uniform sampler2D gDepth;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 uniform sampler2D gAmbientOcclusion;
+uniform samplerCube irradianceMap;
 
 layout (std140) uniform Matrices
 {
@@ -86,7 +87,10 @@ void main()
     Lo += (kD * albedo / PI + specular) * radiance * NdotL;
 
     Lo *= 1 - shadow;
-    vec3 ambient = vec3(0.01) * albedo;
+    vec3 irradiance = texture(irradianceMap, N).rgb;
+        vec3 diffuse    = irradiance * albedo;
+        vec3 ambient    = (kD * diffuse) * ao;
+//    vec3 ambient = vec3(0.01) * albedo;
     FragColor   = vec4(ambient + Lo ,1) * ao;
 }
 
