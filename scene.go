@@ -332,8 +332,8 @@ func (s *Scene) Render() {
 		gl.BindVertexArray(s.skybox.SkyboxVAO)
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.Uniform1i(s.skybox.LocScreenTexture, 0)
-		//gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.envCubeMap)
-		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.irradianceMap)
+		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.envCubeMap)
+		//gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.irradianceMap)
 		//gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.prefilterMap)
 		gl.DrawArrays(gl.TRIANGLES, 0, 36)
 	}
