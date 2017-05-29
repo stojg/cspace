@@ -31,67 +31,82 @@ uniform mat4 lightView;
 
 const float PI = 3.14159265359;
 
-vec2 CalcTexCoord();
-vec4 ViewPosFromDepth(float depth, vec2 TexCoords);
-vec4 WorldPosFromDepth(float depth, vec2 TexCoords);
+vec4 viewPosFromDepth(float depth, vec2 TexCoords);
 vec3 fresnelSchlick(float cosTheta, vec3 F0);
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness);
 float DistributionGGX(vec3 N, vec3 H, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
 float ShadowCalculation(vec4 worldPos, vec3 normal);
+vec3 LightCalculation(vec3 V, vec3 N, vec3 albedo, float roughness, float metallic, vec3 F0, vec3 lightPos, vec3 lightColor, float attenuation);
 
 void main()
 {
-    vec2 TexCoords = CalcTexCoord();
-    vec4 FragPos   = ViewPosFromDepth(texture(gDepth, TexCoords).x, TexCoords);
-    vec4 wFragPos   = WorldPosFromDepth(texture(gDepth, TexCoords).x, TexCoords);
+    vec2 TexCoords = gl_FragCoord.xy / gScreenSize;
+    vec4 FragPos   = viewPosFromDepth(texture(gDepth, TexCoords).x, TexCoords);
 
+    // Normal
     vec3 N = normalize(texture(gNormal, TexCoords).rgb);
+    // since this is a directional light in view space
     vec3 V = normalize(-FragPos.xyz);
 
+    // sample all the textures
     vec3 albedo     = texture(gAlbedoSpec, TexCoords).rgb;
     float metallic  = texture(gAlbedoSpec, TexCoords).a;
     float roughness = texture(gNormal, TexCoords).w;
-    float ao = texture(gAmbientOcclusion, TexCoords).r;
-    float shadow    = ShadowCalculation(wFragPos, N);
+    float ao        = texture(gAmbientOcclusion, TexCoords).r;
+    float shadow    = ShadowCalculation(invView * FragPos, N);
 
     vec3 Lo = vec3(0.0);
-    vec3 kD = vec3(0.0);
-    vec3 lightPos = transpose(mat3(invView)) * normalize(dirLight.Direction);
+
+    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 of 0.04 and if it's a metal,
+    // use the albedo color as F0 (metallic workflow)
+    vec3 F0 = vec3(0.04);
+    F0      = mix(F0, albedo, metallic);
+
+    // light calculations start here
+    //vec3 lightPos = transpose(mat3(invView)) * normalize(dirLight.Direction);
+    //Lo += LightCalculation(V, N, albedo, roughness, metallic, F0, lightPos, dirLight.Color, 1.0) * (1 - shadow);
+
+    // ambient lighting (we now use IBL as the ambient term)
+    vec3 kS = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+    vec3 irradiance = texture(irradianceMap, N).rgb;
+    vec3 diffuse      = irradiance * albedo;
+    vec3 ambient = (kD * diffuse) * ao;
+
+    FragColor   = vec4(ambient + Lo ,1);
+}
+
+vec3 LightCalculation(vec3 V, vec3 N, vec3 albedo, float roughness, float metallic, vec3 F0, vec3 lightPos, vec3 lightColor, float attenuation) {
     vec3 L = normalize(lightPos);
     vec3 H = normalize(V + L);
 
-    vec3 radiance = dirLight.Color;
+    vec3 radiance = lightColor * attenuation;
 
-    vec3 F0 = vec3(0.04);
-    F0      = mix(F0, albedo, metallic);
-    vec3 F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
-
+    // Cook-Torrance BRDF
     float NDF = DistributionGGX(N, H, roughness);
     float G   = GeometrySmith(N, V, L, roughness);
+    vec3 F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
-    vec3 specular = vec3(0.0);
-    // Cook-Torrance BRDF
     vec3 nominator    = NDF * G * F;
-    //  0.001 to the denominator to prevent a divide by zero
-    float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;
-    specular     = nominator / denominator;
+    float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001; // 0.001 to the denominator to prevent a divide by zero
+    vec3 specular     = nominator / denominator;
 
-    // and add to kD
+    // kS is equal to Fresnel
     vec3 kS = F;
-    kD = vec3(1.0) - kS;
-
+    // for energy conservation, the diffuse and specular light can't be above 1.0 (unless the surface emits light); to
+    // preserve this relationship the diffuse component (kD) should equal 1.0 - kS.
+    vec3 kD = vec3(1.0) - kS;
+    // multiply kD by the inverse metalness such that only non-metals
+    // have diffuse lighting, or a linear blend if partly metal (pure metals
+    // have no diffuse light).
     kD *= 1.0 - metallic;
-
+     // scale light by NdotL
     float NdotL = max(dot(N, L), 0.0);
-    Lo += (kD * albedo / PI + specular) * radiance * NdotL;
-
-    Lo *= 1 - shadow;
-    vec3 irradiance = texture(irradianceMap, N).rgb;
-        vec3 diffuse    = irradiance * albedo;
-        vec3 ambient    = (kD * diffuse) * ao;
-//    vec3 ambient = vec3(0.01) * albedo;
-    FragColor   = vec4(ambient + Lo ,1) * ao;
+     // add to outgoing radiance Lo
+    return (kD * albedo / PI + specular) * radiance * NdotL; // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
 }
 
 float ShadowCalculation(vec4 worldPos, vec3 normal)
@@ -123,25 +138,22 @@ float ShadowCalculation(vec4 worldPos, vec3 normal)
     return shadow /= 9.0;
 }
 
-vec2 CalcTexCoord() {
-   return gl_FragCoord.xy / gScreenSize;
-}
-
-vec4 ViewPosFromDepth(float depth, vec2 TexCoords) {
+vec4 viewPosFromDepth(float depth, vec2 TexCoords) {
     float z = depth * 2.0 - 1.0;
     vec4 clipSpacePosition = vec4(TexCoords * 2.0 - 1.0, z, 1.0);
     vec4 viewSpacePosition = invProjection * clipSpacePosition;
     return viewSpacePosition /= viewSpacePosition.w;
 }
 
-vec4 WorldPosFromDepth(float depth, vec2 TexCoords) {
-    return invView * ViewPosFromDepth(depth, TexCoords);
-}
-
 // The Fresnel equation returns the ratio of light that gets reflected on a surface
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
