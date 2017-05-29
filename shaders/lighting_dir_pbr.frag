@@ -7,6 +7,8 @@ uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 uniform sampler2D gAmbientOcclusion;
 uniform samplerCube irradianceMap;
+uniform samplerCube prefilterMap;
+uniform sampler2D   brdfLUT;
 
 layout (std140) uniform Matrices
 {
@@ -45,13 +47,21 @@ void main()
     vec2 TexCoords = gl_FragCoord.xy / gScreenSize;
     vec4 FragPos   = viewPosFromDepth(texture(gDepth, TexCoords).x, TexCoords);
 
-    // Normal
+    // Normal in view space
     vec3 N = normalize(texture(gNormal, TexCoords).rgb);
-    // since this is a directional light in view space
+    // direction towards they eye (camera) in the view (eye) space
     vec3 V = normalize(-FragPos.xyz);
 
+    // http://marcinignac.com/blog/pragmatic-pbr-hdr/
+    vec3 wcEyeDir = vec3(invView * vec4(V, 0.0));
+    //surface normal in the world space
+    vec3 wcNormal = vec3(invView * vec4(N, 0.0));
+
+    // reflection vector in the world space. We negate wcEyeDir as the reflect function expect incident vector pointing towards the surface
+    vec3 R = reflect(-wcEyeDir, normalize(wcNormal));
+
     // sample all the textures
-    vec3 albedo     = texture(gAlbedoSpec, TexCoords).rgb;
+    vec3  albedo    = texture(gAlbedoSpec, TexCoords).rgb;
     float metallic  = texture(gAlbedoSpec, TexCoords).a;
     float roughness = texture(gNormal, TexCoords).w;
     float ao        = texture(gAmbientOcclusion, TexCoords).r;
@@ -65,16 +75,26 @@ void main()
     F0      = mix(F0, albedo, metallic);
 
     // light calculations start here
-    vec3 lightPos = transpose(mat3(invView)) * normalize(dirLight.Direction);
-    Lo += LightCalculation(V, N, albedo, roughness, metallic, F0, lightPos, dirLight.Color, 1.0) * (1 - shadow);
+//    vec3 lightPos = transpose(mat3(invView)) * normalize(dirLight.Direction);
+//    Lo += LightCalculation(V, N, albedo, roughness, metallic, F0, lightPos, dirLight.Color, 1.0) * (1 - shadow);
 
     // ambient lighting (we now use IBL as the ambient term)
-    vec3 kS = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+    vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+
+    vec3 kS = F;
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
-    vec3 irradiance = texture(irradianceMap, N).rgb;
+    vec3 irradiance = texture(irradianceMap, wcNormal).rgb;
     vec3 diffuse      = irradiance * albedo;
-    vec3 ambient = (kD * diffuse) * ao;
+
+    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum
+    // approximation to get the IBL specular part.
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
+    vec2 brdf  = texture(brdfLUT, vec2(max(dot(wcNormal, wcEyeDir), 0.0), roughness)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+    vec3 ambient = (kD * diffuse + specular) * ao;
 
     FragColor   = vec4(ambient + Lo ,1);
 }

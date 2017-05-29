@@ -6,10 +6,10 @@ func PBRLevel(graph SceneNode) {
 	{
 		meshes := LoadModel("models/cube", TextureMesh)
 
-		albTexture := GetTexture(Albedo, "sculptedfloorboards1/sculptedfloorboards1_basecolor.png", true)
-		metallicTexture := GetTexture(Metallic, "sculptedfloorboards1/sculptedfloorboards1_metalness.png", false)
-		normalTexture := GetTexture(Normal, "sculptedfloorboards1/sculptedfloorboards1_normal.png", false)
-		roughnessTexture := GetTexture(Roughness, "sculptedfloorboards1/sculptedfloorboards1_roughness.png", false)
+		albTexture := GetTexture(Albedo, "rock_floor/Base_Color.png", true)
+		metallicTexture := GetTexture(Metallic, "rock_floor/Metallic.png", false)
+		normalTexture := GetTexture(Normal, "rock_floor/Normal.png", false)
+		roughnessTexture := GetTexture(Roughness, "rock_floor/Roughness.png", false)
 
 		for _, mesh := range meshes {
 			mesh.Textures = append(mesh.Textures, albTexture)
@@ -26,15 +26,16 @@ func PBRLevel(graph SceneNode) {
 			}
 		}
 	}
-
-	meshes := LoadModel("models/ico", MaterialMesh)
-	for _, mesh := range meshes {
-		mesh.Albedo = [3]float32{1, 0, 0}
-		mesh.Metallic = 0.01
-		mesh.Roughness = 0.8
+	{
+		meshes := LoadModel("models/ico", MaterialMesh)
+		for _, mesh := range meshes {
+			mesh.Albedo = [3]float32{1, 0, 0}
+			mesh.Metallic = 0.01
+			mesh.Roughness = 0.8
+		}
+		t := mgl32.Translate3D(25, 5, -1)
+		graph.Add(meshes, t)
 	}
-	t := mgl32.Translate3D(25, 5, -1)
-	graph.Add(meshes, t)
 
 	{
 
@@ -72,7 +73,7 @@ func PBRLevel(graph SceneNode) {
 		graph.Add(meshes, t)
 	}
 
-	// green
+	// green sphere
 	{
 		meshes := LoadModel("models/sphere", MaterialMesh)
 		for _, mesh := range meshes {
@@ -84,6 +85,19 @@ func PBRLevel(graph SceneNode) {
 		graph.Add(meshes, t)
 	}
 
+	// green cube
+	{
+		meshes := LoadModel("models/cube", MaterialMesh)
+		for _, mesh := range meshes {
+			mesh.Albedo = [3]float32{0, 1, 0}
+			mesh.Metallic = 0.01
+			mesh.Roughness = 0.1
+		}
+
+		t := mgl32.Translate3D(0, 1, 10)
+		graph.Add(meshes, t)
+	}
+
 	{
 		meshes := LoadModel("models/sphere", TextureMesh)
 		albTexture := GetTexture(Albedo, "scuffed-plastic/scuffed-plastic6-alb.png", true)
@@ -92,9 +106,6 @@ func PBRLevel(graph SceneNode) {
 			mesh.Textures = append(mesh.Textures, plasticMetTex)
 			mesh.Textures = append(mesh.Textures, plasticRoughTex)
 			mesh.Textures = append(mesh.Textures, plasticNormTex)
-			//mesh.Albedo = [3]float32{0, 0.12, 0}
-			//mesh.Metallic = 0.01
-			//mesh.Roughness = 0.1
 		}
 		t := mgl32.Translate3D(-8, 1, 16)
 		t = t.Mul4(mgl32.HomogRotate3D(float32(2)*0.314*4, mgl32.Vec3{0, 1, 0}))
@@ -109,9 +120,6 @@ func PBRLevel(graph SceneNode) {
 			mesh.Textures = append(mesh.Textures, plasticMetTex)
 			mesh.Textures = append(mesh.Textures, plasticRoughTex)
 			mesh.Textures = append(mesh.Textures, plasticNormTex)
-			//mesh.Albedo = [3]float32{0, 0, 0.12}
-			//mesh.Metallic = 0.01
-			//mesh.Roughness = 0.1
 		}
 		t := mgl32.Translate3D(-8, 1, 20)
 		t = t.Mul4(mgl32.HomogRotate3D(float32(3)*0.314*4, mgl32.Vec3{0, 1, 0}))
@@ -146,29 +154,4 @@ func PBRLevel(graph SceneNode) {
 		}
 	}
 
-	//{
-	//	meshes := LoadModel("models/statue", MaterialMesh)
-	//	for _, mesh := range meshes {
-	//		mesh.Albedo = [3]float32{1, 1, 1}
-	//		mesh.Metallic = 0.0
-	//		mesh.Roughness = 0.99
-	//	}
-	//	t := mgl32.Translate3D(0, -0.1, -10)
-	//	t = t.Mul4(mgl32.Scale3D(10, 10, 10))
-	//	//t = t.Mul4(mgl32.HomogRotate3D(-x*3, mgl32.Vec3{1, 0, 0}))
-	//	graph.Add(meshes, t)
-	//}
-
-	//{
-	//	meshes := LoadModel("models/india-buddha", MaterialMesh)
-	//	for _, mesh := range meshes {
-	//		mesh.Albedo = [3]float32{1, 0.766, 0.336}
-	//		mesh.Metallic = 1.0
-	//		mesh.Roughness = 0.4
-	//	}
-	//	t := mgl32.Translate3D(-10, 0, 26)
-	//	t = t.Mul4(mgl32.HomogRotate3D(3.14, mgl32.Vec3{0, 1, 0}))
-	//	t = t.Mul4(mgl32.Scale3D(1, 1, 1))
-	//	graph.Add(meshes, t)
-	//}
 }

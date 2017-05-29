@@ -70,7 +70,7 @@ func NewScene() *Scene {
 	for i := 0; i < maxPointLights; i++ {
 		s.pointLights = append(s.pointLights, &PointLight{
 			Position: [3]float32{rand.Float32()*60 - 30, rand.Float32()*5 + 1, rand.Float32()*60 - 30},
-			Color:    [3]float32{rand.Float32()*1 + 0.5, rand.Float32()*1 + 0.5, rand.Float32()*1 + 0.5},
+			Color:    [3]float32{rand.Float32() * 10, rand.Float32() * 10, rand.Float32() * 10},
 			Constant: att.Constant,
 			Linear:   att.Linear,
 			Exp:      att.Exp,
@@ -125,6 +125,8 @@ func (s *Scene) Init() {
 	s.exposure = NewAverageExposure()
 
 	s.skybox = shaders.NewSkybox()
+	//s.skyBoxTexture = GetHDRTexture("Road_to_MonumentValley_Ref.hdr")
+	//s.skyBoxTexture = GetHDRTexture("Newport_Loft_Ref.hdr")
 	s.skyBoxTexture = GetHDRTexture("woods_1k.hdr")
 	s.cubeMap = NewCubeMap(512, 512)
 
@@ -303,6 +305,14 @@ func (s *Scene) Render() {
 		gl.Uniform1i(s.dirLightShader.LocIrradianceMap, 5)
 		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.irradianceMap)
 
+		gl.ActiveTexture(gl.TEXTURE6)
+		gl.Uniform1i(s.dirLightShader.LocPrefilterMap, 6)
+		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.prefilterMap)
+
+		gl.ActiveTexture(gl.TEXTURE7)
+		gl.Uniform1i(s.dirLightShader.LocPbrdfLUT, 7)
+		gl.BindTexture(gl.TEXTURE_2D, s.cubeMap.brdfLUTTexture)
+
 		gl.UniformMatrix4fv(s.dirLightShader.LocLightProjection, 1, false, &lightProjection[0])
 		gl.UniformMatrix4fv(s.dirLightShader.LocLightView, 1, false, &lightView[0])
 		gl.Uniform3fv(s.dirLightShader.LocLightDirection, 1, &directionLight.Direction[0])
@@ -324,7 +334,7 @@ func (s *Scene) Render() {
 		gl.BindVertexArray(s.skybox.SkyboxVAO)
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.Uniform1i(s.skybox.LocScreenTexture, 0)
-		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.radianceMap)
+		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.envCubeMap)
 		gl.DrawArrays(gl.TRIANGLES, 0, 36)
 	}
 

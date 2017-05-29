@@ -12,6 +12,8 @@ func NewDirectionalLight() *DirectionalLight {
 		LocGAlbedo:           loc(c, "gAlbedoSpec"),
 		LocGAmbientOcclusion: loc(c, "gAmbientOcclusion"),
 		LocIrradianceMap:     loc(c, "irradianceMap"),
+		LocPrefilterMap:      loc(c, "prefilterMap"),
+		LocPbrdfLUT:          loc(c, "brdfLUT"),
 
 		LocLightDirection: loc(c, "dirLight.Direction"),
 		LocLightColor:     loc(c, "dirLight.Color"),
@@ -36,6 +38,8 @@ type DirectionalLight struct {
 	LocGAlbedo           int32
 	LocGAmbientOcclusion int32
 	LocIrradianceMap     int32
+	LocPrefilterMap      int32
+	LocPbrdfLUT          int32
 
 	LocLightDirection  int32
 	LocLightColor      int32
