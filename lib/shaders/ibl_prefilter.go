@@ -1,19 +1,21 @@
 package shaders
 
-type Irradiance struct {
+type IBLPreFilter struct {
 	Program           uint32
 	LocEnvironmentMap int32
 	LocProjection     int32
 	LocView           int32
+	LocRoughness      int32
 }
 
-func NewIrradiance() *Irradiance {
-	c := buildShader("equi", "equi_irradiance")
+func NewIBLPrefilter() *IBLPreFilter {
+	c := buildShader("ibl_cubemap", "ibl_prefilter")
 
-	return &Irradiance{
+	return &IBLPreFilter{
 		Program:           c,
 		LocEnvironmentMap: loc(c, "environmentMap"),
 		LocProjection:     loc(c, "projection"),
 		LocView:           loc(c, "view"),
+		LocRoughness:      loc(c, "roughness"),
 	}
 }

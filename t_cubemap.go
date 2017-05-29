@@ -15,24 +15,24 @@ type CubeMap struct {
 	width, height                  int32
 	fbo                            uint32
 	rbo                            uint32
-	equirectangularToCubemapShader *shaders.HDRCube
+	equirectangularToCubemapShader *shaders.EquiRectToCubeMap
 	envCubeMap                     uint32
-	irradianceShader               *shaders.Irradiance
+	irradianceShader               *shaders.IBLIrradiance
 	irradianceMap                  uint32
 	prefilterMap                   uint32
-	prefilterShader                *shaders.Prefilter
+	prefilterShader                *shaders.IBLPreFilter
 	brdfLUTTexture                 uint32
-	brdfShader                     *shaders.Brdf
+	brdfShader                     *shaders.IBLBrdf
 }
 
 func NewCubeMap(width, height int32) *CubeMap {
 	cube := &CubeMap{
 		width:  width,
 		height: height,
-		equirectangularToCubemapShader: shaders.NewHDRCube(),
-		irradianceShader:               shaders.NewIrradiance(),
-		prefilterShader:                shaders.NewPrefilter(),
-		brdfShader:                     shaders.NewBrdf(),
+		equirectangularToCubemapShader: shaders.NewEquiRectToCubeMap(),
+		irradianceShader:               shaders.NewIBLIrradiance(),
+		prefilterShader:                shaders.NewIBLPrefilter(),
+		brdfShader:                     shaders.NewIBLBrdf(),
 	}
 
 	gl.Enable(gl.TEXTURE_CUBE_MAP_SEAMLESS)

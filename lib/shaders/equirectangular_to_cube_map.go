@@ -1,16 +1,16 @@
 package shaders
 
-type HDRCube struct {
+type EquiRectToCubeMap struct {
 	Program               uint32
 	LocEquirectangularMap int32
 	LocProjection         int32
 	LocView               int32
 }
 
-func NewHDRCube() *HDRCube {
-	c := buildShader("equi", "equi")
+func NewEquiRectToCubeMap() *EquiRectToCubeMap {
+	c := buildShader("ibl_cubemap", "equirectangular_to_cubemap")
 
-	return &HDRCube{
+	return &EquiRectToCubeMap{
 		Program:               c,
 		LocEquirectangularMap: loc(c, "equirectangularMap"),
 		LocProjection:         loc(c, "projection"),
