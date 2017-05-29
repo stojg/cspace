@@ -34,7 +34,7 @@ var currentNumLights = 0
 
 var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{-80, 60, -100}),
-	Color:     [3]float32{3, 3, 3},
+	Color:     [3]float32{20, 20, 20},
 }
 
 func NewScene() *Scene {
@@ -125,8 +125,6 @@ func (s *Scene) Init() {
 	s.exposure = NewAverageExposure()
 
 	s.skybox = shaders.NewSkybox()
-	//s.skyBoxTexture = GetHDRTexture("Road_to_MonumentValley_Ref.hdr")
-	//s.skyBoxTexture = GetHDRTexture("Newport_Loft_Ref.hdr")
 	s.skyBoxTexture = GetHDRTexture("woods_1k.hdr")
 	s.cubeMap = NewCubeMap(512, 512)
 
@@ -334,7 +332,9 @@ func (s *Scene) Render() {
 		gl.BindVertexArray(s.skybox.SkyboxVAO)
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.Uniform1i(s.skybox.LocScreenTexture, 0)
-		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.envCubeMap)
+		//gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.envCubeMap)
+		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.irradianceMap)
+		//gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.prefilterMap)
 		gl.DrawArrays(gl.TRIANGLES, 0, 36)
 	}
 
@@ -365,7 +365,6 @@ func (s *Scene) Render() {
 
 	exp := s.exposure.Exposure(out)
 
-	//exp := float32(1)
 	// do the final rendering to the backbuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 	// taking care of retina having more actual pixels
