@@ -5,7 +5,6 @@ layout (location = 1) out vec4 gAlbedoMetallic;
 
 in vec2 TexCoords;
 in vec3 Normal;
-in vec3 Tangent;
 
 struct Material {
     vec3 albedo;

@@ -5,17 +5,7 @@ layout (location = 1) out vec4 gAlbedoMetallic;
 
 in vec2 TexCoords;
 in vec3 Normal;
-in vec3 Tangent;
 in mat3 TBN;
-
-layout (std140) uniform Matrices
-{
-    mat4 projection;
-    mat4 view;
-    mat4 invProjection;
-    mat4 invView;
-    vec3 cameraPos;
-};
 
 struct Material {
     sampler2D albedo;
@@ -25,12 +15,12 @@ struct Material {
 };
 uniform Material mat;
 
-vec3 CalcBumpedNormal(vec3 normal, vec3 tangent);
+vec3 CalcBumpedNormal(vec3 normal);
 
 void main()
 {
     // store the per-fragment normals
-    gNormalRoughness.xyz = CalcBumpedNormal(Normal, Tangent);
+    gNormalRoughness.xyz = CalcBumpedNormal(Normal);
     // store the per-fragment roughness
     gNormalRoughness.w = texture(mat.roughness, TexCoords).r;
 
@@ -40,9 +30,9 @@ void main()
     gAlbedoMetallic.a = texture(mat.metallic, TexCoords).r;
 }
 
-vec3 CalcBumpedNormal(vec3 normal, vec3 tangent)
+vec3 CalcBumpedNormal(vec3 normal)
 {
     vec3 BumpMapNormal = texture(mat.normal, TexCoords).xyz;
     BumpMapNormal = 2.0 * BumpMapNormal - vec3(1.0);
-    return (vec4(normalize(TBN * BumpMapNormal),1)).xyz;
+    return normalize(TBN * BumpMapNormal);
 }

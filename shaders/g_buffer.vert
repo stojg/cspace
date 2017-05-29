@@ -7,7 +7,6 @@ layout (location = 3) in vec3 tangent;
 
 out vec2 TexCoords;
 out vec3 Normal;
-out vec3 Tangent;
 
 layout (std140) uniform Matrices
 {
@@ -22,10 +21,8 @@ uniform mat4 model;
 
 void main()
 {
-    mat4 mvp = projection * view * model;
-    gl_Position = mvp * vec4(position, 1.0);
-
+    mat4 vm = view * model;
+    gl_Position = projection * vm * vec4(position, 1.0);
     TexCoords = texCoords;
-    Normal = transpose(inverse(mat3(view * model))) * normal;
-    Tangent = normalize(vec3(model * vec4(tangent,   0.0)));
+    Normal = transpose(inverse(mat3(vm))) * normal;
 }
