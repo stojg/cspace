@@ -65,8 +65,8 @@ void main()
     F0      = mix(F0, albedo, metallic);
 
     // light calculations start here
-    //vec3 lightPos = transpose(mat3(invView)) * normalize(dirLight.Direction);
-    //Lo += LightCalculation(V, N, albedo, roughness, metallic, F0, lightPos, dirLight.Color, 1.0) * (1 - shadow);
+    vec3 lightPos = transpose(mat3(invView)) * normalize(dirLight.Direction);
+    Lo += LightCalculation(V, N, albedo, roughness, metallic, F0, lightPos, dirLight.Color, 1.0) * (1 - shadow);
 
     // ambient lighting (we now use IBL as the ambient term)
     vec3 kS = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
