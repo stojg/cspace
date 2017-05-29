@@ -30,6 +30,8 @@ float bias = 0.025;
 // tile noise texture over screen based on screen dimensions divided by noise size
 vec2 noiseScale = gScreenSize / 4.0;
 
+vec2 TexCoords = gl_FragCoord.xy / gScreenSize;
+
 vec3 ViewPosFromDepth(float depth, vec2 TexCoords);
 
 void main() {
@@ -39,23 +41,22 @@ void main() {
         return;
     }
 
-    vec2 TexCoords = gl_FragCoord.xy / gScreenSize;
     float depth = texture(gDepth, TexCoords).x;
     vec3 fragPos = ViewPosFromDepth(depth, TexCoords).xyz;
 
-     vec3 normal = texture(gNormal, TexCoords).rgb;
-     vec3 randomVec = normalize(texture(texNoise, TexCoords * noiseScale).xyz);
+    vec3 normal = texture(gNormal, TexCoords).rgb;
+    vec3 randomVec = normalize(texture(texNoise, TexCoords * noiseScale).xyz);
     // create TBN change-of-basis matrix: from tangent-space to view-space
-     vec3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
-     vec3 bitangent = cross(normal, tangent);
-     mat3 TBN = mat3(tangent, bitangent, normal);
+    vec3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
+    vec3 bitangent = cross(normal, tangent);
+    mat3 TBN = mat3(tangent, bitangent, normal);
 
     // iterate over the sample kernel and calculate occlusion factor
     float occlusion = 0.0;
 
     for(int i = 0; i < kernelSize; ++i) {
         // get sample position
-         vec3 sampl = TBN * samples[i]; // from tangent to view-space
+        vec3 sampl = TBN * samples[i]; // from tangent to view-space
         sampl = sampl * radius + fragPos;
         // project sample position:
         vec4 offset = vec4(sampl, 1.0);
@@ -69,15 +70,12 @@ void main() {
         float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
         occlusion       += (sampleDepth >= sampl.z + bias ? 1.0 : 0.0) * rangeCheck;
     }
-    occlusion = 1.0 - (occlusion / kernelSize);
-    FragColor = occlusion;
-    // FragColor = pow(occlusion, 3);
+    FragColor = 1.0 - (occlusion / kernelSize);
 }
 
 vec3 ViewPosFromDepth(float depth, vec2 TexCoords) {
-    float z = depth * 2.0 - 1.0;
-    vec4 clipSpacePosition = vec4(TexCoords * 2.0 - 1.0, z, 1.0);
+    vec4 clipSpacePosition = vec4(TexCoords * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
     vec4 viewSpacePosition = invProjection * clipSpacePosition;
-    viewSpacePosition /= viewSpacePosition.w;
-    return viewSpacePosition.xyz;
+    return (viewSpacePosition /= viewSpacePosition.w).xyz;
 }
+

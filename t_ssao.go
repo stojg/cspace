@@ -22,10 +22,10 @@ type SsaoFBO struct {
 	Kernel [64][3]float32
 }
 
-func NewSSAO() *SsaoFBO {
+func NewSSAO(width, height int32) *SsaoFBO {
 	ssao := &SsaoFBO{
-		Width:  windowWidth,
-		Height: windowHeight,
+		Width:  width,
+		Height: height,
 	}
 
 	gl.GenFramebuffers(1, &ssao.fbo)
@@ -43,7 +43,7 @@ func NewSSAO() *SsaoFBO {
 
 	gl.GenTextures(1, &ssao.outTexture)
 	gl.BindTexture(gl.TEXTURE_2D, ssao.outTexture)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, ssao.Width, ssao.Height, 0, gl.RGB, gl.UNSIGNED_INT, nil)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, windowWidth, windowHeight, 0, gl.RGB, gl.UNSIGNED_INT, nil)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 
