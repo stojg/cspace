@@ -136,6 +136,23 @@ func chkError(name string) {
 	panic(name)
 }
 
+func chkFramebuffer() {
+	if s := gl.CheckFramebufferStatus(gl.FRAMEBUFFER); s != gl.FRAMEBUFFER_COMPLETE {
+		switch s {
+		case gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+			panic("Framebuffer incomplete: No image is attached to FBO")
+		case gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+			panic("Framebuffer incomplete: Attachment is NOT complete")
+		case gl.FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+			panic("Framebuffer incomplete: Draw buffer")
+		case gl.FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+			panic("Framebuffer incomplete: Read buffer")
+		default:
+			panic(fmt.Sprintf("FRAMEBUFFER_COMPLETE error, s: 0x%x\n", s))
+		}
+	}
+}
+
 func restartLog() error {
 	f, err := os.Create(logFile)
 	if err != nil {

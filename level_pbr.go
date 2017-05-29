@@ -4,7 +4,7 @@ import "github.com/go-gl/mathgl/mgl32"
 
 func PBRLevel(graph SceneNode) {
 	{
-		meshes := LoadModel("models/cube", TextureMesh)
+		meshes := LoadModel("models/cube", TexturedMesh)
 
 		albTexture := GetTexture(Albedo, "rock_floor/Base_Color.png", true)
 		metallicTexture := GetTexture(Metallic, "rock_floor/Metallic.png", false)
@@ -44,7 +44,7 @@ func PBRLevel(graph SceneNode) {
 		normalTexture := GetTexture(Normal, "streaked-marble/streaked-marble-normal.png", false)
 		roughnessTexture := GetTexture(Roughness, "streaked-marble/streaked-marble-roughness1.png", false)
 
-		meshes := LoadModel("models/winged_victory", TextureMesh)
+		meshes := LoadModel("models/winged_victory", TexturedMesh)
 		for _, mesh := range meshes {
 			mesh.Textures = append(mesh.Textures, albTexture)
 			mesh.Textures = append(mesh.Textures, metallicTexture)
@@ -60,7 +60,7 @@ func PBRLevel(graph SceneNode) {
 	plasticNormTex := GetTexture(Normal, "scuffed-plastic/scuffed-plastic-normal.png", false)
 	plasticRoughTex := GetTexture(Roughness, "scuffed-plastic/scuffed-plastic-rough.png", false)
 	{
-		meshes := LoadModel("models/sphere", TextureMesh)
+		meshes := LoadModel("models/sphere", TexturedMesh)
 		albTexture := GetTexture(Albedo, "scuffed-plastic/scuffed-plastic4-alb.png", true)
 		for _, mesh := range meshes {
 			mesh.Textures = append(mesh.Textures, albTexture)
@@ -99,7 +99,7 @@ func PBRLevel(graph SceneNode) {
 	}
 
 	{
-		meshes := LoadModel("models/sphere", TextureMesh)
+		meshes := LoadModel("models/sphere", TexturedMesh)
 		albTexture := GetTexture(Albedo, "scuffed-plastic/scuffed-plastic6-alb.png", true)
 		for _, mesh := range meshes {
 			mesh.Textures = append(mesh.Textures, albTexture)
@@ -113,7 +113,7 @@ func PBRLevel(graph SceneNode) {
 	}
 
 	{
-		meshes := LoadModel("models/sphere", TextureMesh)
+		meshes := LoadModel("models/sphere", TexturedMesh)
 		albTexture := GetTexture(Albedo, "scuffed-plastic/scuffed-plastic-alb.png", true)
 		for _, mesh := range meshes {
 			mesh.Textures = append(mesh.Textures, albTexture)
@@ -128,7 +128,7 @@ func PBRLevel(graph SceneNode) {
 
 	{
 
-		meshes := LoadModel("models/sphere_bot", TextureMesh)
+		meshes := LoadModel("models/sphere_bot", TexturedMesh)
 		iAlb := GetTexture(Albedo, "sphere_bot/Robot_innerbody_Albedo.png", true)
 		iMet := GetTexture(Metallic, "sphere_bot/Robot_innerbody_Metallic.png", false)
 		iNorm := GetTexture(Normal, "sphere_bot/Robot_innerbody_Normal.png", false)

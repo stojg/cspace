@@ -111,7 +111,7 @@ var cubeVAO *Mesh
 // renderQuad renders a full screen quad
 func renderCube() {
 	if cubeVAO == nil {
-		meshes := LoadModel("models/cube", TextureMesh)
+		meshes := LoadModel("models/cube", TexturedMesh)
 		cubeVAO = meshes[0]
 	}
 	cubeVAO.Render()

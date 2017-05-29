@@ -8,7 +8,7 @@ import (
 type ShaderType int
 
 const (
-	TextureMesh ShaderType = iota
+	TexturedMesh ShaderType = iota
 	MaterialMesh
 )
 
@@ -16,7 +16,6 @@ type SceneNode interface {
 	SimpleRender(ModelShader)
 	Render(tShader *GbufferTShader, mShader *GbufferMShader)
 	Add(mesh []*Mesh, transform mgl32.Mat4)
-	Destroy()
 }
 
 func NewBaseNode() SceneNode {
@@ -38,7 +37,7 @@ func (n *BaseNode) Render(tShader *GbufferTShader, mShader *GbufferMShader) {
 	var mMeshes []*Node
 	children := n.Node.Children()
 	for _, child := range children {
-		if child.mesh.MeshType == TextureMesh {
+		if child.mesh.MeshType == TexturedMesh {
 			tMeshes = append(tMeshes, child)
 		} else if child.mesh.MeshType == MaterialMesh {
 			mMeshes = append(mMeshes, child)
@@ -47,18 +46,21 @@ func (n *BaseNode) Render(tShader *GbufferTShader, mShader *GbufferMShader) {
 
 	gl.UseProgram(tShader.Program())
 	for i := range tMeshes {
-		tMeshes[i].RenderTexture(tShader)
+		gl.UniformMatrix4fv(tShader.LocModel, 1, false, &tMeshes[i].transform[0])
+		tMeshes[i].mesh.setTextures(tShader)
+		tMeshes[i].mesh.Render()
 	}
 
 	gl.UseProgram(mShader.Program())
 	for i := range mMeshes {
-		mMeshes[i].RenderMaterial(mShader)
+		gl.UniformMatrix4fv(mShader.locModel, 1, false, &mMeshes[i].transform[0])
+		mMeshes[i].mesh.setMaterial(mShader)
+		mMeshes[i].mesh.Render()
 	}
 }
 
 func (n *BaseNode) SimpleRender(shader ModelShader) {
-	children := n.Node.Children()
-	for _, child := range children {
+	for _, child := range n.Node.Children() {
 		child.SimpleRender(shader)
 	}
 }
@@ -75,22 +77,6 @@ func (n *Node) SimpleRender(shader ModelShader) {
 	for _, child := range n.children {
 		child.SimpleRender(shader)
 	}
-}
-
-func (n *Node) RenderTexture(tShader *GbufferTShader) {
-	gl.UniformMatrix4fv(tShader.LocModel, 1, false, &n.transform[0])
-	n.mesh.setTextures(tShader)
-	n.mesh.Render()
-}
-
-func (n *Node) RenderMaterial(mShader *GbufferMShader) {
-	gl.UniformMatrix4fv(mShader.locModel, 1, false, &n.transform[0])
-	n.mesh.setMaterial(mShader)
-	n.mesh.Render()
-}
-
-func (n *Node) Destroy() {
-	n.children = make([]*Node, 0)
 }
 
 func (n *Node) Children() []*Node {

@@ -213,7 +213,7 @@ func (s *Scene) Render() {
 		gl.Uniform1i(s.ssao.shader.LocGDepth, 0)
 
 		gl.ActiveTexture(gl.TEXTURE1)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormal)
+		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormalRoughness)
 		gl.Uniform1i(s.ssao.shader.LocGNormal, 1)
 
 		gl.ActiveTexture(gl.TEXTURE2)
@@ -260,12 +260,12 @@ func (s *Scene) Render() {
 		gl.Uniform1i(s.pointLightShader.LocGDepth, 0)
 
 		gl.ActiveTexture(gl.TEXTURE1)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormal)
+		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormalRoughness)
 		gl.Uniform1i(s.pointLightShader.LocGNormal, 1)
 
 		gl.ActiveTexture(gl.TEXTURE2)
 		gl.Uniform1i(s.pointLightShader.LocGAlbedo, 2)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gAlbedoSpec)
+		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gAlbedoMetallic)
 
 		gl.ActiveTexture(gl.TEXTURE3)
 		gl.Uniform1i(s.pointLightShader.LocGAmbientOcclusion, 3)
@@ -285,11 +285,11 @@ func (s *Scene) Render() {
 
 		gl.ActiveTexture(gl.TEXTURE1)
 		gl.Uniform1i(s.dirLightShader.LocGNormal, 1)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormal)
+		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormalRoughness)
 
 		gl.ActiveTexture(gl.TEXTURE2)
 		gl.Uniform1i(s.dirLightShader.LocGAlbedo, 2)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gAlbedoSpec)
+		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gAlbedoMetallic)
 
 		gl.ActiveTexture(gl.TEXTURE3)
 		gl.Uniform1i(s.dirLightShader.LocShadowMap, 3)
@@ -382,10 +382,10 @@ func (s *Scene) Render() {
 
 	// and if debug is on, quad print them on top off everything
 	if showDebug {
-		DisplayColorTexBuffer(s.gBuffer.buffer.gAlbedoSpec)
+		DisplayColorTexBuffer(s.gBuffer.buffer.gAlbedoMetallic)
 		DisplayDepthbufferTexture(s.gBuffer.buffer.gDepth)
 		DisplayDepthbufferTexture(s.ssao.outTexture)
-		DisplayNormalBufferTexture(s.gBuffer.buffer.gNormal)
+		DisplayNormalBufferTexture(s.gBuffer.buffer.gNormalRoughness)
 		//DisplayDepthbufferTexture(s.shadow.depthMap)
 	}
 
