@@ -24,8 +24,8 @@ var windowHeight int32 = 720
 var viewPortWidth int32
 var viewPortHeight int32
 
-var bloomOn = true
-var ssaoOn = true
+var bloomOn = true // 2ms
+var ssaoOn = true  // 8ms ?
 var dirLightOn = true
 var fxaaOn = false
 var showDebug = false
@@ -34,7 +34,7 @@ var currentNumLights = 0
 
 var directionLight = &DirectionalLight{
 	Direction: normalise([3]float32{-80, 60, -100}),
-	Color:     [3]float32{1, 1, 1},
+	Color:     [3]float32{3, 3, 3},
 }
 
 func NewScene() *Scene {
@@ -120,12 +120,11 @@ func (s *Scene) Init() {
 	s.dirLightShader = shaders.NewDirectionalLight()
 	s.pointLightShader = shaders.NewPointLightShader(maxPointLights)
 	s.hdrShader = shaders.NewHDR()
-	s.ssao = NewSSAO()
+	s.ssao = NewSSAO(windowWidth/2, windowHeight/2)
 	s.hdr = NewHDRFBO()
 	s.exposure = NewAverageExposure()
 
 	s.skybox = shaders.NewSkybox()
-	//s.skyBoxTexture = GetHDRTexture("Road_to_MonumentValley_Ref.hdr")
 	s.skyBoxTexture = GetHDRTexture("woods_1k.hdr")
 	s.cubeMap = NewCubeMap(512, 512)
 
@@ -207,18 +206,16 @@ func (s *Scene) Render() {
 		for i, sample := range s.ssao.Kernel {
 			gl.Uniform3f(s.ssao.shader.LocSamples[i], sample[0], sample[1], sample[2])
 		}
-		gl.Uniform2f(s.ssao.shader.LocScreenSize, float32(windowWidth), float32(windowHeight))
+		gl.Uniform2f(s.ssao.shader.LocScreenSize, float32(s.ssao.Width), float32(s.ssao.Height))
 
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gDepth)
 		gl.Uniform1i(s.ssao.shader.LocGDepth, 0)
 
-		// see @todo in the shader
 		gl.ActiveTexture(gl.TEXTURE1)
 		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormal)
 		gl.Uniform1i(s.ssao.shader.LocGNormal, 1)
 
-		// see @todo in the shader
 		gl.ActiveTexture(gl.TEXTURE2)
 		gl.BindTexture(gl.TEXTURE_2D, s.ssao.noiseTexture)
 		gl.Uniform1i(s.ssao.shader.LocTexNoise, 2)
