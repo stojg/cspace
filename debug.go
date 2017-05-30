@@ -214,7 +214,7 @@ func fpsCounter(window *glfw.Window) {
 		fpsPrevSeconds = currentSeconds
 		fps := (float64(fpsFrameCount) / elapsedSeconds)
 		ms := 1000 / fps
-		msg := fmt.Sprintf("cspace @ %.2fms", ms)
+		msg := fmt.Sprintf("cspace @ %.2fms / %.0f", ms, fps)
 		window.SetTitle(msg)
 		fmt.Println(msg)
 		fpsFrameCount = 0
