@@ -16,16 +16,15 @@ uniform sampler2D gNormal;
 uniform sampler2D texNoise;
 
 uniform vec2 gScreenSize;
-uniform mat4 viewMatrixInv;
 
 uniform int enabled = 0;
 
 uniform vec3 samples[64];
 
 // parameters (you'd probably want to use them as uniforms to more easily tweak the effect)
-int kernelSize = 64;
-float radius = 0.4;
-float bias = 0.025;
+const int kernelSize = 64;
+const float radius = 0.9;
+const float bias = 0.025;
 
 // tile noise texture over screen based on screen dimensions divided by noise size
 vec2 noiseScale = gScreenSize / 4.0;

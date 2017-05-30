@@ -43,7 +43,7 @@ func NewSSAO(width, height int32) *SsaoFBO {
 
 	gl.GenTextures(1, &ssao.outTexture)
 	gl.BindTexture(gl.TEXTURE_2D, ssao.outTexture)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, windowWidth, windowHeight, 0, gl.RGB, gl.UNSIGNED_INT, nil)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, ssao.Width, ssao.Height, 0, gl.RGB, gl.UNSIGNED_INT, nil)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 
@@ -96,7 +96,6 @@ func NewSSAO(width, height int32) *SsaoFBO {
 
 	ssao.shader = shaders.NewSSAO()
 	ssao.blurShader = shaders.NewBlur()
-	chkError("Shader?")
 	return ssao
 }
 
