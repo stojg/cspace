@@ -32,3 +32,7 @@ func GLTextureRGB16F(textureID *uint32, width, height int32, filter, wrap int32,
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrap)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrap)
 }
+
+func Lerp(a, b, f float32) float32 {
+	return a + f*(b-a)
+}

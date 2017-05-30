@@ -98,7 +98,7 @@ func (a *AverageExposure) Exposure(inTexture uint32) float32 {
 	} else if lum > 0.9 {
 		lum = 0.9
 	}
-	a.exposure = lerp(a.exposure, 0.5/lum, 0.2) // slowly adjust exposure based on average brightness
+	a.exposure = Lerp(a.exposure, 0.5/lum, 0.2) // slowly adjust exposure based on average brightness
 
 	for i := 0; i < 2; i++ {
 		// Reset color buffer dimensions

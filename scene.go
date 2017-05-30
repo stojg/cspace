@@ -97,7 +97,7 @@ type Scene struct {
 
 	pointLightShader *shaders.PointLight
 	dirLightShader   *shaders.DirectionalLight
-	hdrShader        *shaders.HDR
+	toneShader       *shaders.HDR
 	lightBoxShader   *shaders.Emissive
 
 	pointLights []*PointLight
@@ -118,7 +118,7 @@ func (s *Scene) Init() {
 	s.stencilShader = shaders.NewStencil()
 	s.dirLightShader = shaders.NewDirectionalLight()
 	s.pointLightShader = shaders.NewPointLightShader(maxPointLights)
-	s.hdrShader = shaders.NewHDR()
+	s.toneShader = shaders.NewHDR()
 	s.bloom = NewBloomEffect(windowWidth/2, windowHeight/2)
 	s.ssao = NewSSAO(windowWidth/2, windowHeight/2)
 	s.hdr = NewHDRFBO()
@@ -191,34 +191,7 @@ func (s *Scene) Render() {
 	// we wont be needing the depth tests for until we start a forward rendering again
 	gl.Disable(gl.DEPTH_TEST)
 
-	{ // screen space ambient occlusion (SSAO)
-		gl.BindFramebuffer(gl.FRAMEBUFFER, s.ssao.fbo)
-		gl.DrawBuffer(gl.COLOR_ATTACHMENT0)
-		gl.UseProgram(s.ssao.shader.Program)
-
-		if ssaoOn {
-			gl.Uniform1i(s.ssao.shader.LocEnabled, 1)
-		} else {
-			gl.Uniform1i(s.ssao.shader.LocEnabled, 0)
-		}
-		// Send kernel (samples)
-		for i, sample := range s.ssao.Kernel {
-			gl.Uniform3f(s.ssao.shader.LocSamples[i], sample[0], sample[1], sample[2])
-		}
-		gl.Uniform2f(s.ssao.shader.LocScreenSize, float32(s.ssao.Width), float32(s.ssao.Height))
-
-		GLBindTexture(0, s.ssao.shader.LocGDepth, s.gBuffer.buffer.gDepth)
-		GLBindTexture(1, s.ssao.shader.LocGNormal, s.gBuffer.buffer.gNormalRoughness)
-		GLBindTexture(2, s.ssao.shader.LocTexNoise, s.ssao.noiseTexture)
-
-		renderQuad()
-
-		gl.DrawBuffer(gl.COLOR_ATTACHMENT1)
-		gl.UseProgram(s.ssao.blurShader.Program)
-
-		GLBindTexture(0, s.ssao.blurShader.LocScreenTexture, s.ssao.texture)
-		renderQuad()
-	}
+	aoTexture := s.ssao.Render(s.gBuffer.buffer.gDepth, s.gBuffer.buffer.gNormalRoughness)
 
 	// start drawing light calculations into the finalTexture of the gbuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, s.gBuffer.buffer.fbo)
@@ -260,7 +233,7 @@ func (s *Scene) Render() {
 		GLBindTexture(1, s.dirLightShader.LocGNormal, s.gBuffer.buffer.gNormalRoughness)
 		GLBindTexture(2, s.dirLightShader.LocGAlbedo, s.gBuffer.buffer.gAlbedoMetallic)
 		GLBindTexture(3, s.dirLightShader.LocShadowMap, s.shadow.depthMap)
-		GLBindTexture(4, s.dirLightShader.LocGAmbientOcclusion, s.ssao.texture)
+		GLBindTexture(4, s.dirLightShader.LocGAmbientOcclusion, aoTexture)
 		GLBindCubeMap(5, s.dirLightShader.LocIrradianceMap, s.cubeMap.irradianceMap)
 		GLBindCubeMap(6, s.dirLightShader.LocPrefilterMap, s.cubeMap.prefilterMap)
 		GLBindTexture(7, s.dirLightShader.LocPbrdfLUT, s.cubeMap.brdfLUTTexture)
@@ -278,14 +251,14 @@ func (s *Scene) Render() {
 	// start a forward rendering pass from here
 	gl.Enable(gl.DEPTH_TEST)
 
+	// render the skybox
 	if dirLightOn {
 		gl.DepthFunc(gl.LEQUAL)
 		gl.UseProgram(s.skybox.Program)
 		skyboxView := view.Mat3().Mat4()
 		gl.UniformMatrix4fv(s.skybox.LocSkyView, 1, false, &skyboxView[0])
-		gl.BindVertexArray(s.skybox.SkyboxVAO)
-
 		GLBindCubeMap(0, s.skybox.LocScreenTexture, s.cubeMap.envCubeMap)
+		gl.BindVertexArray(s.skybox.SkyboxVAO)
 		gl.DrawArrays(gl.TRIANGLES, 0, 36)
 	}
 
@@ -301,8 +274,7 @@ func (s *Scene) Render() {
 			gl.UniformMatrix4fv(s.lightBoxShader.LocModel, 1, false, &model[0])
 			gl.Uniform3fv(s.lightBoxShader.LocColor, 1, &s.pointLights[i].Color[0])
 
-			gl.BindVertexArray(s.cubeMesh.vao)
-			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(s.cubeMesh.Vertices)))
+			renderCube()
 		}
 	}
 
@@ -313,28 +285,28 @@ func (s *Scene) Render() {
 	if bloomOn {
 		out = s.bloom.Render(out)
 	}
-	exp := s.exposure.Exposure(out)
+
+	exp := float32(1.3)
+	//exp := s.exposure.Exposure(out)
 
 	// do the final rendering to the backbuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
-	// taking care of retina having more actual pixels
+	// taking care of retina screens have different amount of pixel between actual viewport and requested window size
 	gl.Viewport(0, 0, viewPortWidth, viewPortHeight)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
-	gl.UseProgram(s.hdrShader.Program)
+	gl.UseProgram(s.toneShader.Program)
+	gl.Uniform1f(s.toneShader.LocExposure, exp)
 
-	gl.Uniform1f(s.hdrShader.LocExposure, exp)
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.Uniform1i(s.hdrShader.LocScreenTexture, 0)
-	gl.BindTexture(gl.TEXTURE_2D, out)
+	GLBindTexture(0, s.toneShader.LocScreenTexture, out)
+
 	renderQuad()
-	gl.BindTexture(gl.TEXTURE_2D, 0)
 
 	// and if debug is on, quad print them on top of everything
 	if showDebug {
 		DisplayColorTexBuffer(s.gBuffer.buffer.gAlbedoMetallic)
 		DisplayDepthbufferTexture(s.gBuffer.buffer.gDepth)
-		DisplayDepthbufferTexture(s.ssao.outTexture)
+		//DisplayDepthbufferTexture(s.ssao.outTexture)
 		DisplayNormalBufferTexture(s.gBuffer.buffer.gNormalRoughness)
 		//DisplayDepthbufferTexture(s.shadow.depthMap)
 	}

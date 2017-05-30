@@ -41,12 +41,10 @@ func DisplayColorTexBuffer(textureID uint32) {
 
 	GLBindTexture(0, 0, textureID)
 
-	//gl.BindTexture(gl.TEXTURE_2D, textureID)
 	gl.BindVertexArray(vaoDebugAlbedoTextureRect)
 
 	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
 	gl.BindVertexArray(0)
-
 	gl.UseProgram(0)
 }
 

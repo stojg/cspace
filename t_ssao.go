@@ -8,19 +8,6 @@ import (
 	"github.com/stojg/cspace/lib/shaders"
 )
 
-type SsaoFBO struct {
-	fbo          uint32
-	texture      uint32
-	noiseTexture uint32
-	outTexture   uint32
-	shader       *shaders.SSAO
-	blurShader   *shaders.Blur
-
-	Width  int32
-	Height int32
-	Kernel [64][3]float32
-}
-
 func NewSSAO(width, height int32) *SsaoFBO {
 	ssao := &SsaoFBO{
 		Width:  width,
@@ -54,7 +41,7 @@ func NewSSAO(width, height int32) *SsaoFBO {
 		smp = smp.Normalize()
 		scale := float32(i) / 64.0
 		//scale samples s.t. they're more aligned to center of kernel
-		scale = lerp(0.1, 1.0, scale*scale)
+		scale = Lerp(0.1, 1.0, scale*scale)
 		smp = smp.Mul(scale)
 		ssao.Kernel[i][0] = smp[0]
 		ssao.Kernel[i][1] = smp[1]
@@ -79,6 +66,46 @@ func NewSSAO(width, height int32) *SsaoFBO {
 	return ssao
 }
 
-func lerp(a, b, f float32) float32 {
-	return a + f*(b-a)
+type SsaoFBO struct {
+	fbo          uint32
+	texture      uint32
+	noiseTexture uint32
+	outTexture   uint32
+	shader       *shaders.SSAO
+	blurShader   *shaders.Blur
+
+	Width  int32
+	Height int32
+	Kernel [64][3]float32
+}
+
+func (s *SsaoFBO) Render(gDepthTexture, gNormalTexture uint32) uint32 {
+	gl.BindFramebuffer(gl.FRAMEBUFFER, s.fbo)
+	gl.DrawBuffer(gl.COLOR_ATTACHMENT0)
+	gl.UseProgram(s.shader.Program)
+
+	if ssaoOn {
+		gl.Uniform1i(s.shader.LocEnabled, 1)
+	} else {
+		gl.Uniform1i(s.shader.LocEnabled, 0)
+	}
+	// Send kernel (samples)
+	for i, sample := range s.Kernel {
+		gl.Uniform3f(s.shader.LocSamples[i], sample[0], sample[1], sample[2])
+	}
+	gl.Uniform2f(s.shader.LocScreenSize, float32(s.Width), float32(s.Height))
+
+	GLBindTexture(0, s.shader.LocGDepth, gDepthTexture)
+	GLBindTexture(1, s.shader.LocGNormal, gNormalTexture)
+	GLBindTexture(2, s.shader.LocTexNoise, s.noiseTexture)
+
+	renderQuad()
+
+	gl.DrawBuffer(gl.COLOR_ATTACHMENT1)
+	gl.UseProgram(s.blurShader.Program)
+
+	GLBindTexture(0, s.blurShader.LocScreenTexture, s.texture)
+	renderQuad()
+
+	return s.texture
 }
