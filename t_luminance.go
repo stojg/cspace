@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/stojg/cspace/lib/shaders"
 )
@@ -25,20 +23,12 @@ func NewAverageExposure() *AverageExposure {
 	gl.GenFramebuffers(1, &a.fbo)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, a.fbo)
 
-	gl.GenTextures(int32(len(a.textures)), &a.textures[0])
 	for i := 0; i < len(a.textures); i++ {
-		gl.BindTexture(gl.TEXTURE_2D, a.textures[i])
-		gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB16F, windowWidth, windowHeight, 0, gl.RGB, gl.FLOAT, nil)
-		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-		gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+		GLTextureRGB16F(&a.textures[i], windowWidth, windowHeight, gl.LINEAR, gl.CLAMP_TO_EDGE, nil)
 		gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0+uint32(i), gl.TEXTURE_2D, a.textures[i], 0)
 	}
 
-	if s := gl.CheckFramebufferStatus(gl.FRAMEBUFFER); s != gl.FRAMEBUFFER_COMPLETE {
-		panic(fmt.Sprintf("FRAMEBUFFER_COMPLETE error, s: 0x%x\n", s))
-	}
+	chkFramebuffer()
 
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 	return a
@@ -55,10 +45,9 @@ func (a *AverageExposure) Exposure(inTexture uint32) float32 {
 	gl.BindFramebuffer(gl.FRAMEBUFFER, a.fbo)
 	var attachments = [1]uint32{gl.COLOR_ATTACHMENT0}
 	gl.DrawBuffers(1, &attachments[0])
+
 	gl.UseProgram(a.passShader.Program)
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.Uniform1i(a.passShader.LocScreenTexture, 0)
-	gl.BindTexture(gl.TEXTURE_2D, inTexture)
+	GLBindTexture(0, a.passShader.LocScreenTexture, inTexture)
 	renderQuad()
 
 	texWidth := windowWidth

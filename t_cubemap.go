@@ -94,9 +94,8 @@ func (cube *CubeMap) Update(texture *Texture) {
 	gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, cube.rbo)
 
 	gl.UseProgram(cube.equirectangularToCubemapShader.Program)
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.Uniform1i(cube.equirectangularToCubemapShader.LocEquirectangularMap, 0)
-	gl.BindTexture(gl.TEXTURE_2D, texture.ID)
+
+	GLBindTexture(0, cube.equirectangularToCubemapShader.LocEquirectangularMap, texture.ID)
 
 	gl.UniformMatrix4fv(cube.equirectangularToCubemapShader.LocProjection, 1, false, &captureProjection[0])
 	gl.Viewport(0, 0, cube.width, cube.height)

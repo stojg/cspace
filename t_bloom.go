@@ -15,17 +15,9 @@ func NewBloomEffect(width, height int32) *BloomEffect {
 		gaussianShader: shaders.NewGaussian(),
 	}
 
-	gl.GenFramebuffers(1, &b.fbo)
-	gl.BindFramebuffer(gl.FRAMEBUFFER, b.fbo)
+	GLFramebuffer(&b.fbo)
 
-	gl.GenTextures(1, &b.texture)
-
-	gl.BindTexture(gl.TEXTURE_2D, b.texture)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB16F, windowWidth, windowHeight, 0, gl.RGB, gl.FLOAT, nil)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	GLTextureRGB16F(&b.texture, windowWidth, windowHeight, gl.LINEAR, gl.CLAMP_TO_EDGE, nil)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, b.texture, 0)
 
 	chkFramebuffer()
@@ -55,9 +47,7 @@ func (b *BloomEffect) Render(inTexture uint32) uint32 {
 
 	gl.UseProgram(b.bloomSeparator.Program)
 
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.Uniform1i(b.bloomSeparator.LocScreenTexture, 0)
-	gl.BindTexture(gl.TEXTURE_2D, inTexture)
+	GLBindTexture(0, b.bloomSeparator.LocScreenTexture, inTexture)
 	renderQuad()
 
 	// blur the bright part
@@ -77,13 +67,11 @@ func (b *BloomEffect) Render(inTexture uint32) uint32 {
 		} else {
 			horizontal = 0
 		}
-		gl.Uniform1i(b.gaussianShader.LocScreenTexture, 0)
-		gl.ActiveTexture(gl.TEXTURE0)
 		if firstIteration {
-			gl.BindTexture(gl.TEXTURE_2D, b.texture)
+			GLBindTexture(0, b.gaussianShader.LocScreenTexture, b.texture)
 			firstIteration = false
 		} else {
-			gl.BindTexture(gl.TEXTURE_2D, b.pingBuffers[horizontal].textures[0])
+			GLBindTexture(0, b.gaussianShader.LocScreenTexture, b.pingBuffers[horizontal].textures[0])
 		}
 		renderQuad()
 	}
@@ -94,13 +82,8 @@ func (b *BloomEffect) Render(inTexture uint32) uint32 {
 	gl.UseProgram(b.bloomBlend.Program)
 	gl.DrawBuffer(gl.COLOR_ATTACHMENT0)
 
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.Uniform1i(b.bloomBlend.LocScreenTexture, 0)
-	gl.BindTexture(gl.TEXTURE_2D, inTexture)
-
-	gl.ActiveTexture(gl.TEXTURE1)
-	gl.Uniform1i(b.bloomBlend.LocBloomTexture, 1)
-	gl.BindTexture(gl.TEXTURE_2D, b.pingBuffers[1].textures[0])
+	GLBindTexture(0, b.bloomBlend.LocScreenTexture, inTexture)
+	GLBindTexture(1, b.bloomBlend.LocBloomTexture, b.pingBuffers[1].textures[0])
 
 	renderQuad()
 

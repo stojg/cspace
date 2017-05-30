@@ -207,26 +207,16 @@ func (s *Scene) Render() {
 		}
 		gl.Uniform2f(s.ssao.shader.LocScreenSize, float32(s.ssao.Width), float32(s.ssao.Height))
 
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gDepth)
-		gl.Uniform1i(s.ssao.shader.LocGDepth, 0)
-
-		gl.ActiveTexture(gl.TEXTURE1)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormalRoughness)
-		gl.Uniform1i(s.ssao.shader.LocGNormal, 1)
-
-		gl.ActiveTexture(gl.TEXTURE2)
-		gl.BindTexture(gl.TEXTURE_2D, s.ssao.noiseTexture)
-		gl.Uniform1i(s.ssao.shader.LocTexNoise, 2)
+		GLBindTexture(0, s.ssao.shader.LocGDepth, s.gBuffer.buffer.gDepth)
+		GLBindTexture(1, s.ssao.shader.LocGNormal, s.gBuffer.buffer.gNormalRoughness)
+		GLBindTexture(2, s.ssao.shader.LocTexNoise, s.ssao.noiseTexture)
 
 		renderQuad()
 
 		gl.DrawBuffer(gl.COLOR_ATTACHMENT1)
 		gl.UseProgram(s.ssao.blurShader.Program)
 
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.Uniform1i(s.ssao.blurShader.LocScreenTexture, 0)
-		gl.BindTexture(gl.TEXTURE_2D, s.ssao.texture)
+		GLBindTexture(0, s.ssao.blurShader.LocScreenTexture, s.ssao.texture)
 		renderQuad()
 	}
 
@@ -253,21 +243,10 @@ func (s *Scene) Render() {
 			gl.Uniform1f(s.pointLightShader.LocLightQuadratic[i], s.pointLights[i].Exp)
 		}
 
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gDepth)
-		gl.Uniform1i(s.pointLightShader.LocGDepth, 0)
-
-		gl.ActiveTexture(gl.TEXTURE1)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormalRoughness)
-		gl.Uniform1i(s.pointLightShader.LocGNormal, 1)
-
-		gl.ActiveTexture(gl.TEXTURE2)
-		gl.Uniform1i(s.pointLightShader.LocGAlbedo, 2)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gAlbedoMetallic)
-
-		gl.ActiveTexture(gl.TEXTURE3)
-		gl.Uniform1i(s.pointLightShader.LocGAmbientOcclusion, 3)
-		gl.BindTexture(gl.TEXTURE_2D, s.ssao.texture)
+		GLBindTexture(0, s.pointLightShader.LocGDepth, s.gBuffer.buffer.gDepth)
+		GLBindTexture(1, s.pointLightShader.LocGNormal, s.gBuffer.buffer.gNormalRoughness)
+		GLBindTexture(2, s.pointLightShader.LocGAlbedo, s.gBuffer.buffer.gAlbedoMetallic)
+		GLBindTexture(3, s.pointLightShader.LocGAmbientOcclusion, s.ssao.texture)
 
 		gl.Uniform2f(s.pointLightShader.LocScreenSize, float32(windowWidth), float32(windowHeight))
 
@@ -277,37 +256,14 @@ func (s *Scene) Render() {
 	if dirLightOn { // Render the directional light, for now there is only one
 		gl.UseProgram(s.dirLightShader.Program)
 
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.Uniform1i(s.dirLightShader.LocGDepth, 0)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gDepth)
-
-		gl.ActiveTexture(gl.TEXTURE1)
-		gl.Uniform1i(s.dirLightShader.LocGNormal, 1)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gNormalRoughness)
-
-		gl.ActiveTexture(gl.TEXTURE2)
-		gl.Uniform1i(s.dirLightShader.LocGAlbedo, 2)
-		gl.BindTexture(gl.TEXTURE_2D, s.gBuffer.buffer.gAlbedoMetallic)
-
-		gl.ActiveTexture(gl.TEXTURE3)
-		gl.Uniform1i(s.dirLightShader.LocShadowMap, 3)
-		gl.BindTexture(gl.TEXTURE_2D, s.shadow.depthMap)
-
-		gl.ActiveTexture(gl.TEXTURE4)
-		gl.Uniform1i(s.dirLightShader.LocGAmbientOcclusion, 4)
-		gl.BindTexture(gl.TEXTURE_2D, s.ssao.texture)
-
-		gl.ActiveTexture(gl.TEXTURE5)
-		gl.Uniform1i(s.dirLightShader.LocIrradianceMap, 5)
-		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.irradianceMap)
-
-		gl.ActiveTexture(gl.TEXTURE6)
-		gl.Uniform1i(s.dirLightShader.LocPrefilterMap, 6)
-		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.prefilterMap)
-
-		gl.ActiveTexture(gl.TEXTURE7)
-		gl.Uniform1i(s.dirLightShader.LocPbrdfLUT, 7)
-		gl.BindTexture(gl.TEXTURE_2D, s.cubeMap.brdfLUTTexture)
+		GLBindTexture(0, s.dirLightShader.LocGDepth, s.gBuffer.buffer.gDepth)
+		GLBindTexture(1, s.dirLightShader.LocGNormal, s.gBuffer.buffer.gNormalRoughness)
+		GLBindTexture(2, s.dirLightShader.LocGAlbedo, s.gBuffer.buffer.gAlbedoMetallic)
+		GLBindTexture(3, s.dirLightShader.LocShadowMap, s.shadow.depthMap)
+		GLBindTexture(4, s.dirLightShader.LocGAmbientOcclusion, s.ssao.texture)
+		GLBindCubeMap(5, s.dirLightShader.LocIrradianceMap, s.cubeMap.irradianceMap)
+		GLBindCubeMap(6, s.dirLightShader.LocPrefilterMap, s.cubeMap.prefilterMap)
+		GLBindTexture(7, s.dirLightShader.LocPbrdfLUT, s.cubeMap.brdfLUTTexture)
 
 		gl.UniformMatrix4fv(s.dirLightShader.LocLightProjection, 1, false, &lightProjection[0])
 		gl.UniformMatrix4fv(s.dirLightShader.LocLightView, 1, false, &lightView[0])
@@ -328,11 +284,8 @@ func (s *Scene) Render() {
 		skyboxView := view.Mat3().Mat4()
 		gl.UniformMatrix4fv(s.skybox.LocSkyView, 1, false, &skyboxView[0])
 		gl.BindVertexArray(s.skybox.SkyboxVAO)
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.Uniform1i(s.skybox.LocScreenTexture, 0)
-		gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.envCubeMap)
-		//gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.irradianceMap)
-		//gl.BindTexture(gl.TEXTURE_CUBE_MAP, s.cubeMap.prefilterMap)
+
+		GLBindCubeMap(0, s.skybox.LocScreenTexture, s.cubeMap.envCubeMap)
 		gl.DrawArrays(gl.TRIANGLES, 0, 36)
 	}
 
@@ -360,8 +313,7 @@ func (s *Scene) Render() {
 	if bloomOn {
 		out = s.bloom.Render(out)
 	}
-	//exp := s.exposure.Exposure(out)
-	var exp float32 = 1.4
+	exp := s.exposure.Exposure(out)
 
 	// do the final rendering to the backbuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)

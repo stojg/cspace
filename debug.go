@@ -37,9 +37,11 @@ func DisplayColorTexBuffer(textureID uint32) {
 		shaderDisplayFBOOutput = NewDefaultShader("fbo_debug", "fbo_debug")
 	}
 
-	gl.ActiveTexture(gl.TEXTURE0)
 	shaderDisplayFBOOutput.Use()
-	gl.BindTexture(gl.TEXTURE_2D, textureID)
+
+	GLBindTexture(0, 0, textureID)
+
+	//gl.BindTexture(gl.TEXTURE_2D, textureID)
 	gl.BindVertexArray(vaoDebugAlbedoTextureRect)
 
 	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)

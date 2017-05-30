@@ -44,8 +44,6 @@ func renderFxaa(inTexture uint32) {
 	gl.Uniform1f(fxaaLocU_minReduce, u_minReduce)
 	gl.Uniform1f(fxaaLocU_mulReduce, u_mulReduce)
 	gl.Uniform1f(fxaaLocU_maxSpan, u_maxSpan)
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.Uniform1i(fxaaTextureloc, 0)
-	gl.BindTexture(gl.TEXTURE_2D, inTexture)
+	GLBindTexture(0, fxaaTextureloc, inTexture)
 	renderQuad()
 }

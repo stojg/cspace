@@ -52,9 +52,7 @@ func (s *Mesh) Render() {
 
 func (s *Mesh) setTextures(tShader *GbufferTShader) {
 	for i := range s.Textures {
-		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
-		gl.Uniform1i(tShader.TextureUniform(s.Textures[i].textureType), int32(i))
-		gl.BindTexture(gl.TEXTURE_2D, s.Textures[i].ID)
+		GLBindTexture(i, tShader.TextureUniform(s.Textures[i].textureType), s.Textures[i].ID)
 	}
 }
 
