@@ -304,10 +304,14 @@ func (s *Scene) Render() {
 
 	// and if debug is on, quad print them on top of everything
 	if showDebug {
-		DisplayColorTexBuffer(s.gBuffer.buffer.gAlbedoMetallic)
-		DisplayDepthbufferTexture(s.gBuffer.buffer.gDepth)
-		//DisplayDepthbufferTexture(s.ssao.outTexture)
 		DisplayNormalBufferTexture(s.gBuffer.buffer.gNormalRoughness)
+		DisplayAlbedoTexBuffer(s.gBuffer.buffer.gAlbedoMetallic)
+		DisplayDepthbufferTexture(s.gBuffer.buffer.gDepth)
+		DisplaySsaoTexture(s.ssao.outTexture)
+		DisplayShadowTexture(s.shadow.depthMap)
+		DisplayRoughnessTexture(s.gBuffer.buffer.gNormalRoughness)
+		DisplayMetallicTexture(s.gBuffer.buffer.gAlbedoMetallic)
+		DisplayBloomTexture(s.bloom.pingBuffers[1].textures[0])
 		//DisplayDepthbufferTexture(s.shadow.depthMap)
 	}
 

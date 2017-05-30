@@ -10,13 +10,11 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
-var shaderDisplayFBOOutput *DefaultShader
-var vaoDebugAlbedoTextureRect uint32
-var vaoDebugNormalTextureRect uint32
-var vaoDebugDepthTexturedRect uint32
+var albedoDebugShader *DefaultShader
+var vaoAlbedodoDebug uint32
 
-func DisplayColorTexBuffer(textureID uint32) {
-	if vaoDebugAlbedoTextureRect == 0 {
+func DisplayAlbedoTexBuffer(textureID uint32) {
+	if vaoAlbedodoDebug == 0 {
 		quadVertices := []float32{
 			0.0, 1, 0.0, 0.0, 1.0,
 			0.0, 0.5, 0.0, 0.0, 0.0,
@@ -24,8 +22,8 @@ func DisplayColorTexBuffer(textureID uint32) {
 			0.5, 0.5, 0.0, 1.0, 0.0,
 		}
 		// Setup plane VAO
-		gl.GenVertexArrays(1, &vaoDebugAlbedoTextureRect)
-		gl.BindVertexArray(vaoDebugAlbedoTextureRect)
+		gl.GenVertexArrays(1, &vaoAlbedodoDebug)
+		gl.BindVertexArray(vaoAlbedodoDebug)
 		var vbo uint32
 		gl.GenBuffers(1, &vbo)
 		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
@@ -34,19 +32,21 @@ func DisplayColorTexBuffer(textureID uint32) {
 		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
 		gl.EnableVertexAttribArray(1)
 		gl.VertexAttribPointer(1, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
-		shaderDisplayFBOOutput = NewDefaultShader("fbo_debug", "fbo_debug")
+		albedoDebugShader = NewDefaultShader("fbo_debug", "fbo_debug")
 	}
 
-	shaderDisplayFBOOutput.Use()
+	albedoDebugShader.Use()
 
 	GLBindTexture(0, 0, textureID)
 
-	gl.BindVertexArray(vaoDebugAlbedoTextureRect)
+	gl.BindVertexArray(vaoAlbedodoDebug)
 
 	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
 	gl.BindVertexArray(0)
 	gl.UseProgram(0)
 }
+
+var vaoDebugNormalTextureRect uint32
 
 func DisplayNormalBufferTexture(textureID uint32) {
 	if vaoDebugNormalTextureRect == 0 {
@@ -67,11 +67,11 @@ func DisplayNormalBufferTexture(textureID uint32) {
 		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
 		gl.EnableVertexAttribArray(1)
 		gl.VertexAttribPointer(1, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
-		shaderDisplayFBOOutput = NewDefaultShader("fbo_debug", "fbo_debug")
+		albedoDebugShader = NewDefaultShader("fbo_debug", "fbo_debug")
 	}
 
 	gl.ActiveTexture(gl.TEXTURE0)
-	shaderDisplayFBOOutput.Use()
+	albedoDebugShader.Use()
 	gl.BindTexture(gl.TEXTURE_2D, textureID)
 	gl.BindVertexArray(vaoDebugNormalTextureRect)
 
@@ -81,6 +81,7 @@ func DisplayNormalBufferTexture(textureID uint32) {
 	gl.UseProgram(0)
 }
 
+var vaoDebugDepthTexturedRect uint32
 var depthShaderTextureLoc int32
 var depthShader *DefaultShader
 
@@ -115,6 +116,191 @@ func DisplayDepthbufferTexture(textureID uint32) {
 	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
 	gl.BindVertexArray(0)
 
+	gl.UseProgram(0)
+}
+
+var ssaoDebugTextureLoc int32
+var ssaoDebug *DefaultShader
+var vaoSsaoTexturedRect uint32
+
+func DisplaySsaoTexture(textureID uint32) {
+	if vaoSsaoTexturedRect == 0 {
+		quadVertices := []float32{
+			-1, 1, 0.0, 0.0, 1.0,
+			-1, 0.5, 0.0, 0.0, 0.0,
+			-0.5, 1, 0.0, 1.0, 1.0,
+			-0.5, 0.5, 0.0, 1.0, 0.0,
+		}
+		// Setup plane VAO
+		gl.GenVertexArrays(1, &vaoSsaoTexturedRect)
+		gl.BindVertexArray(vaoSsaoTexturedRect)
+		var vbo uint32
+		gl.GenBuffers(1, &vbo)
+		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+		gl.BufferData(gl.ARRAY_BUFFER, 4*len(quadVertices), gl.Ptr(quadVertices), gl.STATIC_DRAW)
+		gl.EnableVertexAttribArray(0)
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
+		gl.EnableVertexAttribArray(1)
+		gl.VertexAttribPointer(1, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+		ssaoDebug = NewDefaultShader("depth_debug", "depth_debug")
+		ssaoDebugTextureLoc = uniformLocation(ssaoDebug, "screenTexture")
+	}
+
+	ssaoDebug.Use()
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.Uniform1i(ssaoDebugTextureLoc, 0)
+	gl.BindTexture(gl.TEXTURE_2D, textureID)
+	gl.BindVertexArray(vaoSsaoTexturedRect)
+	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
+	gl.BindVertexArray(0)
+	gl.UseProgram(0)
+}
+
+var vaoRoughnessTexturedRect uint32
+var roughnessDebug *DefaultShader
+var roughnessDebugTextureLoc int32
+
+func DisplayRoughnessTexture(textureID uint32) {
+	if vaoRoughnessTexturedRect == 0 {
+		quadVertices := []float32{
+			-1.0, 0.5, 0.0, 0.0, 1.0,
+			-1.0, 0.0, 0.0, 0.0, 0.0,
+			-0.5, 0.5, 0, 1.0, 1.0,
+			-0.5, 0.0, 0, 1.0, 0.0,
+		}
+		// Setup plane VAO
+		gl.GenVertexArrays(1, &vaoRoughnessTexturedRect)
+		gl.BindVertexArray(vaoRoughnessTexturedRect)
+		var vbo uint32
+		gl.GenBuffers(1, &vbo)
+		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+		gl.BufferData(gl.ARRAY_BUFFER, 4*len(quadVertices), gl.Ptr(quadVertices), gl.STATIC_DRAW)
+		gl.EnableVertexAttribArray(0)
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
+		gl.EnableVertexAttribArray(1)
+		gl.VertexAttribPointer(1, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+		roughnessDebug = NewDefaultShader("depth_debug", "fbo_debug_alpha")
+		roughnessDebugTextureLoc = uniformLocation(roughnessDebug, "screenTexture")
+	}
+
+	roughnessDebug.Use()
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.Uniform1i(roughnessDebugTextureLoc, 0)
+	gl.BindTexture(gl.TEXTURE_2D, textureID)
+	gl.BindVertexArray(vaoRoughnessTexturedRect)
+	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
+	gl.BindVertexArray(0)
+	gl.UseProgram(0)
+}
+
+var vaoMetallicTexturedRect uint32
+var metallicDebug *DefaultShader
+var metallicDebugTextureLoc int32
+
+func DisplayMetallicTexture(textureID uint32) {
+	if vaoMetallicTexturedRect == 0 {
+		quadVertices := []float32{
+			-1.0, 0.0, 0.0, 0.0, 1.0,
+			-1.0, -0.5, 0.0, 0.0, 0.0,
+			-0.5, 0.0, 0, 1.0, 1.0,
+			-0.5, -0.5, 0, 1.0, 0.0,
+		}
+		// Setup plane VAO
+		gl.GenVertexArrays(1, &vaoMetallicTexturedRect)
+		gl.BindVertexArray(vaoMetallicTexturedRect)
+		var vbo uint32
+		gl.GenBuffers(1, &vbo)
+		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+		gl.BufferData(gl.ARRAY_BUFFER, 4*len(quadVertices), gl.Ptr(quadVertices), gl.STATIC_DRAW)
+		gl.EnableVertexAttribArray(0)
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
+		gl.EnableVertexAttribArray(1)
+		gl.VertexAttribPointer(1, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+		metallicDebug = NewDefaultShader("depth_debug", "fbo_debug_alpha")
+		metallicDebugTextureLoc = uniformLocation(metallicDebug, "screenTexture")
+	}
+
+	metallicDebug.Use()
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.Uniform1i(metallicDebugTextureLoc, 0)
+	gl.BindTexture(gl.TEXTURE_2D, textureID)
+	gl.BindVertexArray(vaoMetallicTexturedRect)
+	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
+	gl.BindVertexArray(0)
+	gl.UseProgram(0)
+}
+
+var vaoshadowTexturedRect uint32
+var shadowDebug *DefaultShader
+var shadowDebugTextureLoc int32
+
+func DisplayShadowTexture(textureID uint32) {
+	if vaoshadowTexturedRect == 0 {
+		quadVertices := []float32{
+			0.5, 0.5, 0.0, 0.0, 1.0,
+			0.5, 0.0, 0.0, 0.0, 0.0,
+			1.0, 0.5, 0, 1.0, 1.0,
+			1.0, 0.0, 0, 1.0, 0.0,
+		}
+		// Setup plane VAO
+		gl.GenVertexArrays(1, &vaoshadowTexturedRect)
+		gl.BindVertexArray(vaoshadowTexturedRect)
+		var vbo uint32
+		gl.GenBuffers(1, &vbo)
+		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+		gl.BufferData(gl.ARRAY_BUFFER, 4*len(quadVertices), gl.Ptr(quadVertices), gl.STATIC_DRAW)
+		gl.EnableVertexAttribArray(0)
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
+		gl.EnableVertexAttribArray(1)
+		gl.VertexAttribPointer(1, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+		shadowDebug = NewDefaultShader("depth_debug", "depth_debug")
+		shadowDebugTextureLoc = uniformLocation(shadowDebug, "screenTexture")
+	}
+
+	shadowDebug.Use()
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.Uniform1i(shadowDebugTextureLoc, 0)
+	gl.BindTexture(gl.TEXTURE_2D, textureID)
+	gl.BindVertexArray(vaoshadowTexturedRect)
+	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
+	gl.BindVertexArray(0)
+	gl.UseProgram(0)
+}
+
+var vaoBloomTexturedRect uint32
+var BloomDebug *DefaultShader
+var BloomDebugTextureLoc int32
+
+func DisplayBloomTexture(textureID uint32) {
+	if vaoBloomTexturedRect == 0 {
+		quadVertices := []float32{
+			0.5, 0.0, 0.0, 0.0, 1.0,
+			0.5, -0.5, 0.0, 0.0, 0.0,
+			1.0, 0.0, 0, 1.0, 1.0,
+			1.0, -0.5, 0, 1.0, 0.0,
+		}
+		// Setup plane VAO
+		gl.GenVertexArrays(1, &vaoBloomTexturedRect)
+		gl.BindVertexArray(vaoBloomTexturedRect)
+		var vbo uint32
+		gl.GenBuffers(1, &vbo)
+		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+		gl.BufferData(gl.ARRAY_BUFFER, 4*len(quadVertices), gl.Ptr(quadVertices), gl.STATIC_DRAW)
+		gl.EnableVertexAttribArray(0)
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
+		gl.EnableVertexAttribArray(1)
+		gl.VertexAttribPointer(1, 2, gl.FLOAT, false, 5*4, gl.PtrOffset(3*4))
+		BloomDebug = NewDefaultShader("fbo_debug", "fbo_debug")
+		BloomDebugTextureLoc = uniformLocation(BloomDebug, "screenTexture")
+	}
+
+	BloomDebug.Use()
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.Uniform1i(BloomDebugTextureLoc, 0)
+	gl.BindTexture(gl.TEXTURE_2D, textureID)
+	gl.BindVertexArray(vaoBloomTexturedRect)
+	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
+	gl.BindVertexArray(0)
 	gl.UseProgram(0)
 }
 

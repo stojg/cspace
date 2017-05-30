@@ -20,9 +20,9 @@ vec3 CalcBumpedNormal(vec3 normal);
 void main()
 {
     // store the per-fragment normals
-    gNormalRoughness.xyz = CalcBumpedNormal(Normal);
+    gNormalRoughness.rgb = CalcBumpedNormal(Normal).rgb;
     // store the per-fragment roughness
-    gNormalRoughness.w = texture(mat.roughness, TexCoords).r;
+    gNormalRoughness.a = texture(mat.roughness, TexCoords).r;
 
     // And the diffuse per-fragment color
     gAlbedoMetallic.rgb = texture(mat.albedo, TexCoords).rgb;

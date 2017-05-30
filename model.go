@@ -30,9 +30,14 @@ func LoadModel(directory string, shaderType ShaderType) []*Mesh {
 			textures = append(textures, specularTexture)
 		}
 
-		normalTexture, err := newTexture(Roughness, filepath.Join(directory, "n.png"), false)
+		normalTexture, err := newTexture(Normal, filepath.Join(directory, "n.png"), false)
 		if err == nil {
 			textures = append(textures, normalTexture)
+		}
+
+		roughnessTexture, err := newTexture(Roughness, filepath.Join(directory, "r.png"), false)
+		if err == nil {
+			textures = append(textures, roughnessTexture)
 		}
 
 		glLogf("textures %d \n", len(textures))
