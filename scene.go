@@ -43,7 +43,6 @@ func NewScene() *Scene {
 		gBuffer: NewGBufferPipeline(),
 
 		shadow:         NewShadow(),
-		bloom:          NewBloomEffect(),
 		previousTime:   glfw.GetTime(),
 		camera:         NewCamera(),
 		projection:     mgl32.Perspective(mgl32.DegToRad(45.0), float32(windowWidth)/float32(windowHeight), near, far),
@@ -120,6 +119,7 @@ func (s *Scene) Init() {
 	s.dirLightShader = shaders.NewDirectionalLight()
 	s.pointLightShader = shaders.NewPointLightShader(maxPointLights)
 	s.hdrShader = shaders.NewHDR()
+	s.bloom = NewBloomEffect(windowWidth/2, windowHeight/2)
 	s.ssao = NewSSAO(windowWidth/2, windowHeight/2)
 	s.hdr = NewHDRFBO()
 	s.exposure = NewAverageExposure()
@@ -182,7 +182,6 @@ func (s *Scene) Render() {
 		var attachments = [2]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1}
 		gl.DrawBuffers(int32(len(attachments)), &attachments[0])
 		gl.Clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-
 		s.graph.Render(s.gBuffer.tShader, s.gBuffer.mShader)
 	}
 
@@ -379,7 +378,7 @@ func (s *Scene) Render() {
 	renderQuad()
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 
-	// and if debug is on, quad print them on top off everything
+	// and if debug is on, quad print them on top of everything
 	if showDebug {
 		DisplayColorTexBuffer(s.gBuffer.buffer.gAlbedoMetallic)
 		DisplayDepthbufferTexture(s.gBuffer.buffer.gDepth)

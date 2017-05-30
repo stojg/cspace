@@ -38,12 +38,12 @@ func NewBloom() *BloomFBO {
 	return frameBuffer
 }
 
-const bloomScreenDiv = 2.0
-
-func NewBloomEffect() *BloomEffect {
+func NewBloomEffect(width, height int32) *BloomEffect {
 	b := &BloomEffect{
+		width:            width,
+		height:           height,
 		bloomFbo:         NewBloom(),
-		pingBuffers:      [2]*FBO{NewFBO(windowWidth/bloomScreenDiv, windowHeight/bloomScreenDiv), NewFBO(windowWidth/bloomScreenDiv, windowHeight/bloomScreenDiv)},
+		pingBuffers:      [2]*FBO{NewFBO(width, height), NewFBO(width, height)},
 		separationShader: NewDefaultShader("fx", "fx_brigthness_sep"),
 		blendShader:      NewDefaultShader("fx", "fx_bloom_blender"),
 		gaussianBlender:  NewDefaultShader("fx", "fx_guassian_blur"),
@@ -56,8 +56,9 @@ func NewBloomEffect() *BloomEffect {
 }
 
 type BloomEffect struct {
-	bloomFbo    *BloomFBO
-	pingBuffers [2]*FBO
+	width, height int32
+	bloomFbo      *BloomFBO
+	pingBuffers   [2]*FBO
 
 	separationShader *DefaultShader
 	gaussianBlender  *DefaultShader
@@ -110,7 +111,7 @@ func (b *BloomEffect) Render(inTexture uint32) uint32 {
 	firstIteration := true
 
 	// ping-pong
-	gl.Viewport(0, 0, windowWidth/bloomScreenDiv, windowHeight/bloomScreenDiv)
+	gl.Viewport(0, 0, b.width, b.height)
 	b.gaussianBlender.Use()
 	for i := 0; i < blurAmount; i++ {
 		gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, b.pingBuffers[horizontal].id)
