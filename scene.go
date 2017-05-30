@@ -229,7 +229,6 @@ func (s *Scene) Render() {
 		gl.Uniform1i(s.ssao.blurShader.LocScreenTexture, 0)
 		gl.BindTexture(gl.TEXTURE_2D, s.ssao.texture)
 		renderQuad()
-
 	}
 
 	// start drawing light calculations into the finalTexture of the gbuffer
@@ -362,8 +361,8 @@ func (s *Scene) Render() {
 	if bloomOn {
 		out = s.bloom.Render(out)
 	}
-
-	exp := s.exposure.Exposure(out)
+	//exp := s.exposure.Exposure(out)
+	var exp float32 = 1.4
 
 	// do the final rendering to the backbuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)

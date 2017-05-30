@@ -64,9 +64,6 @@ func (a *AverageExposure) Exposure(inTexture uint32) float32 {
 	texWidth := windowWidth
 	texHeight := windowHeight
 
-	//averageShader.Use()
-
-	//gl.UseProgram(a.passShader.Program)
 	readTexture := 0
 	writeTexture := 1
 	// Then pingpong between color buffers creating a smaller texture every time
@@ -81,10 +78,10 @@ func (a *AverageExposure) Exposure(inTexture uint32) float32 {
 		if texHeight < 1 {
 			texHeight = 1
 		}
+		// @todo this is slow rought 5ms/frame on macbook pro
 		gl.BindTexture(gl.TEXTURE_2D, a.textures[writeTexture])
 		gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB16F, texWidth, texHeight, 0, gl.RGB, gl.FLOAT, nil)
 
-		//gl.BindFramebuffer(gl.FRAMEBUFFER, a.fbo)
 		var attachments [1]uint32
 		if readTexture == 0 {
 			attachments[0] = gl.COLOR_ATTACHMENT1
