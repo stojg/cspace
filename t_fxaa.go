@@ -30,22 +30,24 @@ func NewFxaa(width, height int32) *Fxaa {
 		MinReduce:     1 / 128.0,
 		MaxSpan:       8.0,
 	}
-	gl.GenFramebuffers(1, &fxaa.fbo)
 
-	GLTextureRGB16F(&fxaa.texture, width, height, gl.LINEAR, gl.CLAMP_TO_EDGE, nil)
+	GLFramebuffer(&fxaa.fbo)
+	GLTextureRGB8(&fxaa.texture, width, height, gl.LINEAR, gl.CLAMP_TO_EDGE, nil)
+	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fxaa.texture, 0)
 
 	chkFramebuffer()
 
 	return fxaa
 }
 
-func (fxaa *Fxaa) Render(inTexture uint32) {
+func (fxaa *Fxaa) Render(inTexture uint32) uint32 {
+
+	gl.BindFramebuffer(gl.FRAMEBUFFER, fxaa.fbo)
+	gl.Clear(gl.COLOR_BUFFER_BIT)
+	gl.DrawBuffer(gl.COLOR_ATTACHMENT0)
 	gl.UseProgram(fxaa.shader.Program)
-	if fxaaOn {
-		gl.Uniform1i(fxaa.shader.LocEnabled, 1)
-	} else {
-		gl.Uniform1i(fxaa.shader.LocEnabled, 0)
-	}
+	chkError("here")
+
 	if showDebug {
 		gl.Uniform1i(fxaa.shader.LocShowEdges, 1)
 	} else {
@@ -56,5 +58,8 @@ func (fxaa *Fxaa) Render(inTexture uint32) {
 	gl.Uniform1f(fxaa.shader.LocMulReduce, fxaa.MulReduce)
 	gl.Uniform1f(fxaa.shader.LocMaxSpan, fxaa.MaxSpan)
 	GLBindTexture(0, fxaa.shader.LocInTexture, inTexture)
+
 	renderQuad()
+
+	return fxaa.texture
 }

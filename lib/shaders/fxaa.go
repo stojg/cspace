@@ -4,7 +4,6 @@ func NewFxaa() *Fxaa {
 	c := buildShader("fx", "fx_fxaa")
 	s := &Fxaa{
 		Program:          c,
-		LocEnabled:       loc(c, "u_enabled"),
 		LocInTexture:     loc(c, "screenTexture"),
 		LocShowEdges:     loc(c, "u_showEdges"),
 		LocLumaThreshold: loc(c, "u_lumaThreshold"),
@@ -22,7 +21,6 @@ func NewFxaa() *Fxaa {
 type Fxaa struct {
 	Program uint32
 
-	LocEnabled       int32
 	LocInTexture     int32
 	LocShowEdges     int32
 	LocLumaThreshold int32

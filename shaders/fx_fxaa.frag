@@ -5,10 +5,9 @@ out vec4 color;
 uniform sampler2D screenTexture;
 
 uniform vec2 u_texelStep = vec2(1/1280, 1/720);
-uniform int u_showEdges = 0;
-uniform int u_enabled = 0;
+uniform int u_showEdges = 1;
 
-uniform float u_lumaThreshold = 0.1f; // 0.45 - 0.8 - 0.6
+uniform float u_lumaThreshold = 0.6f; // 0.45 - 0.8 - 0.6
 uniform float u_mulReduce = 1 / 8.0f;
 uniform float u_minReduce = 1 / 128.0f;
 uniform float u_maxSpan = 8.0f;
@@ -34,11 +33,6 @@ void main(void)
     }
     if (rgbM.b > 1.0) {
         color = vec4(0.19,0.33,0.47,1);
-        return;
-    }
-
-    if(u_enabled != 1.0) {
-        color = vec4(rgbM, 1);
         return;
     }
 

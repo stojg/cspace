@@ -26,8 +26,8 @@ var viewPortHeight int32
 
 var bloomOn = true // 2ms
 var ssaoOn = true  // 8ms ?
+var fxaaOn = true
 var dirLightOn = true
-var fxaaOn = false
 var showDebug = false
 
 var currentNumLights = 0
@@ -97,8 +97,8 @@ type Scene struct {
 
 	pointLightShader *shaders.PointLight
 	dirLightShader   *shaders.DirectionalLight
-	toneShader       *shaders.HDR
 	lightBoxShader   *shaders.Emissive
+	passShader       *shaders.Passthrough
 
 	pointLights []*PointLight
 	icoMesh     *Mesh
@@ -110,6 +110,9 @@ type Scene struct {
 	skyBoxTexture *Texture
 	cubeMap       *IBL
 
+	fxaa    *Fxaa
+	tonemap *ToneMap
+
 	uboMatrices uint32
 }
 
@@ -118,7 +121,6 @@ func (s *Scene) Init() {
 	s.stencilShader = shaders.NewStencil()
 	s.dirLightShader = shaders.NewDirectionalLight()
 	s.pointLightShader = shaders.NewPointLightShader(maxPointLights)
-	s.toneShader = shaders.NewHDR()
 	s.bloom = NewBloomEffect(windowWidth/2, windowHeight/2)
 	s.ssao = NewSSAO(windowWidth/2, windowHeight/2)
 	s.hdr = NewHDRFBO()
@@ -129,6 +131,10 @@ func (s *Scene) Init() {
 	s.cubeMap = NewCubeMap(512, 512)
 
 	s.cubeMap.Update(s.skyBoxTexture)
+
+	s.fxaa = NewFxaa(windowWidth, windowHeight)
+	s.tonemap = NewToneMap(windowWidth, windowHeight)
+	s.passShader = shaders.NewPassthrough()
 
 	chkError("scene.init")
 
@@ -255,6 +261,7 @@ func (s *Scene) Render() {
 	if dirLightOn {
 		gl.DepthFunc(gl.LEQUAL)
 		gl.UseProgram(s.skybox.Program)
+		// remove the rotation
 		skyboxView := view.Mat3().Mat4()
 		gl.UniformMatrix4fv(s.skybox.LocSkyView, 1, false, &skyboxView[0])
 		GLBindCubeMap(0, s.skybox.LocScreenTexture, s.cubeMap.envCubeMap)
@@ -263,7 +270,6 @@ func (s *Scene) Render() {
 	}
 
 	{ // render emissive objects
-
 		gl.UseProgram(s.lightBoxShader.Program)
 
 		for i := range s.pointLights[:currentNumLights] {
@@ -286,21 +292,21 @@ func (s *Scene) Render() {
 		out = s.bloom.Render(out)
 	}
 
-	exp := float32(1.3)
-	//exp := s.exposure.Exposure(out)
+	out = s.tonemap.Render(out)
+	if fxaaOn {
+		out = s.fxaa.Render(out)
+	}
 
-	// do the final rendering to the backbuffer
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 	// taking care of retina screens have different amount of pixel between actual viewport and requested window size
-	gl.Viewport(0, 0, viewPortWidth, viewPortHeight)
+	gl.Viewport(0, 0, windowWidth, windowHeight)
+	gl.UseProgram(s.passShader.Program)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
-
-	gl.UseProgram(s.toneShader.Program)
-	gl.Uniform1f(s.toneShader.LocExposure, exp)
-
-	GLBindTexture(0, s.toneShader.LocScreenTexture, out)
-
+	GLBindTexture(0, s.passShader.LocScreenTexture, out)
 	renderQuad()
+	GLUnbindTexture(0)
+
+	//DisplayAlbedoTexBuffer(out)
 
 	// and if debug is on, quad print them on top of everything
 	if showDebug {
