@@ -10,17 +10,17 @@ func NewMaterialShader() *GbufferMShader {
 	blockIndex := gl.GetUniformBlockIndex(shader.Program(), gl.Str("Matrices\x00"))
 	gl.UniformBlockBinding(shader.Program(), blockIndex, 0)
 
-	shader.locModel = uniformLocation(shader, "model")
-	shader.locAlbedo = uniformLocation(shader, "mat.albedo")
-	shader.locMetallic = uniformLocation(shader, "mat.metallic")
-	shader.locRoughness = uniformLocation(shader, "mat.roughness")
+	shader.LocModel = uniformLocation(shader, "model")
+	shader.LocAlbedo = uniformLocation(shader, "mat.albedo")
+	shader.LocMetallic = uniformLocation(shader, "mat.metallic")
+	shader.LocRoughness = uniformLocation(shader, "mat.roughness")
 	return shader
 }
 
 type GbufferMShader struct {
 	Shader
-	locModel     int32
-	locAlbedo    int32
-	locMetallic  int32
-	locRoughness int32
+	LocModel     int32
+	LocAlbedo    int32
+	LocMetallic  int32
+	LocRoughness int32
 }

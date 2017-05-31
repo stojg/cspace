@@ -53,7 +53,7 @@ func (n *BaseNode) Render(tShader *GbufferTShader, mShader *GbufferMShader) {
 
 	gl.UseProgram(mShader.Program())
 	for i := range mMeshes {
-		gl.UniformMatrix4fv(mShader.locModel, 1, false, &mMeshes[i].transform[0])
+		gl.UniformMatrix4fv(mShader.LocModel, 1, false, &mMeshes[i].transform[0])
 		mMeshes[i].mesh.setMaterial(mShader)
 		mMeshes[i].mesh.Render()
 	}

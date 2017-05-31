@@ -57,9 +57,9 @@ func (s *Mesh) setTextures(tShader *GbufferTShader) {
 }
 
 func (s *Mesh) setMaterial(mShader *GbufferMShader) {
-	gl.Uniform3f(mShader.locAlbedo, s.Albedo[0], s.Albedo[1], s.Albedo[2])
-	gl.Uniform1f(mShader.locMetallic, s.Metallic)
-	gl.Uniform1f(mShader.locRoughness, s.Roughness)
+	gl.Uniform3f(mShader.LocAlbedo, s.Albedo[0], s.Albedo[1], s.Albedo[2])
+	gl.Uniform1f(mShader.LocMetallic, s.Metallic)
+	gl.Uniform1f(mShader.LocRoughness, s.Roughness)
 }
 
 func (s *Mesh) init() {

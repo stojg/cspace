@@ -1,49 +1,60 @@
 package main
 
-import "github.com/go-gl/gl/v4.1-core/gl"
+import (
+	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/stojg/cspace/lib/shaders"
+)
 
-var u_lumaThreshold float32 = 0.6 // (1/3), (1/4), (1/8), (1/16)
-var u_mulReduce float32 = 1 / 8.0 //
-var u_minReduce float32 = 1 / 128.0
-var u_maxSpan float32 = 8.0
+type Fxaa struct {
+	width, height int32
+	fbo           uint32
+	texture       uint32
 
-var fxaaShader *DefaultShader
-var fxaaTextureloc int32
+	ShowEdges     int32
+	LumaThreshold float32
+	MulReduce     float32
+	MinReduce     float32
+	MaxSpan       float32
 
-var fxaaLocU_showEdges int32
-var fxaaLocU_lumaThreshold int32
-var fxaaLocU_mulReduce int32
-var fxaaLocU_minReduce int32
-var fxaaLocU_maxSpan int32
-var fxaaLoc_enabled int32
-
-func initFxaa() {
-	fxaaShader = NewDefaultShader("fx", "fx_fxaa")
-	fxaaTextureloc = uniformLocation(fxaaShader, "screenTexture")
-	fxaaLocU_showEdges = pUniformLocation(fxaaShader.program, "u_showEdges")
-	fxaaLocU_lumaThreshold = pUniformLocation(fxaaShader.program, "u_lumaThreshold")
-	fxaaLocU_mulReduce = pUniformLocation(fxaaShader.program, "u_mulReduce")
-	fxaaLocU_minReduce = pUniformLocation(fxaaShader.program, "u_minReduce")
-	fxaaLocU_maxSpan = pUniformLocation(fxaaShader.program, "u_maxSpan")
-	fxaaLoc_enabled = pUniformLocation(fxaaShader.program, "u_enabled")
+	shader *shaders.Fxaa
 }
 
-func renderFxaa(inTexture uint32) {
-	fxaaShader.Use()
+func NewFxaa(width, height int32) *Fxaa {
+	c := shaders.NewFxaa()
+	fxaa := &Fxaa{
+		shader:        c,
+		width:         width,
+		height:        height,
+		LumaThreshold: 0.6,
+		MulReduce:     1 / 8.0,
+		MinReduce:     1 / 128.0,
+		MaxSpan:       8.0,
+	}
+	gl.GenFramebuffers(1, &fxaa.fbo)
+
+	GLTextureRGB16F(&fxaa.texture, width, height, gl.LINEAR, gl.CLAMP_TO_EDGE, nil)
+
+	chkFramebuffer()
+
+	return fxaa
+}
+
+func (fxaa *Fxaa) Render(inTexture uint32) {
+	gl.UseProgram(fxaa.shader.Program)
 	if fxaaOn {
-		gl.Uniform1i(fxaaLoc_enabled, 1)
+		gl.Uniform1i(fxaa.shader.LocEnabled, 1)
 	} else {
-		gl.Uniform1i(fxaaLoc_enabled, 0)
+		gl.Uniform1i(fxaa.shader.LocEnabled, 0)
 	}
 	if showDebug {
-		gl.Uniform1i(fxaaLocU_showEdges, 1)
+		gl.Uniform1i(fxaa.shader.LocShowEdges, 1)
 	} else {
-		gl.Uniform1i(fxaaLocU_showEdges, 0)
+		gl.Uniform1i(fxaa.shader.LocShowEdges, 0)
 	}
-	gl.Uniform1f(fxaaLocU_lumaThreshold, u_lumaThreshold)
-	gl.Uniform1f(fxaaLocU_minReduce, u_minReduce)
-	gl.Uniform1f(fxaaLocU_mulReduce, u_mulReduce)
-	gl.Uniform1f(fxaaLocU_maxSpan, u_maxSpan)
-	GLBindTexture(0, fxaaTextureloc, inTexture)
+	gl.Uniform1f(fxaa.shader.LocLumaThreshold, fxaa.LumaThreshold)
+	gl.Uniform1f(fxaa.shader.LocMinReduce, fxaa.MinReduce)
+	gl.Uniform1f(fxaa.shader.LocMulReduce, fxaa.MulReduce)
+	gl.Uniform1f(fxaa.shader.LocMaxSpan, fxaa.MaxSpan)
+	GLBindTexture(0, fxaa.shader.LocInTexture, inTexture)
 	renderQuad()
 }

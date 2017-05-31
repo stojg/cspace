@@ -108,7 +108,7 @@ type Scene struct {
 
 	skybox        *shaders.Skybox
 	skyBoxTexture *Texture
-	cubeMap       *CubeMap
+	cubeMap       *IBL
 
 	uboMatrices uint32
 }
@@ -358,10 +358,6 @@ func handleInputs() {
 		fxaaOn = false
 		ssaoOn = false
 		showDebug = false
-		u_lumaThreshold = 0.6
-		u_mulReduce = 1 / 8.0
-		u_minReduce = 1 / 128.0
-		u_maxSpan = 8
 	}
 
 }

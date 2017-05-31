@@ -10,8 +10,7 @@ import (
 	"github.com/stojg/cspace/lib/shaders"
 )
 
-// FBO is a generic FBO with one texture
-type CubeMap struct {
+type IBL struct {
 	width, height                  int32
 	fbo                            uint32
 	rbo                            uint32
@@ -25,8 +24,8 @@ type CubeMap struct {
 	brdfShader                     *shaders.IBLBrdf
 }
 
-func NewCubeMap(width, height int32) *CubeMap {
-	cube := &CubeMap{
+func NewCubeMap(width, height int32) *IBL {
+	cube := &IBL{
 		width:  width,
 		height: height,
 		equirectangularToCubemapShader: shaders.NewEquiRectToCubeMap(),
@@ -74,7 +73,7 @@ func NewCubeMap(width, height int32) *CubeMap {
 	return cube
 }
 
-func (cube *CubeMap) Update(texture *Texture) {
+func (cube *IBL) Update(texture *Texture) {
 	fovy := (90 * math.Pi) / 180.0
 	captureProjection := mgl32.Perspective(float32(fovy), 1, 0.1, 10)
 	captureViews := []mgl32.Mat4{
@@ -87,7 +86,6 @@ func (cube *CubeMap) Update(texture *Texture) {
 	}
 
 	// convert HDR equirectangular environment map to cubemap equivalent
-
 	gl.BindFramebuffer(gl.FRAMEBUFFER, cube.fbo)
 	gl.BindRenderbuffer(gl.RENDERBUFFER, cube.rbo)
 	gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, cube.width, cube.height)
@@ -103,13 +101,7 @@ func (cube *CubeMap) Update(texture *Texture) {
 
 	for i := 0; i < 6; i++ {
 		gl.UniformMatrix4fv(cube.equirectangularToCubemapShader.LocView, 1, false, &captureViews[i][0])
-		gl.FramebufferTexture2D(
-			gl.FRAMEBUFFER,
-			gl.COLOR_ATTACHMENT0,
-			gl.TEXTURE_CUBE_MAP_POSITIVE_X+uint32(i),
-			cube.envCubeMap,
-			0,
-		)
+		gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X+uint32(i), cube.envCubeMap, 0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		renderCube()
 	}
@@ -133,13 +125,7 @@ func (cube *CubeMap) Update(texture *Texture) {
 	gl.BindFramebuffer(gl.FRAMEBUFFER, cube.fbo)
 	for i := 0; i < 6; i++ {
 		gl.UniformMatrix4fv(cube.irradianceShader.LocView, 1, false, &captureViews[i][0])
-		gl.FramebufferTexture2D(
-			gl.FRAMEBUFFER,
-			gl.COLOR_ATTACHMENT0,
-			gl.TEXTURE_CUBE_MAP_POSITIVE_X+uint32(i),
-			cube.irradianceMap,
-			0,
-		)
+		gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X+uint32(i), cube.irradianceMap, 0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		renderCube()
 	}
@@ -166,13 +152,7 @@ func (cube *CubeMap) Update(texture *Texture) {
 
 		for i := 0; i < 6; i++ {
 			gl.UniformMatrix4fv(cube.prefilterShader.LocView, 1, false, &captureViews[i][0])
-			gl.FramebufferTexture2D(
-				gl.FRAMEBUFFER,
-				gl.COLOR_ATTACHMENT0,
-				gl.TEXTURE_CUBE_MAP_POSITIVE_X+uint32(i),
-				cube.prefilterMap,
-				int32(mip),
-			)
+			gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X+uint32(i), cube.prefilterMap, int32(mip))
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 			renderCube()
 		}
