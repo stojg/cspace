@@ -396,7 +396,7 @@ var fpsFrameCount int
 func fpsCounter(window *glfw.Window) {
 	currentSeconds := glfw.GetTime()
 	elapsedSeconds := currentSeconds - fpsPrevSeconds
-	if elapsedSeconds > 4 {
+	if elapsedSeconds > 2 {
 		fpsPrevSeconds = currentSeconds
 		fps := (float64(fpsFrameCount) / elapsedSeconds)
 		ms := 1000 / fps

@@ -31,8 +31,6 @@ vec2 noiseScale = gScreenSize / 4.0;
 
 vec2 TexCoords = gl_FragCoord.xy / gScreenSize;
 
-vec3 ViewPosFromDepth(float depth, vec2 TexCoords);
-
 void main() {
 
     if(enabled != 1.0) {
@@ -40,8 +38,7 @@ void main() {
         return;
     }
 
-    float depth = texture(gDepth, TexCoords).x;
-    vec3 fragPos = ViewPosFromDepth(depth, TexCoords).xyz;
+    vec3 fragPos = texture(gDepth, TexCoords).xyz;
 
     vec3 normal = texture(gNormal, TexCoords).rgb;
     vec3 randomVec = normalize(texture(texNoise, TexCoords * noiseScale).xyz);
@@ -63,18 +60,10 @@ void main() {
         offset.xy /= offset.w;
         offset.xy = offset.xy * 0.5 + vec2(0.5);
 
-        float iDepth = texture(gDepth, offset.xy).x;
-        float sampleDepth = ViewPosFromDepth(iDepth, offset.xy).z;
-
+        float sampleDepth = texture(gDepth, offset.xy).z;
         float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
         occlusion       += (sampleDepth >= sampl.z + bias ? 1.0 : 0.0) * rangeCheck;
     }
     FragColor = 1.0 - (occlusion / kernelSize);
-}
-
-vec3 ViewPosFromDepth(float depth, vec2 TexCoords) {
-    vec4 clipSpacePosition = vec4(TexCoords * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-    vec4 viewSpacePosition = invProjection * clipSpacePosition;
-    return (viewSpacePosition /= viewSpacePosition.w).xyz;
 }
 

@@ -11,7 +11,7 @@ import (
 )
 
 const near float32 = 0.5
-const far float32 = 200
+const far float32 = 40
 
 const maxPointLights = 64
 
@@ -24,9 +24,9 @@ var windowHeight int32 = 720
 var viewPortWidth int32
 var viewPortHeight int32
 
-var bloomOn = true // 2ms
-var ssaoOn = true  // 8ms ?
-var fxaaOn = true
+var bloomOn = false // 2ms
+var ssaoOn = true   // 8ms ?
+var fxaaOn = false
 var dirLightOn = true
 var showDebug = false
 
@@ -90,10 +90,9 @@ type Scene struct {
 	gBuffer *GBufferPipeline
 	bloom   *BloomEffect
 
-	shadow   *ShadowFBO
-	ssao     *SsaoFBO
-	hdr      *HDRFBO
-	exposure *AverageExposure
+	shadow *ShadowFBO
+	ssao   *SsaoFBO
+	hdr    *HDRFBO
 
 	pointLightShader *shaders.PointLight
 	dirLightShader   *shaders.DirectionalLight
@@ -122,9 +121,8 @@ func (s *Scene) Init() {
 	s.dirLightShader = shaders.NewDirectionalLight()
 	s.pointLightShader = shaders.NewPointLightShader(maxPointLights)
 	s.bloom = NewBloomEffect(windowWidth/2, windowHeight/2)
-	s.ssao = NewSSAO(windowWidth/2, windowHeight/2)
+	s.ssao = NewSSAO(windowWidth, windowHeight)
 	s.hdr = NewHDRFBO()
-	s.exposure = NewAverageExposure()
 
 	s.skybox = shaders.NewSkybox()
 	s.skyBoxTexture = GetHDRTexture("woods_1k.hdr")
@@ -306,7 +304,7 @@ func (s *Scene) Render() {
 	renderQuad()
 	GLUnbindTexture(0)
 
-	//DisplayAlbedoTexBuffer(out)
+	DisplaySsaoTexture(s.ssao.texture)
 
 	// and if debug is on, quad print them on top of everything
 	if showDebug {

@@ -8,6 +8,8 @@ import (
 	"github.com/stojg/cspace/lib/shaders"
 )
 
+// NewSSAO returns the Screen Space Ambient Occlusion effect
+// on macbook air this takes ~10ms to render
 func NewSSAO(width, height int32) *SsaoFBO {
 	ssao := &SsaoFBO{
 		Width:  width,
@@ -19,22 +21,32 @@ func NewSSAO(width, height int32) *SsaoFBO {
 	gl.GenTextures(1, &ssao.texture)
 	gl.BindTexture(gl.TEXTURE_2D, ssao.texture)
 
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, ssao.Width, ssao.Height, 0, gl.RGB, gl.UNSIGNED_INT, nil)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, ssao.Width/2, ssao.Height/2, 0, gl.RGB, gl.UNSIGNED_INT, nil)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 	borderColor := [4]float32{1.0, 1.0, 1.0, 1.0}
 	gl.TexParameterfv(gl.TEXTURE_2D, gl.TEXTURE_BORDER_COLOR, &borderColor[0])
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, ssao.texture, 0)
 
 	gl.GenTextures(1, &ssao.outTexture)
 	gl.BindTexture(gl.TEXTURE_2D, ssao.outTexture)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, windowWidth, windowHeight, 0, gl.RGB, gl.UNSIGNED_INT, nil)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-
-	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, ssao.texture, 0)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, windowWidth/2, windowHeight/2, 0, gl.RGB, gl.UNSIGNED_INT, nil)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, ssao.outTexture, 0)
+
+	gl.GenTextures(1, &ssao.resampledDepth)
+	gl.BindTexture(gl.TEXTURE_2D, ssao.resampledDepth)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, windowWidth/2, windowHeight/2, 0, gl.RGB, gl.FLOAT, nil)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT2, gl.TEXTURE_2D, ssao.resampledDepth, 0)
 
 	for i := range ssao.Kernel {
 		smp := mgl32.Vec3{rand.Float32()*2 - 1, rand.Float32()*2 - 1, rand.Float32()}
@@ -61,18 +73,22 @@ func NewSSAO(width, height int32) *SsaoFBO {
 
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 
+	ssao.depthResampler = shaders.NewSSAODepthResampler()
 	ssao.shader = shaders.NewSSAO()
 	ssao.blurShader = shaders.NewBlur()
+	//ssao.blurShader = shaders.NewGaussian()
 	return ssao
 }
 
 type SsaoFBO struct {
-	fbo          uint32
-	texture      uint32
-	noiseTexture uint32
-	outTexture   uint32
-	shader       *shaders.SSAO
-	blurShader   *shaders.Blur
+	fbo            uint32
+	resampledDepth uint32
+	texture        uint32
+	noiseTexture   uint32
+	outTexture     uint32
+	depthResampler *shaders.SSAODepthResampler
+	shader         *shaders.SSAO
+	blurShader     *shaders.Blur
 
 	Width  int32
 	Height int32
@@ -81,6 +97,14 @@ type SsaoFBO struct {
 
 func (s *SsaoFBO) Render(gDepthTexture, gNormalTexture uint32) uint32 {
 	gl.BindFramebuffer(gl.FRAMEBUFFER, s.fbo)
+
+	gl.Viewport(0, 0, s.Width/2, s.Height/2)
+	gl.DrawBuffer(gl.COLOR_ATTACHMENT2)
+	gl.UseProgram(s.depthResampler.Program)
+	GLBindTexture(0, s.depthResampler.LocGDepth, gDepthTexture)
+	gl.Uniform2f(s.depthResampler.LocScreenSize, float32(s.Width/2), float32(s.Height/2))
+	renderQuad()
+
 	gl.DrawBuffer(gl.COLOR_ATTACHMENT0)
 	gl.UseProgram(s.shader.Program)
 
@@ -93,9 +117,9 @@ func (s *SsaoFBO) Render(gDepthTexture, gNormalTexture uint32) uint32 {
 	for i, sample := range s.Kernel {
 		gl.Uniform3f(s.shader.LocSamples[i], sample[0], sample[1], sample[2])
 	}
-	gl.Uniform2f(s.shader.LocScreenSize, float32(s.Width), float32(s.Height))
+	gl.Uniform2f(s.shader.LocScreenSize, float32(s.Width/2), float32(s.Height/2))
 
-	GLBindTexture(0, s.shader.LocGDepth, gDepthTexture)
+	GLBindTexture(0, s.shader.LocGDepth, s.resampledDepth)
 	GLBindTexture(1, s.shader.LocGNormal, gNormalTexture)
 	GLBindTexture(2, s.shader.LocTexNoise, s.noiseTexture)
 
@@ -104,8 +128,11 @@ func (s *SsaoFBO) Render(gDepthTexture, gNormalTexture uint32) uint32 {
 	gl.DrawBuffer(gl.COLOR_ATTACHMENT1)
 	gl.UseProgram(s.blurShader.Program)
 
+	//gl.Uniform1i(s.blurShader.LocHorizontal, int32(0))
+
 	GLBindTexture(0, s.blurShader.LocScreenTexture, s.texture)
 	renderQuad()
 
+	gl.Viewport(0, 0, s.Width, s.Height)
 	return s.texture
 }

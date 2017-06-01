@@ -1,6 +1,6 @@
 #version 330 core
 in vec2 TexCoords;
-out vec4 color;
+out float color;
 
 uniform sampler2D screenTexture;
 
@@ -34,5 +34,5 @@ void main()
      for(int i = 0; i < 9; i++) {
          col += sampleTex[i] * kernel[i];
      }
-     color = vec4(col, 1.0);
+     color = col.r;
 }

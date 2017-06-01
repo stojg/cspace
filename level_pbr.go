@@ -73,6 +73,19 @@ func PBRLevel(graph SceneNode) {
 		graph.Add(meshes, t)
 	}
 
+	{
+		meshes := LoadModel("models/test", TexturedMesh)
+		albTexture := GetTexture(Albedo, "scuffed-plastic/scuffed-plastic5-alb.png", true)
+		for _, mesh := range meshes {
+			mesh.Textures = append(mesh.Textures, albTexture)
+			mesh.Textures = append(mesh.Textures, plasticMetTex)
+			mesh.Textures = append(mesh.Textures, plasticRoughTex)
+			mesh.Textures = append(mesh.Textures, plasticNormTex)
+		}
+		t := mgl32.Translate3D(1, 4, -10)
+		graph.Add(meshes, t)
+	}
+
 	// green sphere
 	{
 		meshes := LoadModel("models/sphere", MaterialMesh)
