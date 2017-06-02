@@ -304,8 +304,6 @@ func (s *Scene) Render() {
 	renderQuad()
 	GLUnbindTexture(0)
 
-	DisplaySsaoTexture(s.ssao.texture)
-
 	// and if debug is on, quad print them on top of everything
 	if showDebug {
 		DisplayNormalBufferTexture(s.gBuffer.buffer.gNormalRoughness)
