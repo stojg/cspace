@@ -11,7 +11,7 @@ import (
 )
 
 const near float32 = 0.5
-const far float32 = 40
+const far float32 = 200
 
 const maxPointLights = 64
 
