@@ -23,8 +23,8 @@ uniform vec3 samples[64];
 
 // parameters (you'd probably want to use them as uniforms to more easily tweak the effect)
 const int kernelSize = 64;
-const float radius = 0.9;
-const float bias = 0.025;
+const float radius = 0.7;
+const float bias = 0.05;
 
 // tile noise texture over screen based on screen dimensions divided by noise size
 vec2 noiseScale = gScreenSize / 4.0;
@@ -64,6 +64,6 @@ void main() {
         float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
         occlusion       += (sampleDepth >= sampl.z + bias ? 1.0 : 0.0) * rangeCheck;
     }
-    FragColor = 1.0 - (occlusion / kernelSize);
+    FragColor = pow(1.0 - (occlusion / kernelSize), 2);
 }
 

@@ -21,9 +21,9 @@ vec3 ViewPosFromDepth(float depth, vec2 TexCoords);
 void main()
 {
     vec2 pixelOffset = 1/gScreenSize;
-    vec2 texCoord = vec2(TexCoords.x - 0.25f * pixelOffset.x, TexCoords.y - 0.25f * pixelOffset.y);
+    float offset = 0.0f;
+    vec2 texCoord = vec2(TexCoords.x - offset * pixelOffset.x, TexCoords.y - offset * pixelOffset.y);
     Depth = ViewPosFromDepth(texture(gDepth, texCoord).r, TexCoords);
-    return;
 }
 
 vec3 ViewPosFromDepth(float depth, vec2 TexCoords) {

@@ -223,7 +223,7 @@ func (s *Scene) Render() {
 		GLBindTexture(0, s.pointLightShader.LocGDepth, s.gBuffer.buffer.gDepth)
 		GLBindTexture(1, s.pointLightShader.LocGNormal, s.gBuffer.buffer.gNormalRoughness)
 		GLBindTexture(2, s.pointLightShader.LocGAlbedo, s.gBuffer.buffer.gAlbedoMetallic)
-		GLBindTexture(3, s.pointLightShader.LocGAmbientOcclusion, s.ssao.texture)
+		GLBindTexture(3, s.pointLightShader.LocGAmbientOcclusion, aoTexture)
 
 		gl.Uniform2f(s.pointLightShader.LocScreenSize, float32(windowWidth), float32(windowHeight))
 
@@ -295,6 +295,8 @@ func (s *Scene) Render() {
 		out = s.fxaa.Render(out)
 	}
 
+	//out = s.ssao.outTexture
+
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 	// taking care of retina screens have different amount of pixel between actual viewport and requested window size
 	gl.Viewport(0, 0, windowWidth, windowHeight)
@@ -309,7 +311,7 @@ func (s *Scene) Render() {
 		DisplayNormalBufferTexture(s.gBuffer.buffer.gNormalRoughness)
 		DisplayAlbedoTexBuffer(s.gBuffer.buffer.gAlbedoMetallic)
 		DisplayDepthbufferTexture(s.gBuffer.buffer.gDepth)
-		DisplaySsaoTexture(s.ssao.outTexture)
+		DisplaySsaoTexture(aoTexture)
 		DisplayShadowTexture(s.shadow.depthMap)
 		DisplayRoughnessTexture(s.gBuffer.buffer.gNormalRoughness)
 		DisplayMetallicTexture(s.gBuffer.buffer.gAlbedoMetallic)
