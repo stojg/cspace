@@ -37,7 +37,7 @@ type Camera struct {
 	view       mgl32.Mat4
 }
 
-func (cam *Camera) View(elapsed float32) mgl32.Mat4 {
+func (cam *Camera) View(elapsed float64) mgl32.Mat4 {
 	changed := false
 	if cam.handleKeyboard(elapsed) {
 		changed = true
@@ -52,32 +52,32 @@ func (cam *Camera) View(elapsed float32) mgl32.Mat4 {
 	return cam.view
 }
 
-func (cam *Camera) handleKeyboard(elapsed float32) bool {
+func (cam *Camera) handleKeyboard(elapsed float64) bool {
 	changed := false
 	if keys[glfw.KeyW] {
-		change := cam.front.Mul(cam.speed * elapsed)
+		change := cam.front.Mul(cam.speed * float32(elapsed))
 		cam.position = cam.position.Add(change)
 		changed = true
 	}
 	if keys[glfw.KeyS] {
-		change := cam.front.Mul(cam.speed * elapsed)
+		change := cam.front.Mul(cam.speed * float32(elapsed))
 		cam.position = cam.position.Sub(change)
 		changed = true
 	}
 	if keys[glfw.KeyA] {
-		change := cam.front.Cross(cam.up).Normalize().Mul(cam.speed * elapsed)
+		change := cam.front.Cross(cam.up).Normalize().Mul(cam.speed * float32(elapsed))
 		cam.position = cam.position.Sub(change)
 		changed = true
 	}
 	if keys[glfw.KeyD] {
-		change := cam.front.Cross(cam.up).Normalize().Mul(cam.speed * elapsed)
+		change := cam.front.Cross(cam.up).Normalize().Mul(cam.speed * float32(elapsed))
 		cam.position = cam.position.Add(change)
 		changed = true
 	}
 	return changed
 }
 
-func (cam *Camera) handleCursor(elapsed float32) bool {
+func (cam *Camera) handleCursor(elapsed float64) bool {
 	xpos := cursor[0]
 	ypos := cursor[1]
 
@@ -98,8 +98,8 @@ func (cam *Camera) handleCursor(elapsed float32) bool {
 	cam.lastY = float32(ypos)
 
 	sensitivity := float32(10)
-	xOffset *= sensitivity * elapsed
-	yOffset *= sensitivity * elapsed
+	xOffset *= sensitivity * float32(elapsed)
+	yOffset *= sensitivity * float32(elapsed)
 
 	cam.yaw += xOffset
 	cam.pitch += yOffset

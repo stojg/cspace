@@ -66,9 +66,13 @@ func realMain() error {
 
 	PBRLevel(scene.graph)
 
+	previousTime := glfw.GetTime()
 	for !window.ShouldClose() {
 		glfw.PollEvents()
-		scene.Render()
+		now := glfw.GetTime()
+		elapsed := (now - previousTime)
+		previousTime = now
+		scene.Render(elapsed)
 		fpsCounter(window)
 		window.SwapBuffers()
 	}

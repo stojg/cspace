@@ -24,6 +24,23 @@ type GBufferPipeline struct {
 	nullShader *DefaultShader
 }
 
+// Render into the gBuffer
+func (g *GBufferPipeline) Render(graph SceneNode) {
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthMask(true)
+
+	gl.Enable(gl.CULL_FACE)
+	gl.CullFace(gl.BACK)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, g.buffer.fbo)
+	var attachments = [2]uint32{gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1}
+	gl.DrawBuffers(int32(len(attachments)), &attachments[0])
+	gl.Clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
+	graph.Render(g.tShader, g.mShader)
+
+	gl.UseProgram(0)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+}
+
 type Gbuffer struct {
 	fbo uint32
 

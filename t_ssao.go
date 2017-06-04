@@ -97,6 +97,7 @@ type SsaoFBO struct {
 
 func (s *SsaoFBO) Render(gDepthTexture, gNormalTexture uint32) uint32 {
 	gl.BindFramebuffer(gl.FRAMEBUFFER, s.fbo)
+	gl.Disable(gl.DEPTH_TEST)
 
 	gl.Viewport(0, 0, s.Width/2, s.Height/2)
 
@@ -141,5 +142,8 @@ func (s *SsaoFBO) Render(gDepthTexture, gNormalTexture uint32) uint32 {
 	renderQuad()
 
 	gl.Viewport(0, 0, s.Width, s.Height)
+
+	gl.UseProgram(0)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 	return s.outTexture
 }

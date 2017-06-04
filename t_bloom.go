@@ -39,6 +39,7 @@ type BloomEffect struct {
 }
 
 func (b *BloomEffect) Render(inTexture uint32) uint32 {
+	gl.Disable(gl.DEPTH_TEST)
 
 	// separate the brightest colours into a separate texture
 	gl.BindFramebuffer(gl.FRAMEBUFFER, b.fbo)
@@ -51,7 +52,7 @@ func (b *BloomEffect) Render(inTexture uint32) uint32 {
 	renderQuad()
 
 	// blur the bright part
-	const blurAmount = 10
+	const blurAmount = 4
 	horizontal := 0
 	firstIteration := true
 

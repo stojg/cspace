@@ -26,7 +26,7 @@ type ToneMap struct {
 }
 
 func (t *ToneMap) Render(inTexture uint32, exposure float32) uint32 {
-
+	gl.Disable(gl.DEPTH_TEST)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, t.fbo)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	gl.DrawBuffer(gl.COLOR_ATTACHMENT0)

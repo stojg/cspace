@@ -7,16 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
-	"github.com/go-gl/mathgl/mgl32"
 )
-
-func Use(program uint32) {
-	gl.UseProgram(program)
-}
-
-func SetMatrix4f(loc int32, mat mgl32.Mat4) {
-	gl.UniformMatrix4fv(loc, 1, false, &mat[0])
-}
 
 func buildShader(vertex, frag string) uint32 {
 	vertexShaderSource, err := loadVertexShader(vertex)

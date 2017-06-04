@@ -6,6 +6,7 @@ uniform sampler2D gDepth;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 uniform sampler2D gAmbientOcclusion;
+uniform int iblEnabled;
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
 uniform sampler2D   brdfLUT;
@@ -81,23 +82,24 @@ void main()
         Lo += LightCalculation(V, N, albedo, roughness, metallic, F0, lightPos, dirLight.Color, 1.0) * (1 - shadow);
     }
 
-    // ambient lighting (we now use IBL as the ambient term)
-    vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+    vec3 ambient = vec3(0,0,0);
+    if(iblEnabled == 1) {
+        vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
-    vec3 kS = F;
-    vec3 kD = 1.0 - kS;
-    kD *= 1.0 - metallic;
-    vec3 irradiance = texture(irradianceMap, wcNormal).rgb;
-    vec3 diffuse      = irradiance * albedo;
+        vec3 kS = F;
+        vec3 kD = 1.0 - kS;
+        kD *= 1.0 - metallic;
+        vec3 irradiance = texture(irradianceMap, wcNormal).rgb;
+        vec3 diffuse      = irradiance * albedo;
 
-    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum
-    // approximation to get the IBL specular part.
-    const float MAX_REFLECTION_LOD = 4.0;
-    vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
-    vec2 brdf  = texture(brdfLUT, vec2(max(dot(wcNormal, wcEyeDir), 0.0), roughness)).rg;
-    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
-
-    vec3 ambient = (kD * diffuse + specular) * ao;
+        // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum
+        // approximation to get the IBL specular part.
+        const float MAX_REFLECTION_LOD = 4.0;
+        vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
+        vec2 brdf  = texture(brdfLUT, vec2(max(dot(wcNormal, wcEyeDir), 0.0), roughness)).rg;
+        vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+        ambient = (kD * diffuse + specular) * ao;
+    }
 
     FragColor   = vec4(ambient + Lo ,1);
 }

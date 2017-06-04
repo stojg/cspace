@@ -41,7 +41,7 @@ func NewFxaa(width, height int32) *Fxaa {
 }
 
 func (fxaa *Fxaa) Render(inTexture uint32) uint32 {
-
+	gl.Disable(gl.DEPTH_TEST)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, fxaa.fbo)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	gl.DrawBuffer(gl.COLOR_ATTACHMENT0)
