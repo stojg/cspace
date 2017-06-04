@@ -45,7 +45,7 @@ func initWindow() (*glfw.Window, error) {
 	}
 	window.MakeContextCurrent()
 	// disable or enable vertical refresh (vsync)
-	glfw.SwapInterval(0)
+	glfw.SwapInterval(1)
 	mouseCaptured := true
 	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	window.SetKeyCallback(func(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {

@@ -64,9 +64,8 @@ void main()
         vec3 L = normalize(lightPos - FragPos);
         vec3 H = normalize(V + L);
 
-        float distance = length(L);
-        float attenuation = 1.0 / (1.0 + pointLight[i].Linear * distance + pointLight[i].Quadratic * distance * distance);
-        // float attenuation = 1.0 / (distance * distance* distance* distance);
+        float distance    = length(L);
+        float attenuation = 1.0 / (1.0 + pointLight[i].Linear * distance + pointLight[i].Quadratic * pow(distance, 2));
         vec3 radiance     = pointLight[i].Color * attenuation;
 
         vec3 F0 = vec3(0.04);

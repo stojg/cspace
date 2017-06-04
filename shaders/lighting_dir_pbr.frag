@@ -22,6 +22,7 @@ layout (std140) uniform Matrices
 struct Light {
     vec3 Direction;
     vec3 Color;
+    int Enabled;
 };
 uniform Light dirLight;
 
@@ -75,8 +76,10 @@ void main()
     F0      = mix(F0, albedo, metallic);
 
     // light calculations start here
-    vec3 lightPos = transpose(mat3(invView)) * normalize(dirLight.Direction);
-    Lo += LightCalculation(V, N, albedo, roughness, metallic, F0, lightPos, dirLight.Color, 1.0) * (1 - shadow);
+    if (dirLight.Enabled == 1) {
+        vec3 lightPos = transpose(mat3(invView)) * normalize(dirLight.Direction);
+        Lo += LightCalculation(V, N, albedo, roughness, metallic, F0, lightPos, dirLight.Color, 1.0) * (1 - shadow);
+    }
 
     // ambient lighting (we now use IBL as the ambient term)
     vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);

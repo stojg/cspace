@@ -25,7 +25,7 @@ type ToneMap struct {
 	shader        *shaders.HDR
 }
 
-func (t *ToneMap) Render(inTexture uint32) uint32 {
+func (t *ToneMap) Render(inTexture uint32, exposure float32) uint32 {
 
 	gl.BindFramebuffer(gl.FRAMEBUFFER, t.fbo)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
@@ -34,7 +34,7 @@ func (t *ToneMap) Render(inTexture uint32) uint32 {
 	gl.UseProgram(t.shader.Program)
 
 	GLBindTexture(0, t.shader.LocScreenTexture, inTexture)
-	gl.Uniform1f(t.shader.LocExposure, 1.2)
+	gl.Uniform1f(t.shader.LocExposure, exposure)
 	renderQuad()
 
 	GLUnbindTexture(0)

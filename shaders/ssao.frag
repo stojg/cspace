@@ -64,6 +64,6 @@ void main() {
         float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
         occlusion       += (sampleDepth >= sampl.z + bias ? 1.0 : 0.0) * rangeCheck;
     }
-    FragColor = pow(1.0 - (occlusion / kernelSize), 2);
+    FragColor = pow(1.0 - (occlusion / kernelSize), 3);
 }
 

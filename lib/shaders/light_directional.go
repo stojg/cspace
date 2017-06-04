@@ -17,6 +17,7 @@ func NewDirectionalLight() *DirectionalLight {
 
 		LocLightDirection: loc(c, "dirLight.Direction"),
 		LocLightColor:     loc(c, "dirLight.Color"),
+		LocLightEnabled:   loc(c, "dirLight.Enabled"),
 
 		LocShadowMap:       loc(c, "shadowMap"),
 		LocLightProjection: loc(c, "lightProjection"),
@@ -43,6 +44,7 @@ type DirectionalLight struct {
 
 	LocLightDirection  int32
 	LocLightColor      int32
+	LocLightEnabled    int32
 	LocShadowMap       int32
 	LocLightProjection int32
 	LocLightView       int32

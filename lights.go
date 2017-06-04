@@ -5,6 +5,7 @@ import "math"
 type DirectionalLight struct {
 	Direction [3]float32
 	Color     [3]float32
+	Enabled   int32
 }
 
 type PointLight struct {

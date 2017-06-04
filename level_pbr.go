@@ -100,14 +100,14 @@ func PBRLevel(graph SceneNode) {
 
 	// green cube
 	{
-		meshes := LoadModel("models/cube", MaterialMesh)
+		meshes := LoadModel("models/beveled_cube", MaterialMesh)
 		for _, mesh := range meshes {
 			mesh.Albedo = [3]float32{0, 1, 0}
 			mesh.Metallic = 0.01
 			mesh.Roughness = 0.1
 		}
 
-		t := mgl32.Translate3D(0, 1, 10)
+		t := mgl32.Translate3D(0, 0.0, 10)
 		graph.Add(meshes, t)
 	}
 

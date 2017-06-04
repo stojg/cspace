@@ -24,17 +24,17 @@ var windowHeight int32 = 720
 var viewPortWidth int32
 var viewPortHeight int32
 
-var bloomOn = false // 2ms
-var ssaoOn = true   // 8ms ?
-var fxaaOn = false
+var bloomOn = true
+var ssaoOn = true
+var fxaaOn = true
 var dirLightOn = true
 var showDebug = false
 
 var currentNumLights = 0
 
 var directionLight = &DirectionalLight{
-	Direction: normalise([3]float32{-80, 60, -100}),
-	Color:     [3]float32{20, 20, 20},
+	Direction: normalise([3]float32{1, 0.7, 0}),
+	Color:     [3]float32{5, 5, 6},
 }
 
 func NewScene() *Scene {
@@ -69,7 +69,7 @@ func NewScene() *Scene {
 	for i := 0; i < maxPointLights; i++ {
 		s.pointLights = append(s.pointLights, &PointLight{
 			Position: [3]float32{rand.Float32()*60 - 30, rand.Float32()*5 + 1, rand.Float32()*60 - 30},
-			Color:    [3]float32{rand.Float32() * 10, rand.Float32() * 10, rand.Float32() * 10},
+			Color:    [3]float32{3, 3, 20},
 			Constant: att.Constant,
 			Linear:   att.Linear,
 			Exp:      att.Exp,
@@ -93,6 +93,7 @@ type Scene struct {
 	shadow *ShadowFBO
 	ssao   *SsaoFBO
 	hdr    *HDRFBO
+	skybox *Skybox
 
 	pointLightShader *shaders.PointLight
 	dirLightShader   *shaders.DirectionalLight
@@ -105,9 +106,7 @@ type Scene struct {
 
 	stencilShader *shaders.Stencil
 
-	skybox        *shaders.Skybox
-	skyBoxTexture *Texture
-	cubeMap       *IBL
+	ibl *IBL
 
 	fxaa    *Fxaa
 	tonemap *ToneMap
@@ -124,11 +123,19 @@ func (s *Scene) Init() {
 	s.ssao = NewSSAO(windowWidth, windowHeight)
 	s.hdr = NewHDRFBO()
 
-	s.skybox = shaders.NewSkybox()
-	s.skyBoxTexture = GetHDRTexture("woods_1k.hdr")
-	s.cubeMap = NewCubeMap(512, 512)
+	s.ibl = NewCubeMap(512, 512)
 
-	s.cubeMap.Update(s.skyBoxTexture)
+	//s.ibl.Update(GetHDRTexture("sky0010.hdr"))
+	s.ibl.Update(GetHDRTexture("sky0016.hdr"))
+	//s.ibl.Update(GetHDRTexture("sky0017.hdr"))
+	//s.ibl.Update(GetHDRTexture("sky0020.hdr"))
+	//s.ibl.Update(GetHDRTexture("sky0023.hdr"))
+	//s.ibl.Update(GetHDRTexture("sky0026.hdr"))
+	//s.ibl.Update(GetHDRTexture("sky0028.hdr"))
+	//s.ibl.Update(GetHDRTexture("sky0032.hdr"))
+	//s.ibl.Update(GetHDRTexture("woods_1k.hdr"))
+
+	s.skybox = NewSkymap(s.ibl.envCubeMap)
 
 	s.fxaa = NewFxaa(windowWidth, windowHeight)
 	s.tonemap = NewToneMap(windowWidth, windowHeight)
@@ -229,8 +236,7 @@ func (s *Scene) Render() {
 
 		renderQuad()
 	}
-
-	if dirLightOn { // Render the directional light, for now there is only one
+	{
 		gl.UseProgram(s.dirLightShader.Program)
 
 		GLBindTexture(0, s.dirLightShader.LocGDepth, s.gBuffer.buffer.gDepth)
@@ -238,15 +244,20 @@ func (s *Scene) Render() {
 		GLBindTexture(2, s.dirLightShader.LocGAlbedo, s.gBuffer.buffer.gAlbedoMetallic)
 		GLBindTexture(3, s.dirLightShader.LocShadowMap, s.shadow.depthMap)
 		GLBindTexture(4, s.dirLightShader.LocGAmbientOcclusion, aoTexture)
-		GLBindCubeMap(5, s.dirLightShader.LocIrradianceMap, s.cubeMap.irradianceMap)
-		GLBindCubeMap(6, s.dirLightShader.LocPrefilterMap, s.cubeMap.prefilterMap)
-		GLBindTexture(7, s.dirLightShader.LocPbrdfLUT, s.cubeMap.brdfLUTTexture)
+		GLBindCubeMap(5, s.dirLightShader.LocIrradianceMap, s.ibl.irradianceMap)
+		GLBindCubeMap(6, s.dirLightShader.LocPrefilterMap, s.ibl.prefilterMap)
+		GLBindTexture(7, s.dirLightShader.LocPbrdfLUT, s.ibl.brdfLUTTexture)
 
 		gl.UniformMatrix4fv(s.dirLightShader.LocLightProjection, 1, false, &lightProjection[0])
 		gl.UniformMatrix4fv(s.dirLightShader.LocLightView, 1, false, &lightView[0])
 		gl.Uniform3fv(s.dirLightShader.LocLightDirection, 1, &directionLight.Direction[0])
 		gl.Uniform3fv(s.dirLightShader.LocLightColor, 1, &directionLight.Color[0])
 		gl.Uniform2f(s.dirLightShader.LocScreenSize, float32(windowWidth), float32(windowHeight))
+		if dirLightOn {
+			gl.Uniform1i(s.dirLightShader.LocLightEnabled, 1)
+		} else {
+			gl.Uniform1i(s.dirLightShader.LocLightEnabled, 0)
+		}
 
 		renderQuad()
 	}
@@ -257,14 +268,7 @@ func (s *Scene) Render() {
 
 	// render the skybox
 	if dirLightOn {
-		gl.DepthFunc(gl.LEQUAL)
-		gl.UseProgram(s.skybox.Program)
-		// remove the rotation
-		skyboxView := view.Mat3().Mat4()
-		gl.UniformMatrix4fv(s.skybox.LocSkyView, 1, false, &skyboxView[0])
-		GLBindCubeMap(0, s.skybox.LocScreenTexture, s.cubeMap.envCubeMap)
-		gl.BindVertexArray(s.skybox.SkyboxVAO)
-		gl.DrawArrays(gl.TRIANGLES, 0, 36)
+		s.skybox.Render(view)
 	}
 
 	{ // render emissive objects
@@ -290,16 +294,15 @@ func (s *Scene) Render() {
 		out = s.bloom.Render(out)
 	}
 
-	out = s.tonemap.Render(out)
+	out = s.tonemap.Render(out, 1.2)
+
 	if fxaaOn {
 		out = s.fxaa.Render(out)
 	}
 
-	//out = s.ssao.outTexture
-
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 	// taking care of retina screens have different amount of pixel between actual viewport and requested window size
-	gl.Viewport(0, 0, windowWidth, windowHeight)
+	gl.Viewport(0, 0, viewPortWidth, viewPortHeight)
 	gl.UseProgram(s.passShader.Program)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	GLBindTexture(0, s.passShader.LocScreenTexture, out)
