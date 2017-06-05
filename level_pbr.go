@@ -4,7 +4,8 @@ import "github.com/go-gl/mathgl/mgl32"
 
 func PBRLevel(graph SceneNode) {
 	{
-		meshes := LoadModel("models/cube", TexturedMesh)
+		meshes := LoadModel("models/cube", MaterialMesh)
+		//meshes := LoadModel("models/cube", TexturedMesh)
 
 		albTexture := GetTexture(Albedo, "rock_floor/Base_Color.png", true)
 		metallicTexture := GetTexture(Metallic, "rock_floor/Metallic.png", false)
@@ -16,11 +17,14 @@ func PBRLevel(graph SceneNode) {
 			mesh.Textures = append(mesh.Textures, metallicTexture)
 			mesh.Textures = append(mesh.Textures, roughnessTexture)
 			mesh.Textures = append(mesh.Textures, normalTexture)
+			mesh.Albedo = [3]float32{1, 1, 1}
+			mesh.Metallic = 0.01
+			mesh.Roughness = 0.7
 		}
 		for x := 0; x < 30; x++ {
 			for z := 0; z < 30; z++ {
 				t := mgl32.Translate3D(float32(x)*2-30, -0.5, float32(z)*2-30)
-				t = t.Mul4(mgl32.Scale3D(0.95, 0.5, 0.95))
+				t = t.Mul4(mgl32.Scale3D(0.98, 0.5, 0.98))
 				t = t.Mul4(mgl32.HomogRotate3D(float32(x)*3.14/2, mgl32.Vec3{0, 1, 0}))
 				graph.Add(meshes, t)
 			}

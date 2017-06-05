@@ -49,11 +49,12 @@ func NewScene() *Scene {
 		lightBoxShader: shaders.NewEmissive(),
 	}
 
-	att := ligthAtt[1]
+	att := ligthAtt[20]
 	for i := 0; i < maxPointLights; i++ {
 		s.pointLights = append(s.pointLights, &PointLight{
 			Position: [3]float32{rand.Float32()*60 - 30, rand.Float32()*5 + 1, rand.Float32()*60 - 30},
 			Color:    [3]float32{rand.Float32() * 20, rand.Float32() * 20, rand.Float32() * 20},
+			//Color:    [3]float32{20, 20, 20},
 			Constant: att.Constant,
 			Linear:   att.Linear,
 			Exp:      att.Exp,
@@ -123,6 +124,7 @@ func (s *Scene) Init() {
 
 func (s *Scene) Render(elapsed float64) {
 
+	sin := float32(math.Sin(glfw.GetTime()))
 	handleInputs()
 
 	view := s.camera.View(elapsed)
@@ -150,7 +152,7 @@ func (s *Scene) Render(elapsed float64) {
 		// for now I have settled with passing all lights into one shader pass. Stencil pass turned out to be very hard
 		// to get correct and not very fast. This could possibly be more performant by using tiled deferred rendering.
 		for i := range s.pointLights {
-			gl.Uniform3f(s.pointLightShader.LocLightPos[i], s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
+			gl.Uniform3f(s.pointLightShader.LocLightPos[i], s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin, s.pointLights[i].Position[2])
 			gl.Uniform3fv(s.pointLightShader.LocLightColor[i], 1, &s.pointLights[i].Color[0])
 			gl.Uniform1f(s.pointLightShader.LocLightLinear[i], s.pointLights[i].Linear)
 			gl.Uniform1f(s.pointLightShader.LocLightQuadratic[i], s.pointLights[i].Exp)
@@ -196,7 +198,7 @@ func (s *Scene) Render(elapsed float64) {
 		gl.Enable(gl.DEPTH_TEST)
 		gl.UseProgram(s.lightBoxShader.Program)
 		for i := range s.pointLights[:currentNumLights] {
-			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1], s.pointLights[i].Position[2])
+			model := mgl32.Translate3D(s.pointLights[i].Position[0], s.pointLights[i].Position[1]+sin, s.pointLights[i].Position[2])
 			model = model.Mul4(mgl32.Scale3D(0.1, 0.1, 0.1))
 			model = model.Mul4(mgl32.HomogRotate3D(float32(math.Cos(glfw.GetTime())), mgl32.Vec3{1, 1, 1}.Normalize()))
 			gl.UniformMatrix4fv(s.lightBoxShader.LocModel, 1, false, &model[0])
@@ -212,7 +214,7 @@ func (s *Scene) Render(elapsed float64) {
 	if bloomOn {
 		out = s.bloom.Render(out)
 	}
-	out = s.tonemap.Render(out, 1.4)
+	out = s.tonemap.Render(out, 1.6)
 	if fxaaOn {
 		out = s.fxaa.Render(out)
 	}

@@ -40,12 +40,11 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
 
 void main()
 {
-
-    // point light direction to point in view space
     vec2 TexCoords = CalcTexCoord();
     vec3 FragPos   = ViewPosFromDepth(texture(gDepth, TexCoords).x, TexCoords);
+    vec3 FragPosW  = vec3(invView * vec4(FragPos, 0.0));
 
-    vec3 N = texture(gNormal, TexCoords).rgb;
+    vec3 N = normalize(texture(gNormal, TexCoords).rgb);
     vec3 V = normalize(-FragPos);
 
     vec3 albedo = texture(gAlbedoSpec, TexCoords).rgb;
@@ -53,9 +52,11 @@ void main()
     float roughness = texture(gNormal, TexCoords).w;
     float ao = texture(gAmbientOcclusion, TexCoords).r;
 
+    vec3 F0 = vec3(0.04);
+    F0      = mix(F0, albedo, metallic);
     vec3 Lo = vec3(0.0);
+    vec3 ambient = albedo * 0.001;
 
-    vec3 ambient = vec3(0.0);
     for(int i = 0; i < numLights; i++){
 
         vec3 lightPos = (view * vec4(pointLight[i].Position, 1)).xyz;
@@ -64,12 +65,10 @@ void main()
         vec3 L = normalize(lightPos - FragPos);
         vec3 H = normalize(V + L);
 
-        float distance    = length(L);
-        float attenuation = 1.0 / (1.0 + pointLight[i].Linear * distance + pointLight[i].Quadratic * pow(distance, 2));
+        float distance    = length(pointLight[i].Position - FragPosW);
+        float attenuation = 1.0 / (1.0 + pointLight[i].Linear * distance + pointLight[i].Quadratic * distance * distance);
         vec3 radiance     = pointLight[i].Color * attenuation;
 
-        vec3 F0 = vec3(0.04);
-        F0      = mix(F0, albedo, metallic);
         vec3 F  = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
         float NDF = DistributionGGX(N, H, roughness);
@@ -91,7 +90,6 @@ void main()
         float NdotL = max(dot(N, L), 0.0);
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
 
-//        ambient = vec3(0.0006) * albedo;
     }
     // end foreach
 
