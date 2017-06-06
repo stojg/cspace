@@ -24,8 +24,8 @@ func PBRLevel(graph SceneNode) {
 		for x := 0; x < 30; x++ {
 			for z := 0; z < 30; z++ {
 				t := mgl32.Translate3D(float32(x)*2-30, -0.5, float32(z)*2-30)
-				t = t.Mul4(mgl32.Scale3D(0.98, 0.5, 0.98))
-				t = t.Mul4(mgl32.HomogRotate3D(float32(x)*3.14/2, mgl32.Vec3{0, 1, 0}))
+				t = t.Mul4(mgl32.Scale3D(1, 0.5, 1))
+				//t = t.Mul4(mgl32.HomogRotate3D(float32(x)*3.14/2, mgl32.Vec3{0, 1, 0}))
 				graph.Add(meshes, t)
 			}
 		}
